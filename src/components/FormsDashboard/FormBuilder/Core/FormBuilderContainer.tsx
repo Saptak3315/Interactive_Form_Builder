@@ -1,24 +1,43 @@
-import { useFormContext } from "../../../../context/FormContext/FormProvider";
-import FormHeader from "./FormHeader";
-import FormToolbar from "./FormToolbar";
-import QuestionEditor from "./QuestionEditor";
-import FormPreview from "./FormPreview";
-import "./FormBuilderContainer.css";
+// src/components/FormBuilder/Core/FormBuilderContainer.tsx
 
-const FormBuilderContainer = () => {
+import React, { useState } from 'react';
+import FormHeader from './FormHeader';
+import FormSidebar from './FormSidebar';
+import QuestionEditor from './QuestionEditor';
+import FormPreview from './FormPreview';
+import './FormBuilderContainer.css';
+import { useFormContext } from '../../../../context/FormContext/FormProvider';
+
+const FormBuilderContainer: React.FC = () => {
   const { state } = useFormContext();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   return (
     <div className="form-builder-container">
       {/* Header with form title and description */}
       <FormHeader />
       
-      {/* Toolbar with actions */}
-      <FormToolbar />
-      
-      {/* Main content area with two panels */}
+      {/* Main content area */}
       <div className="form-builder-content">
-        {/* Left panel - Editor */}
+        {/* Collapsible Left Sidebar */}
+        <div className={`form-sidebar-container ${sidebarOpen ? 'open' : 'closed'}`}>
+          <FormSidebar />
+        </div>
+
+        {/* Sidebar Toggle Button */}
+        <button 
+          className="sidebar-toggle-btn"
+          onClick={toggleSidebar}
+          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+        >
+          {sidebarOpen ? '◀' : '▶'}
+        </button>
+        
+        {/* Main Editor Area */}
         <div className="form-builder-editor">
           <div className="editor-header">
             <h3>Edit Form</h3>
@@ -31,7 +50,7 @@ const FormBuilderContainer = () => {
           </div>
         </div>
         
-        {/* Right panel - Preview */}
+        {/* Right Preview Panel */}
         <div className="form-builder-preview">
           <div className="preview-header">
             <h3>Preview</h3>
@@ -54,6 +73,6 @@ const FormBuilderContainer = () => {
       </div>
     </div>
   );
-}
+};
 
-export default FormBuilderContainer
+export default FormBuilderContainer;

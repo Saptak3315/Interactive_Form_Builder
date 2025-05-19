@@ -1,3 +1,5 @@
+/* src/components/FormBuilder/Core/FormBuilderContainer.css */
+
 .form-builder-container {
   height: 100vh;
   display: flex;
@@ -7,19 +9,73 @@
 
 .form-builder-content {
   flex: 1;
-  display: grid;
-  grid-template-columns: 300px 1fr 1fr;
+  display: flex;
   min-height: 0;
+  position: relative;
 }
 
-.form-builder-editor {
+/* Sidebar */
+.form-sidebar-container {
+  width: 320px;
   background-color: white;
   border-right: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+  z-index: 10;
 }
 
+.form-sidebar-container.closed {
+  width: 0;
+  overflow: hidden;
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle-btn {
+  position: absolute;
+  left: 320px;
+  top: 20px;
+  z-index: 15;
+  width: 32px;
+  height: 32px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #6b7280;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-sidebar-container.closed + .sidebar-toggle-btn {
+  left: 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+/* Editor */
+.form-builder-editor {
+  flex: 1;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  margin-left: 40px; /* Space for toggle button */
+}
+
+.form-sidebar-container.closed ~ .form-builder-editor {
+  margin-left: 40px;
+}
+
+/* Preview */
 .form-builder-preview {
+  width: 400px;
   background-color: white;
   border-left: 1px solid #e2e8f0;
   display: flex;
@@ -91,4 +147,34 @@
 .placeholder-content h3 {
   margin: 0 0 10px 0;
   color: #1e293b;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .form-builder-preview {
+    width: 350px;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-builder-content {
+    flex-direction: column;
+  }
+  
+  .form-sidebar-container {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .form-builder-preview {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .sidebar-toggle-btn {
+    display: none;
+  }
 }

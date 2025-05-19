@@ -1,0 +1,126 @@
+/* src/components/FormBuilder/Core/QuestionEditor.css */
+
+.question-editor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: all 0.2s;
+}
+
+.question-editor.drag-over {
+  background-color: #f0f9ff;
+  border: 2px dashed #3b82f6;
+  border-radius: 8px;
+}
+
+.question-editor-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  transition: all 0.2s;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  background-color: #fafafa;
+}
+
+.question-editor-placeholder.drag-over {
+  border-color: #3b82f6;
+  background-color: #f0f9ff;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: #64748b;
+  padding: 40px;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.placeholder-content h3 {
+  margin: 0 0 10px 0;
+  color: #1e293b;
+  font-size: 20px;
+}
+
+.placeholder-content p {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+}
+
+.drop-zone-indicator {
+  padding: 12px 24px;
+  background-color: #e0f2fe;
+  border: 1px dashed #0284c7;
+  border-radius: 6px;
+  color: #0c4a6e;
+  font-weight: 500;
+}
+
+.questions-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.question-item {
+  padding: 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.question-item:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.question-item-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.question-number {
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.question-type {
+  font-size: 12px;
+  padding: 4px 8px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.question-content {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.drop-zone {
+  padding: 20px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  text-align: center;
+  color: #9ca3af;
+  background-color: #fafafa;
+  transition: all 0.2s;
+}
+
+.question-editor.drag-over .drop-zone {
+  border-color: #3b82f6;
+  background-color: #f0f9ff;
+  color: #1d4ed8;
+}
