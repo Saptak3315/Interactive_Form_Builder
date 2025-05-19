@@ -103,7 +103,11 @@ const FormsDashboard: React.FC = () => {
   );
 
   const handleCreateNewForm = () => {
-    navigate('/test'); // This will navigate to the route that renders test.tsx
+    navigate('/form-builder'); // Navigate to the new form creation route
+  };
+
+  const handleEditForm = (formId: number) => {
+    navigate(`/forms/edit/${formId}`); // Navigate to the form editing route
   };
 
   return (
@@ -497,6 +501,7 @@ const FormsDashboard: React.FC = () => {
                         </button>
                         <button
                           title="Edit Form"
+                          onClick={() => handleEditForm(form.id)}
                           style={{
                             width: "32px",
                             height: "32px",

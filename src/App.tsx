@@ -1,25 +1,26 @@
-import './App.css'
-import { Routes, Route, BrowserRouter } from 'react-router-dom'
-import FormsDashboard from './components/FormsDashboard/FormsDashboard'
-import Test from './test/test'
+import './App.css';
+import { Routes, Route, BrowserRouter } from 'react-router-dom';
+import Dashboard from './pages/Dashboard';
+import Test from './test/test';
+import FormBuilder from './pages/FormBuilder';
 
 function AppRoutes() {
   return (
     <Routes>
       {/* Dashboard as the root page */}
-      <Route path="/" element={<FormsDashboard/>} />
-      <Route path="/test" element={<Test />} />
-      
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/form-builder" element={<FormBuilder />} />
+      <Route path="/test" element={<Test />} /> 
     </Routes>
-  )
+  );
 }
 
 function App() {
   return (
     <BrowserRouter>
-      <AppRoutes/>
+      <AppRoutes />
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
