@@ -50,23 +50,14 @@ const FormBuilderContainer: React.FC = () => {
           </div>
         </div>
         
-        {/* Right Preview Panel */}
-        <div className="form-builder-preview">
-          <div className="preview-header">
-            <h3>Preview</h3>
-            <div className="preview-controls">
-              <button className="preview-device-btn active" data-device="desktop">
-                🖥️
-              </button>
-              <button className="preview-device-btn" data-device="tablet">
-                📱
-              </button>
-              <button className="preview-device-btn" data-device="mobile">
-                📱
-              </button>
-            </div>
+        {/* Right Panel - ONLY Preview */}
+        <div className="form-builder-panel">
+          <div className="panel-tabs">
+            <button className="panel-tab active">
+              👁️
+            </button>
           </div>
-          <div className="preview-content">
+          <div className="panel-content">
             <FormPreview />
           </div>
         </div>
