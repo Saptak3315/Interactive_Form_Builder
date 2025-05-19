@@ -58,12 +58,12 @@ const FormBuilderContainer: React.FC = () => {
               <button className="preview-device-btn active" data-device="desktop">
                 🖥️
               </button>
-              <button className="preview-device-btn" data-device="tablet">
+              {/* <button className="preview-device-btn" data-device="tablet">
                 📱
               </button>
               <button className="preview-device-btn" data-device="mobile">
                 📱
-              </button>
+              </button> */}
             </div>
           </div>
           <div className="preview-content">
