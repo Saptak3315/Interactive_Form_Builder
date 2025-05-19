@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useFormContext } from '../../../../context/FormContext/FormProvider';
-import { setForm } from '../../../../context/FormContext/formActions';
 import './FormHeader.css';
+import { useFormContext } from '../../../context/FormContext/FormProvider';
+import { setForm } from '../../../context/FormContext/formActions';
 
 const FormHeader = () => {
   const { state, dispatch } = useFormContext();

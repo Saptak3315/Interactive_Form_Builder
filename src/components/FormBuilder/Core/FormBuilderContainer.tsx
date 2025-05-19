@@ -6,7 +6,7 @@ import FormSidebar from './FormSidebar';
 import QuestionEditor from './QuestionEditor';
 import FormPreview from './FormPreview';
 import './FormBuilderContainer.css';
-import { useFormContext } from '../../../../context/FormContext/FormProvider';
+import { useFormContext } from '../../../context/FormContext/FormProvider';
 
 const FormBuilderContainer: React.FC = () => {
   const { state } = useFormContext();

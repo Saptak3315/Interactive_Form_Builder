@@ -2,8 +2,8 @@
 
 import React from 'react';
 import './DraggableQuestionType.css';
-import { useFormContext } from '../../../../context/FormContext/FormProvider';
-import { addQuestion, createDefaultQuestion } from '../../../../context/FormContext/formActions';
+import { useFormContext } from '../../../context/FormContext/FormProvider';
+import { addQuestion, createDefaultQuestion } from '../../../context/FormContext/formActions';
 
 interface QuestionTypeOption {
   type: string;

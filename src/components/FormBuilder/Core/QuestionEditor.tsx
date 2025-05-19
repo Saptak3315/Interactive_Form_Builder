@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import './QuestionEditor.css';
-import { useFormContext } from '../../../../context/FormContext/FormProvider';
-import { addQuestion, createDefaultQuestion } from '../../../../context/FormContext/formActions';
+import { useFormContext } from '../../../context/FormContext/FormProvider';
+import { addQuestion, createDefaultQuestion } from '../../../context/FormContext/formActions';
 
 const QuestionEditor: React.FC = () => {
   const { state, dispatch } = useFormContext();
