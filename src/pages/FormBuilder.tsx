@@ -1,4 +1,4 @@
-import FormBuilderContainer from '../components/FormsDashboard/FormBuilder/Core/FormBuilderContainer';
+import FormBuilderContainer from "../components/FormBuilder/Core/FormBuilderContainer";
 
 const FormBuilder = () => {
   return <FormBuilderContainer />;
