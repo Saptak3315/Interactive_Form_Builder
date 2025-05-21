@@ -1,4 +1,6 @@
+import { setForm } from '../../../context/FormContext/formActions';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
+import FormStorageService from '../../../services/FormStorageService';
 import DraggableQuestionType from './DraggableQuestionType';
 import './FormSidebar.css';
 
@@ -33,9 +35,21 @@ const FormSidebar = () => {
   }, {} as Record<string, QuestionTypeOption[]>);
 
   const handleSaveForm = () => {
-    // TODO: Implement save functionality
-    alert('Form saved successfully! (This is temporary)');
-  };
+  try {
+    // Save the current form state
+    const savedForm = FormStorageService.saveForm(state);
+    // Update the form ID if it was newly created
+    if (state.formId !== savedForm.formId) {
+      dispatch(setForm({ formId: savedForm.formId }));
+    }
+    // Update saved status
+    dispatch(setForm({ isFormSaved: true }));
+    alert('Form saved successfully!');
+  } catch (error) {
+    console.error('Error saving form:', error);
+    alert('There was an error saving your form. Please try again.');
+  }
+};
 
   const handlePublishForm = () => {
     // TODO: Implement publish functionality
@@ -128,3 +142,7 @@ const FormSidebar = () => {
 };
 
 export default FormSidebar;
+
+function dispatch(arg0: any) {
+  throw new Error('Function not implemented.');
+}

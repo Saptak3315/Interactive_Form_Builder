@@ -79,6 +79,8 @@
   cursor: pointer;
   user-select: none;
   position: relative;
+  display: block;
+  width: 100%;
 }
 
 .question-item:hover {
@@ -196,6 +198,8 @@
 /* Question Content */
 .question-content {
   margin-bottom: 12px;
+  display: block;
+  width: 100%;
 }
 
 .question-text {
@@ -218,6 +222,44 @@
   color: #6b7280;
   margin-top: 6px;
   font-style: italic;
+}
+
+/* Text Preview - Enhanced to ensure visibility */
+.text-preview {
+  margin-top: 10px;
+  width: 100%;
+  display: block;
+  padding: 5px 0;
+}
+
+.text-preview-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  color: #6b7280;
+  font-size: 14px;
+  display: block;
+  box-sizing: border-box;
+}
+
+/* Add more specificity to ensure styles are applied */
+.question-editor .questions-list .question-item .question-content .text-preview {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.question-editor .questions-list .question-item .question-content .text-preview .text-preview-input {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  color: #6b7280;
+  font-size: 14px;
 }
 
 /* Question Options Preview */
@@ -343,4 +385,87 @@
 
 .question-item.drag-target::before {
   opacity: 1;
+}
+
+/* Add to your existing CSS files */
+.question-preview-content {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.question-preview-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  background-color: #f8fafc;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.preview-question {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.preview-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #f8fafc;
+  color: #64748b;
+}
+
+.preview-question-label {
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.preview-required {
+  color: #ef4444;
+  margin-left: 3px;
+}
+
+/* Fix for text preview visibility */
+.question-item {
+  margin-bottom: 12px;
+  padding: 16px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix for text preview visibility issue */
+.question-content .text-preview {
+  margin-top: 10px;
+  width: 100%;
+  display: block;
+  background-color: rgba(249, 250, 251, 0.5);
+  padding: 5px;
+  border-radius: 6px;
+}
+
+.question-content .text-preview .text-preview-input {
+  width: 100%;
+  height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #6b7280;
+  font-size: 14px;
+  display: block;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
 }

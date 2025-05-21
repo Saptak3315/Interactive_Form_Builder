@@ -1,6 +1,6 @@
 // src/components/FormBuilder/Core/QuestionEditor.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './QuestionEditor.css';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 import { 
@@ -15,6 +15,14 @@ const QuestionEditor: React.FC = () => {
   const { state, dispatch } = useFormContext();
   const [dragOver, setDragOver] = useState(false);
   const [draggedQuestion, setDraggedQuestion] = useState<number | null>(null);
+  const [forceUpdate, setForceUpdate] = useState(0); // Added to force re-renders when needed
+
+  // Add an effect to log questions when they change and force re-render
+  useEffect(() => {
+    console.log("QuestionEditor questions updated:", state.questions);
+    // Force a re-render when questions change
+    setForceUpdate(prev => prev + 1);
+  }, [state.questions]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -30,14 +38,21 @@ const QuestionEditor: React.FC = () => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
+    console.log('Drop event triggered');
 
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      console.log('Dropped data:', data);
       
       if (data.type === 'question-type') {
         const orderPosition = state.questions.length;
         const newQuestion = createDefaultQuestion(data.questionType, orderPosition);
+        console.log('New question created:', newQuestion);
         dispatch(addQuestion(newQuestion));
+        console.log('Question added to state, questions count after adding:', state.questions.length + 1);
+        
+        // Force immediate re-render
+        setForceUpdate(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error parsing drop data:', error);
@@ -103,9 +118,117 @@ const QuestionEditor: React.FC = () => {
     setDraggedQuestion(null);
   };
 
+  const renderQuestions = () => {
+    console.log("Rendering questions:", state.questions); // Debug log
+    
+    return state.questions.map((question, index) => (
+      <div 
+        key={question.id} 
+        className={`question-item ${state.activeQuestionId === question.id ? 'active' : ''} ${
+          draggedQuestion === question.id ? 'dragging' : ''
+        }`}
+        onClick={() => handleQuestionSelect(question.id)}
+        draggable={true}
+        onDragStart={(e) => handleQuestionDragStart(e, question.id)}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onDrop={(e) => handleQuestionDrop(e, question.id)}
+        onDragEnd={handleQuestionDragEnd}
+      >
+        <div className="question-item-header">
+          <div className="question-left">
+            <span className="drag-handle">⋮⋮</span>
+            <span className="question-number">{index + 1}.</span>
+            <span className="question-type-badge">{question.type}</span>
+          </div>
+          <div className="question-actions">
+            <button
+              className="question-action-btn duplicate-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                // TODO: Implement duplicate functionality
+                alert('Duplicate functionality coming soon!');
+              }}
+              title="Duplicate question"
+            >
+              📋
+            </button>
+            <button
+              className="question-action-btn delete-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleQuestionDelete(question.id, question.content);
+              }}
+              title="Delete question"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+        <div className="question-content">
+          <div className="question-text">
+            {question.content || `Question ${index + 1}`}
+            {question.isRequired && <span className="required-indicator">*</span>}
+          </div>
+          
+          {/* Text type specific preview */}
+          {question.type === 'text' && (
+            <div className="text-preview">
+              <input 
+                type="text" 
+                className="text-preview-input" 
+                disabled 
+                placeholder={question.placeholder || "Text input field"}
+              />
+            </div>
+          )}
+          
+          {question.explanation && (
+            <div className="question-explanation">
+              {question.explanation}
+            </div>
+          )}
+          
+          {question.options && question.options.length > 0 && (
+            <div className="question-options-preview">
+              {question.options.slice(0, 3).map((option, optIndex) => (
+                <div key={option.id} className="option-preview">
+                  • {option.content || `Option ${optIndex + 1}`}
+                </div>
+              ))}
+              {question.options.length > 3 && (
+                <div className="option-preview more-options">
+                  +{question.options.length - 3} more options
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="question-metadata">
+          <span className="question-points">
+            {question.points ? `${question.points} pts` : 'No scoring'}
+          </span>
+          {question.mediaUrl && (
+            <span className="question-media">📎 Media attached</span>
+          )}
+        </div>
+      </div>
+    ));
+  };
+
+  // Output debugging information
+  console.log("QuestionEditor rendering with state:", {
+    questionsCount: state.questions.length,
+    forceUpdate,
+    activeQuestionId: state.activeQuestionId
+  });
+
   if (state.questions.length === 0) {
     return (
       <div 
+        key={`empty-editor-${forceUpdate}`}
         className={`question-editor-placeholder ${dragOver ? 'drag-over' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -125,93 +248,14 @@ const QuestionEditor: React.FC = () => {
 
   return (
     <div 
+      key={`editor-${forceUpdate}-${state.questions.length}`}
       className={`question-editor ${dragOver ? 'drag-over' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="questions-list">
-        {state.questions.map((question, index) => (
-          <div 
-            key={question.id} 
-            className={`question-item ${state.activeQuestionId === question.id ? 'active' : ''} ${
-              draggedQuestion === question.id ? 'dragging' : ''
-            }`}
-            onClick={() => handleQuestionSelect(question.id)}
-            draggable={true}
-            onDragStart={(e) => handleQuestionDragStart(e, question.id)}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onDrop={(e) => handleQuestionDrop(e, question.id)}
-            onDragEnd={handleQuestionDragEnd}
-          >
-            <div className="question-item-header">
-              <div className="question-left">
-                <span className="drag-handle">⋮⋮</span>
-                <span className="question-number">{index + 1}.</span>
-                <span className="question-type-badge">{question.type}</span>
-              </div>
-              <div className="question-actions">
-                <button
-                  className="question-action-btn duplicate-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // TODO: Implement duplicate functionality
-                    alert('Duplicate functionality coming soon!');
-                  }}
-                  title="Duplicate question"
-                >
-                  📋
-                </button>
-                <button
-                  className="question-action-btn delete-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleQuestionDelete(question.id, question.content);
-                  }}
-                  title="Delete question"
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
-            <div className="question-content">
-              <div className="question-text">
-                {question.content || `Question ${index + 1}`}
-                {question.isRequired && <span className="required-indicator">*</span>}
-              </div>
-              {question.explanation && (
-                <div className="question-explanation">
-                  {question.explanation}
-                </div>
-              )}
-              {question.options && question.options.length > 0 && (
-                <div className="question-options-preview">
-                  {question.options.slice(0, 3).map((option, optIndex) => (
-                    <div key={option.id} className="option-preview">
-                      • {option.content || `Option ${optIndex + 1}`}
-                    </div>
-                  ))}
-                  {question.options.length > 3 && (
-                    <div className="option-preview more-options">
-                      +{question.options.length - 3} more options
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="question-metadata">
-              <span className="question-points">
-                {question.points ? `${question.points} pts` : 'No scoring'}
-              </span>
-              {question.mediaUrl && (
-                <span className="question-media">📎 Media attached</span>
-              )}
-            </div>
-          </div>
-        ))}
+        {renderQuestions()}
       </div>
       
       <div className="add-question-zone">
@@ -228,6 +272,24 @@ const QuestionEditor: React.FC = () => {
           </button>
         </div>
       </div>
+      
+      {/* Debug button to check state */}
+      <button 
+        style={{
+          position: 'absolute', 
+          bottom: '10px', 
+          right: '10px',
+          padding: '5px',
+          background: '#f0f0f0',
+          border: '1px solid #ccc',
+          borderRadius: '4px',
+          fontSize: '12px',
+          zIndex: 100
+        }}
+        onClick={() => console.log('Current state:', state)}
+      >
+        Debug State
+      </button>
     </div>
   );
 };

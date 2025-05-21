@@ -21,6 +21,12 @@ export interface Question {
   mediaType?: string;
   explanation?: string;
   options?: QuestionOption[];
+  
+  // Text question properties
+  placeholder?: string;
+  minLength?: number;
+  maxLength?: number;
+  validationPattern?: string;
 }
 
 export interface FormState {

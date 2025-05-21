@@ -1,6 +1,6 @@
 // src/context/FormContext/FormProvider.tsx
 
-import React, { createContext, useReducer, useContext } from 'react';
+import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { formReducer } from './formReducer';
 // Use type-only imports for types
 import type { FormState, FormAction } from '../../types/form.types';
@@ -32,6 +32,10 @@ export const FormContext = createContext<FormContextType>({
 // Create provider component
 export const FormProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(formReducer, initialState);
+
+  useEffect(() => {
+    console.log('FormProvider state updated:', state);
+  }, [state]);
 
   return (
     <FormContext.Provider value={{ state, dispatch }}>
