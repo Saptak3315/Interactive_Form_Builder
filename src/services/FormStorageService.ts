@@ -20,7 +20,7 @@ interface FormSubmission {
 
 export interface QuestionResponse {
   questionId: number;
-  answer: any; // Can be string, number, array, etc. depending on question type
+  answer: any;
   isValid: boolean;
 }
 
@@ -30,7 +30,6 @@ export const FormStorageService = {
     const storedForms = localStorage.getItem(FORMS_KEY);
     return storedForms ? JSON.parse(storedForms) : [];
   },
-  
   getFormById: (formId: number): FormState | null => {
     const forms = FormStorageService.getForms();
     return forms.find(form => form.formId === formId) || null;

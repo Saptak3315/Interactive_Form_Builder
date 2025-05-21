@@ -13,7 +13,7 @@ interface QuestionTypeOption {
 }
 
 const FormSidebar = () => {
-  const { state } = useFormContext();
+  const { state, dispatch } = useFormContext();
 
   const questionTypes: QuestionTypeOption[] = [
     { type: 'text', label: 'Short Text', icon: '📝', description: 'Single line text input', category: 'Basic' },
