@@ -7,55 +7,90 @@ const FormHeader = () => {
   const { state, dispatch } = useFormContext();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
-  const [tempTitle, setTempTitle] = useState(state.title);
-  const [tempDescription, setTempDescription] = useState(state.description);
-  
+  const [titleInput, setTitleInput] = useState("");
+  const [tempDescription, setTempDescription] = useState("");
+  const [storedFormName, setStoredFormName] = useState("");
+  const [storedDescription, setStoredDescription] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Handle title editing
+  useEffect(() => {
+    const savedName = localStorage.getItem("form_name");
+    if (savedName) {
+      setStoredFormName(savedName);
+    }
+  }, []);
+
+  
+  useEffect(() => {
+    const savedDescription = localStorage.getItem("form_description");
+    if (savedDescription) {
+      setStoredDescription(savedDescription);
+    }
+  }, []);
+
+  
   const handleTitleEdit = () => {
-    setTempTitle(state.title);
+    setTitleInput(storedFormName || state.title || "");
     setIsEditingTitle(true);
   };
 
+  const handleDescriptionEdit = () => {
+    
+    setTempDescription(storedDescription || state.description || "");
+    setIsEditingDescription(true);
+  };
+
   const handleTitleSave = () => {
-    dispatch(setForm({ title: tempTitle }));
+    const newTitle = titleInput.trim();
+    if (newTitle !== "") {
+      
+      dispatch(setForm({ title: newTitle }));
+      
+      
+      localStorage.setItem("form_name", newTitle);
+      setStoredFormName(newTitle);
+    } else {
+      alert("Form name cannot be empty");
+    }
+    
     setIsEditingTitle(false);
   };
 
+  const handleDescriptionSave = () => {
+    const newDescription = tempDescription.trim();
+    if (newDescription !== "") {
+      dispatch(setForm({ description: newDescription }));
+      localStorage.setItem("form_description", newDescription);
+      setStoredDescription(newDescription);
+    } else {
+      alert("Form description cannot be empty");
+    }
+    setIsEditingDescription(false);
+  };
+
   const handleTitleCancel = () => {
-    setTempTitle(state.title);
+    setTitleInput(storedFormName || state.title || "");
     setIsEditingTitle(false);
+  };
+
+  const handleDescriptionCancel = () => {
+    setTempDescription(storedDescription || state.description || "");
+    setIsEditingDescription(false);
   };
 
   const handleTitleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleTitleSave();
     } else if (e.key === 'Escape') {
       handleTitleCancel();
     }
   };
 
-  // Handle description editing
-  const handleDescriptionEdit = () => {
-    setTempDescription(state.description);
-    setIsEditingDescription(true);
-  };
-
-  const handleDescriptionSave = () => {
-    dispatch(setForm({ description: tempDescription }));
-    setIsEditingDescription(false);
-  };
-
-  const handleDescriptionCancel = () => {
-    setTempDescription(state.description);
-    setIsEditingDescription(false);
-  };
-
   const handleDescriptionKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && e.shiftKey) {
-      return; // Allow line breaks with Shift+Enter
+      return; 
     } else if (e.key === 'Enter') {
       e.preventDefault();
       handleDescriptionSave();
@@ -64,7 +99,6 @@ const FormHeader = () => {
     }
   };
 
-  // Auto-focus inputs when editing starts
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
       titleInputRef.current.focus();
@@ -88,25 +122,26 @@ const FormHeader = () => {
               <input
                 ref={titleInputRef}
                 type="text"
-                value={tempTitle}
-                onChange={(e) => setTempTitle(e.target.value)}
+                value={titleInput}
+                onChange={(e) => setTitleInput(e.target.value)}
                 onBlur={handleTitleSave}
                 onKeyDown={handleTitleKeyPress}
                 className="form-title-input"
                 placeholder="Enter form title..."
               />
+
               <div className="edit-actions">
-                <button onClick={handleTitleSave} className="save-btn">✓</button>
-                <button onClick={handleTitleCancel} className="cancel-btn">✕</button>
+                <button type="button" onClick={handleTitleSave} className="save-btn">✓</button>
+                {/* <button type="button" onClick={handleTitleCancel} className="cancel-btn">✕</button> */}
               </div>
             </div>
           ) : (
-            <h1 
-              className="form-title" 
+            <h1
+              className="form-title"
               onClick={handleTitleEdit}
               title="Click to edit title"
             >
-              {state.title || 'Untitled Form'}
+              {storedFormName || state.title || 'Untitled Form'}
               <span className="edit-icon">✏️</span>
             </h1>
           )}
@@ -126,17 +161,17 @@ const FormHeader = () => {
                 rows={3}
               />
               <div className="edit-actions">
-                <button onClick={handleDescriptionSave} className="save-btn">✓</button>
-                <button onClick={handleDescriptionCancel} className="cancel-btn">✕</button>
+                <button type="button" onClick={handleDescriptionSave} className="save-btn">✓</button>
+                {/* <button type="button" onClick={handleDescriptionCancel} className="cancel-btn">✕</button> */}
               </div>
             </div>
           ) : (
-            <p 
-              className="form-description" 
+            <p
+              className="form-description"
               onClick={handleDescriptionEdit}
               title="Click to edit description"
             >
-              {state.description || 'Click to add a description...'}
+              {storedDescription || state.description || 'Click to add a description...'}
               <span className="edit-icon">✏️</span>
             </p>
           )}
@@ -156,4 +191,4 @@ const FormHeader = () => {
   );
 }
 
-export default FormHeader
+export default FormHeader;
