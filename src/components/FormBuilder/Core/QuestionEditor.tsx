@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import './QuestionEditor.css';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
-import { 
-  addQuestion, 
-  createDefaultQuestion, 
-  deleteQuestion, 
+import {
+  addQuestion,
+  createDefaultQuestion,
+  deleteQuestion,
   setActiveQuestion,
   reorderQuestions
 } from '../../../context/FormContext/formActions';
@@ -43,14 +43,14 @@ const QuestionEditor: React.FC = () => {
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/json'));
       console.log('Dropped data:', data);
-      
+
       if (data.type === 'question-type') {
         const orderPosition = state.questions.length;
         const newQuestion = createDefaultQuestion(data.questionType, orderPosition);
         console.log('New question created:', newQuestion);
         dispatch(addQuestion(newQuestion));
         console.log('Question added to state, questions count after adding:', state.questions.length + 1);
-        
+
         // Force immediate re-render
         setForceUpdate(prev => prev + 1);
       }
@@ -88,22 +88,22 @@ const QuestionEditor: React.FC = () => {
 
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/json'));
-      
+
       if (data.type === 'question-reorder' && data.questionId !== targetQuestionId) {
         const draggedIndex = state.questions.findIndex(q => q.id === data.questionId);
         const targetIndex = state.questions.findIndex(q => q.id === targetQuestionId);
-        
+
         if (draggedIndex !== -1 && targetIndex !== -1) {
           const newQuestions = [...state.questions];
           const [draggedQuestion] = newQuestions.splice(draggedIndex, 1);
           newQuestions.splice(targetIndex, 0, draggedQuestion);
-          
+
           // Update order positions
           const reorderedQuestions = newQuestions.map((question, index) => ({
             ...question,
             orderPosition: index
           }));
-          
+
           dispatch(reorderQuestions(reorderedQuestions));
         }
       }
@@ -120,13 +120,12 @@ const QuestionEditor: React.FC = () => {
 
   const renderQuestions = () => {
     console.log("Rendering questions:", state.questions); // Debug log
-    
+
     return state.questions.map((question, index) => (
-      <div 
-        key={question.id} 
-        className={`question-item ${state.activeQuestionId === question.id ? 'active' : ''} ${
-          draggedQuestion === question.id ? 'dragging' : ''
-        }`}
+      <div
+        key={question.id}
+        className={`question-item ${state.activeQuestionId === question.id ? 'active' : ''} ${draggedQuestion === question.id ? 'dragging' : ''
+          }`}
         onClick={() => handleQuestionSelect(question.id)}
         draggable={true}
         onDragStart={(e) => handleQuestionDragStart(e, question.id)}
@@ -172,25 +171,29 @@ const QuestionEditor: React.FC = () => {
             {question.content || `Question ${index + 1}`}
             {question.isRequired && <span className="required-indicator">*</span>}
           </div>
-          
+
           {/* Text type specific preview */}
           {question.type === 'text' && (
             <div className="text-preview">
-              <input 
-                type="text" 
-                className="text-preview-input" 
-                disabled 
+              <input
+                type="text"
+                className="text-preview-input"
+                disabled
                 placeholder={question.placeholder || "Text input field"}
               />
             </div>
           )}
-          
+          {question.label && (
+            <label className="text-preview-label">
+              {question.label} {question.isRequired && <span className="required-mark">*</span>}
+            </label>
+          )}
           {question.explanation && (
             <div className="question-explanation">
               {question.explanation}
             </div>
           )}
-          
+
           {question.options && question.options.length > 0 && (
             <div className="question-options-preview">
               {question.options.map((option, optIndex) => (
@@ -222,7 +225,7 @@ const QuestionEditor: React.FC = () => {
 
   if (state.questions.length === 0) {
     return (
-      <div 
+      <div
         key={`empty-editor-${forceUpdate}`}
         className={`question-editor-placeholder ${dragOver ? 'drag-over' : ''}`}
         onDragOver={handleDragOver}
@@ -242,7 +245,7 @@ const QuestionEditor: React.FC = () => {
   }
 
   return (
-    <div 
+    <div
       key={`editor-${forceUpdate}-${state.questions.length}`}
       className={`question-editor ${dragOver ? 'drag-over' : ''}`}
       onDragOver={handleDragOver}
@@ -252,11 +255,11 @@ const QuestionEditor: React.FC = () => {
       <div className="questions-list">
         {renderQuestions()}
       </div>
-      
+
       <div className="add-question-zone">
         <div className="drop-zone">
           <span>Drop new questions here or</span>
-          <button 
+          <button
             className="add-question-btn"
             onClick={() => {
               // Open question type selector
@@ -267,12 +270,12 @@ const QuestionEditor: React.FC = () => {
           </button>
         </div>
       </div>
-      
+
       {/* Debug button to check state */}
-      <button 
+      <button
         style={{
-          position: 'absolute', 
-          bottom: '10px', 
+          position: 'absolute',
+          bottom: '10px',
           right: '10px',
           padding: '5px',
           background: '#f0f0f0',

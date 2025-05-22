@@ -142,6 +142,18 @@ const QuestionDetailEditor: React.FC = () => {
           />
         </div>
         {/* Question Explanation */}
+        {/* <div className="label">
+          <label htmlFor="Label">Write Your Label</label>
+          <textarea
+          id="question-label"
+          value={localQuestion.label||""}
+          onChange={(e)=>handleFieldChange("label",e.target.value)}
+          //onChange={(e) => handleFieldChange("content", e.target.value)}
+            placeholder="Enter your question..."
+            className="form-textarea"
+            rows={3}
+          />
+        </div> */}
         <div className="form-field">
           <label htmlFor="question-explanation">Help Text / Explanation</label>
           <textarea
@@ -179,7 +191,7 @@ const QuestionDetailEditor: React.FC = () => {
             }
             placeholder="0"
             className="form-input"
-            min="0"
+            min="-100"
           />
         </div>
         {/* Media URL field */}
@@ -280,7 +292,7 @@ const QuestionDetailEditor: React.FC = () => {
             <label>Text Input Settings</label>
             <div className="text-settings">
               <input
-                type="text"
+                type="textarea"
                 placeholder="Placeholder text"
                 value={localQuestion.placeholder || ""}
                 onChange={(e) =>
@@ -329,6 +341,59 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
+         {activeQuestion.type === "textarea" && (
+          <div className="form-field">
+            <label>Text Input Settings</label>
+            <div className="text-settings">
+              <input
+                type="text"
+                placeholder="Placeholder text"
+                value={localQuestion.placeholder || ""}
+                onChange={(e) =>
+                  handleFieldChange("placeholder", e.target.value)
+                }
+                className="form-input"
+              />
+              <div className="input-group">
+                <input
+                  type="number"
+                  placeholder="Min length"
+                  value={localQuestion.minLength || ""}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      "minLength",
+                      e.target.value ? parseInt(e.target.value) : undefined
+                    )
+                  }
+                  className="form-input small"
+                  min="0"
+                />
+                <input
+                  type="number"
+                  placeholder="Max length"
+                  value={localQuestion.maxLength || ""}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      "maxLength",
+                      e.target.value ? parseInt(e.target.value) : undefined
+                    )
+                  }
+                  className="form-input small"
+                  min="0"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="Validation pattern (regex)"
+                value={localQuestion.validationPattern || ""}
+                onChange={(e) =>
+                  handleFieldChange("validationPattern", e.target.value)
+                }
+                className="form-input"
+              />
+            </div>
+          </div>
+        )}
         {activeQuestion.type === "number" && (
           <div className="form-field">
             <label>Number Settings</label>
