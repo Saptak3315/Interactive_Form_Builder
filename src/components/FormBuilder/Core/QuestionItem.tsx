@@ -58,6 +58,15 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
           </div>
         )}
         
+        {question.type === 'textarea' && (
+          <div className="text-preview">
+            <textarea 
+              className="text-preview-input" 
+              disabled
+              placeholder={question.placeholder || "Text input"}
+            />
+          </div>
+        )}
         {/* Add other question type previews here */}
       </div>
     </div>

@@ -24,6 +24,7 @@ export interface Question {
   
   // Text question properties
   placeholder?: string;
+  label?:string
   minLength?: number;
   maxLength?: number;
   validationPattern?: string;

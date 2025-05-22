@@ -93,15 +93,21 @@ export const createDefaultQuestion = (
         content: 'New Text Question',
         placeholder: 'Enter your answer here',
       };
-    case 'multiple_choice':
-    case 'checkbox':
+      case 'textarea':
       return {
         ...baseQuestion,
-        options: [
-          { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
-          { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
-        ],
+        content: 'New Text Question',
+        placeholder: 'Enter your answer here',
       };
+    // case 'multiple_choice':
+    // case 'checkbox':
+    //   return {
+    //     ...baseQuestion,
+    //     options: [
+    //       { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
+    //       { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
+    //     ],
+    //   };
     default:
       return baseQuestion;
   }
