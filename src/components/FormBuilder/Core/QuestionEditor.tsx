@@ -193,16 +193,12 @@ const QuestionEditor: React.FC = () => {
           
           {question.options && question.options.length > 0 && (
             <div className="question-options-preview">
-              {question.options.slice(0, 3).map((option, optIndex) => (
+              {question.options.map((option, optIndex) => (
                 <div key={option.id} className="option-preview">
                   • {option.content || `Option ${optIndex + 1}`}
                 </div>
               ))}
-              {question.options.length > 3 && (
-                <div className="option-preview more-options">
-                  +{question.options.length - 3} more options
-                </div>
-              )}
+              y
             </div>
           )}
         </div>
