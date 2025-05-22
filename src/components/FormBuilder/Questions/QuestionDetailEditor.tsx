@@ -1,7 +1,6 @@
 // src/components/FormBuilder/Questions/QuestionDetailEditor.tsx
 
 import React, { useState, useEffect } from "react";
-import "./QuestionDetailEditor.css";
 import { useFormContext } from "../../../context/FormContext/FormProvider";
 import type { Question, QuestionOption } from "../../../types/form.types";
 import {
@@ -70,11 +69,11 @@ const QuestionDetailEditor: React.FC = () => {
 
   if (!activeQuestion) {
     return (
-      <div className="question-detail-editor">
-        <div className="no-question-selected">
-          <div className="no-question-icon">📝</div>
-          <h3>No question selected</h3>
-          <p>Select a question from the editor to start configuring it</p>
+      <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg">
+        <div className="h-full flex flex-col items-center justify-center text-center text-slate-600 p-10">
+          <div className="text-5xl mb-4">📝</div>
+          <h3 className="mb-2 text-slate-800 text-xl">No question selected</h3>
+          <p className="text-base">Select a question from the editor to start configuring it</p>
         </div>
       </div>
     );
@@ -96,12 +95,18 @@ const QuestionDetailEditor: React.FC = () => {
     activeQuestion.type === "checkbox";
 
   return (
-    <div className="question-detail-editor">
-      <div className="editor-header">
-        <h3>Question Details</h3>
-        <div className="editor-actions">
+    <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg">
+      <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+        <h3 className="m-0 text-lg font-semibold text-slate-800">Question Details</h3>
+        <div className="flex gap-2.5">
           <button
-            className="save-btn"
+            className={`
+              px-4 py-2 border-none rounded-md font-medium cursor-pointer transition-all duration-200 flex items-center gap-1.5
+              ${JSON.stringify(localQuestion) === JSON.stringify(activeQuestion)
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
+                : 'bg-emerald-500 text-white hover:bg-emerald-600'
+              }
+            `}
             onClick={saveChanges}
             disabled={
               JSON.stringify(localQuestion) === JSON.stringify(activeQuestion)
@@ -112,15 +117,17 @@ const QuestionDetailEditor: React.FC = () => {
         </div>
       </div>
 
-      <div className="editor-content">
+      <div className="flex-1 p-5 overflow-y-auto">
         {/* Question Type */}
-        <div className="form-field">
-          <label htmlFor="question-type">Question Type</label>
+        <div className="mb-5">
+          <label htmlFor="question-type" className="block mb-1.5 text-sm font-medium text-gray-700">
+            Question Type
+          </label>
           <select
             id="question-type"
             value={localQuestion.type || ""}
             onChange={(e) => handleFieldChange("type", e.target.value)}
-            className="form-select"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
           >
             {questionTypeOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -129,45 +136,40 @@ const QuestionDetailEditor: React.FC = () => {
             ))}
           </select>
         </div>
+
         {/* Question Content */}
-        <div className="form-field">
-          <label htmlFor="question-content">Question Text</label>
+        <div className="mb-5">
+          <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+            Question Text
+          </label>
           <textarea
             id="question-content"
             value={localQuestion.content || ""}
             onChange={(e) => handleFieldChange("content", e.target.value)}
             placeholder="Enter your question..."
-            className="form-textarea"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
             rows={3}
           />
         </div>
+
         {/* Question Explanation */}
-        {/* <div className="label">
-          <label htmlFor="Label">Write Your Label</label>
-          <textarea
-          id="question-label"
-          value={localQuestion.label||""}
-          onChange={(e)=>handleFieldChange("label",e.target.value)}
-          //onChange={(e) => handleFieldChange("content", e.target.value)}
-            placeholder="Enter your question..."
-            className="form-textarea"
-            rows={3}
-          />
-        </div> */}
-        <div className="form-field">
-          <label htmlFor="question-explanation">Help Text / Explanation</label>
+        <div className="mb-5">
+          <label htmlFor="question-explanation" className="block mb-1.5 text-sm font-medium text-gray-700">
+            Help Text / Explanation
+          </label>
           <textarea
             id="question-explanation"
             value={localQuestion.explanation || ""}
             onChange={(e) => handleFieldChange("explanation", e.target.value)}
             placeholder="Optional help text for respondents..."
-            className="form-textarea"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
             rows={2}
           />
         </div>
+
         {/* Required checkbox */}
-        <div className="form-field">
-          <div className="checkbox-field">
+        <div className="mb-5">
+          <div className="flex items-center gap-2">
             <input
               type="checkbox"
               id="question-required"
@@ -175,13 +177,19 @@ const QuestionDetailEditor: React.FC = () => {
               onChange={(e) =>
                 handleFieldChange("isRequired", e.target.checked)
               }
+              className="w-auto m-0"
             />
-            <label htmlFor="question-required">Required question</label>
+            <label htmlFor="question-required" className="m-0 cursor-pointer select-none text-sm font-medium text-gray-700">
+              Required question
+            </label>
           </div>
         </div>
+
         {/* Points field */}
-        <div className="form-field">
-          <label htmlFor="question-points">Points (for scoring)</label>
+        <div className="mb-5">
+          <label htmlFor="question-points" className="block mb-1.5 text-sm font-medium text-gray-700">
+            Points (for scoring)
+          </label>
           <input
             type="number"
             id="question-points"
@@ -190,44 +198,59 @@ const QuestionDetailEditor: React.FC = () => {
               handleFieldChange("points", parseInt(e.target.value) || undefined)
             }
             placeholder="0"
-            className="form-input"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
             min="-100"
           />
         </div>
+
         {/* Media URL field */}
-        <div className="form-field">
-          <label htmlFor="question-media">Media URL</label>
+        <div className="mb-5">
+          <label htmlFor="question-media" className="block mb-1.5 text-sm font-medium text-gray-700">
+            Media URL
+          </label>
           <input
             type="url"
             id="question-media"
             value={localQuestion.mediaUrl || ""}
             onChange={(e) => handleFieldChange("mediaUrl", e.target.value)}
             placeholder="https://example.com/image.jpg"
-            className="form-input"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
           />
           {localQuestion.mediaUrl && (
-            <div className="media-preview">
-              <small>Media type will be auto-detected</small>
+            <div className="mt-1.5 p-2 bg-gray-100 rounded">
+              <small className="text-gray-500 text-xs">Media type will be auto-detected</small>
             </div>
           )}
         </div>
+
         {/* Options for choice-based questions */}
         {hasOptions && (
-          <div className="form-field">
-            <div className="options-header">
-              <label>Answer Options</label>
-              <button className="add-option-btn" onClick={handleAddOption}>
+          <div className="mb-5">
+            <div className="flex justify-between items-center mb-3">
+              <label className="block text-sm font-medium text-gray-700">Answer Options</label>
+              <button 
+                className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
+                onClick={handleAddOption}
+              >
                 + Add Option
               </button>
             </div>
 
-            <div className="options-list">
+            <div className="flex flex-col gap-3">
               {activeQuestion.options?.map((option, index) => (
-                <div key={option.id} className="option-item">
-                  <div className="option-header">
-                    <span className="option-number">{index + 1}</span>
+                <div key={option.id} className="p-3 border border-gray-200 rounded-md bg-gray-50">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-semibold text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                      {index + 1}
+                    </span>
                     <button
-                      className="delete-option-btn"
+                      className={`
+                        px-2 py-1 border-none rounded cursor-pointer text-xs transition-all duration-200
+                        ${activeQuestion.options!.length <= 2 
+                          ? 'opacity-50 cursor-not-allowed bg-red-50 text-red-600' 
+                          : 'bg-red-50 text-red-600 hover:bg-red-100'
+                        }
+                      `}
                       onClick={() => handleDeleteOption(option.id)}
                       disabled={activeQuestion.options!.length <= 2}
                       title="Delete option"
@@ -243,11 +266,11 @@ const QuestionDetailEditor: React.FC = () => {
                       handleOptionChange(option.id, "content", e.target.value)
                     }
                     placeholder={`Option ${index + 1}`}
-                    className="option-input"
+                    className="w-full px-3 py-2 border border-gray-300 rounded mb-2 text-sm"
                   />
 
-                  <div className="option-controls">
-                    <div className="checkbox-field">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         id={`option-correct-${option.id}`}
@@ -259,8 +282,9 @@ const QuestionDetailEditor: React.FC = () => {
                             e.target.checked
                           )
                         }
+                        className="w-auto m-0"
                       />
-                      <label htmlFor={`option-correct-${option.id}`}>
+                      <label htmlFor={`option-correct-${option.id}`} className="m-0 cursor-pointer select-none text-sm font-medium text-gray-700">
                         Correct answer
                       </label>
                     </div>
@@ -276,7 +300,7 @@ const QuestionDetailEditor: React.FC = () => {
                         )
                       }
                       placeholder="Points"
-                      className="points-input"
+                      className="w-20 px-2 py-1 border border-gray-300 rounded text-xs"
                       min="0"
                     />
                   </div>
@@ -285,22 +309,22 @@ const QuestionDetailEditor: React.FC = () => {
             </div>
           </div>
         )}
-        {/* Question settings specific to type */}
 
+        {/* Text Input Settings */}
         {activeQuestion.type === "text" && (
-          <div className="form-field">
-            <label>Text Input Settings</label>
-            <div className="text-settings">
+          <div className="mb-5">
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Text Input Settings</label>
+            <div className="space-y-3">
               <input
-                type="textarea"
+                type="text"
                 placeholder="Placeholder text"
                 value={localQuestion.placeholder || ""}
                 onChange={(e) =>
                   handleFieldChange("placeholder", e.target.value)
                 }
-                className="form-input"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
-              <div className="input-group">
+              <div className="flex gap-3">
                 <input
                   type="number"
                   placeholder="Min length"
@@ -311,7 +335,7 @@ const QuestionDetailEditor: React.FC = () => {
                       e.target.value ? parseInt(e.target.value) : undefined
                     )
                   }
-                  className="form-input small"
+                  className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                   min="0"
                 />
                 <input
@@ -324,7 +348,7 @@ const QuestionDetailEditor: React.FC = () => {
                       e.target.value ? parseInt(e.target.value) : undefined
                     )
                   }
-                  className="form-input small"
+                  className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                   min="0"
                 />
               </div>
@@ -335,16 +359,17 @@ const QuestionDetailEditor: React.FC = () => {
                 onChange={(e) =>
                   handleFieldChange("validationPattern", e.target.value)
                 }
-                className="form-input"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
             </div>
           </div>
         )}
 
-         {activeQuestion.type === "textarea" && (
-          <div className="form-field">
-            <label>Text Input Settings</label>
-            <div className="text-settings">
+        {/* Textarea Settings */}
+        {activeQuestion.type === "textarea" && (
+          <div className="mb-5">
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Text Input Settings</label>
+            <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Placeholder text"
@@ -352,9 +377,9 @@ const QuestionDetailEditor: React.FC = () => {
                 onChange={(e) =>
                   handleFieldChange("placeholder", e.target.value)
                 }
-                className="form-input"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
-              <div className="input-group">
+              <div className="flex gap-3">
                 <input
                   type="number"
                   placeholder="Min length"
@@ -365,7 +390,7 @@ const QuestionDetailEditor: React.FC = () => {
                       e.target.value ? parseInt(e.target.value) : undefined
                     )
                   }
-                  className="form-input small"
+                  className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                   min="0"
                 />
                 <input
@@ -378,7 +403,7 @@ const QuestionDetailEditor: React.FC = () => {
                       e.target.value ? parseInt(e.target.value) : undefined
                     )
                   }
-                  className="form-input small"
+                  className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                   min="0"
                 />
               </div>
@@ -389,26 +414,28 @@ const QuestionDetailEditor: React.FC = () => {
                 onChange={(e) =>
                   handleFieldChange("validationPattern", e.target.value)
                 }
-                className="form-input"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
             </div>
           </div>
         )}
+
+        {/* Number Settings */}
         {activeQuestion.type === "number" && (
-          <div className="form-field">
-            <label>Number Settings</label>
-            <div className="number-settings">
+          <div className="mb-5">
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Number Settings</label>
+            <div className="flex gap-3 items-center flex-wrap">
               <input
                 type="number"
                 placeholder="Min value"
-                className="form-input small"
+                className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
               <input
                 type="number"
                 placeholder="Max value"
-                className="form-input small"
+                className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
-              <select className="form-select small">
+              <select className="w-auto min-w-40 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100">
                 <option value="">Any number</option>
                 <option value="integer">Whole numbers only</option>
                 <option value="decimal">Decimal numbers</option>
@@ -417,19 +444,20 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
+        {/* File Upload Settings */}
         {activeQuestion.type === "file" && (
-          <div className="form-field">
-            <label>File Upload Settings</label>
-            <div className="file-settings">
+          <div className="mb-5">
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">File Upload Settings</label>
+            <div className="flex gap-3 items-center flex-wrap">
               <input
                 type="text"
                 placeholder="Allowed file types (e.g., .pdf,.doc,.jpg)"
-                className="form-input"
+                className="flex-1 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
               <input
                 type="number"
                 placeholder="Max file size (MB)"
-                className="form-input small"
+                className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                 min="1"
               />
             </div>
