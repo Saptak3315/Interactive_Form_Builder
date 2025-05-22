@@ -1,10 +1,10 @@
 // src/services/FormStorageService.ts
+import { useFormContext } from "../context/FormContext/FormProvider";
 import type { FormState } from "../types/form.types";
 
 // Keys for localStorage
 const FORMS_KEY = 'formcraft_forms';
 const SUBMISSIONS_KEY = 'formcraft_submissions';
-
 // Types for the local storage format
 interface StoredForm extends FormState {
   updatedAt: string;
@@ -23,7 +23,6 @@ export interface QuestionResponse {
   answer: any;
   isValid: boolean;
 }
-
 export const FormStorageService = {
   // Form CRUD operations
   getForms: (): FormState[] => {
@@ -36,6 +35,9 @@ export const FormStorageService = {
   },
   
   saveForm: (form: FormState): FormState => {
+    const temp=localStorage.getItem("form_description"),temp1=localStorage.getItem("form_name")
+    form.description = temp ?? "";
+    form.title=temp1??""
     const forms = FormStorageService.getForms();
     const updatedForm: StoredForm = {
       ...form,
@@ -54,7 +56,6 @@ export const FormStorageService = {
       }
       forms.push(updatedForm);
     }
-    
     localStorage.setItem(FORMS_KEY, JSON.stringify(forms));
     return updatedForm;
   },

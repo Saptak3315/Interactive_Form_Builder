@@ -78,11 +78,11 @@ export const createDefaultQuestion = (
 ): Omit<Question, 'id'> => {
   // Base configuration for all question types
   const baseQuestion = {
-    content: '',
+    content:'',
     type,
     orderPosition,
-    isRequired: false,
-    explanation: '',
+    isRequired:false,
+    explanation:""
   };
 
   // Type-specific configurations
