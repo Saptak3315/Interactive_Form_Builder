@@ -198,7 +198,6 @@ const QuestionEditor: React.FC = () => {
                   • {option.content || `Option ${optIndex + 1}`}
                 </div>
               ))}
-              y
             </div>
           )}
         </div>
