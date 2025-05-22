@@ -142,7 +142,3 @@ const FormSidebar = () => {
 };
 
 export default FormSidebar;
-
-function dispatch(arg0: any) {
-  throw new Error('Function not implemented.');
-}
