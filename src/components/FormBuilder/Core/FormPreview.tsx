@@ -1,7 +1,6 @@
-// Updated FormPreview.tsx
+// Updated FormPreview.tsx with Tailwind CSS
 import { useFormContext } from "../../../context/FormContext/FormProvider";
 import type { QuestionResponse } from "../../../services/FormStorageService";
-import TextQuestionPreview from "../Questions/TextQuestionPreview";
 import { useState } from "react";
 
 const FormPreview = () => {
@@ -28,30 +27,161 @@ const FormPreview = () => {
     switch (question.type) {
       case 'text':
         return (
-          <div key={question.id} className="preview-question">
-            <label className="preview-question-label">
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
               {index + 1}. {question.content || 'Short Text Question'}
-              {question.isRequired && <span className="preview-required">*</span>}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
             {question.explanation && (
-              <p className="preview-question-help">{question.explanation}</p>
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
             )}
             <input 
               type="text"
-              className="preview-input"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               placeholder={question.placeholder || "Enter your answer"}
               disabled={true}
             />
           </div>
         );
+      
+      case 'textarea':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'Long Text Question'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+            <textarea 
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 min-h-16 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder={question.placeholder || "Enter your detailed answer"}
+              disabled={true}
+              rows={4}
+            />
+          </div>
+        );
+      
+      case 'number':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'Number Question'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+            <input 
+              type="number"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder={question.placeholder || "Enter a number"}
+              disabled={true}
+            />
+          </div>
+        );
+      
+      case 'multiple_choice':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'Multiple Choice Question'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+            <div className="flex flex-col gap-2">
+              {question.options?.map((option: any, optIndex: number) => (
+                <div key={option.id} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md">
+                  <input 
+                    type="radio"
+                    name={`question-${question.id}`}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    disabled={true}
+                  />
+                  <span className="flex-1 text-sm text-slate-700">{option.content || `Option ${optIndex + 1}`}</span>
+                </div>
+              )) || (
+                <div className="text-sm text-slate-400 italic">No options configured</div>
+              )}
+            </div>
+          </div>
+        );
+      
+      case 'checkbox':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'Checkbox Question'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+            <div className="flex flex-col gap-2">
+              {question.options?.map((option: any, optIndex: number) => (
+                <div key={option.id} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md">
+                  <input 
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    disabled={true}
+                  />
+                  <span className="flex-1 text-sm text-slate-700">{option.content || `Option ${optIndex + 1}`}</span>
+                </div>
+              )) || (
+                <div className="text-sm text-slate-400 italic">No options configured</div>
+              )}
+            </div>
+          </div>
+        );
+      
+      case 'file':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'File Upload Question'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+            <div className="flex items-center gap-3 p-3 border border-dashed border-slate-300 rounded-md bg-slate-50">
+              <button className="px-3 py-1.5 bg-slate-500 text-white text-xs font-medium rounded border-0 cursor-not-allowed">
+                Choose File
+              </button>
+              <span className="text-xs text-slate-500">No file chosen</span>
+            </div>
+          </div>
+        );
+      
+      case 'audio':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'Audio Question'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+            <div className="p-3 border border-slate-300 rounded-md bg-slate-50 text-center">
+              <button className="px-4 py-2 bg-slate-500 text-white text-xs font-medium rounded border-0 cursor-not-allowed">
+                🎤 Record Audio
+              </button>
+            </div>
+          </div>
+        );
+      
       default:
         return (
-          <div key={question.id} className="preview-question">
-            <label className="preview-question-label">
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
               {index + 1}. {question.content || `Question ${index + 1}`}
-              {question.isRequired && <span className="preview-required">*</span>}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <p className="question-type-note">({question.type})</p>
+            <p className="text-sm text-slate-400 italic">({question.type})</p>
           </div>
         );
     }
@@ -81,20 +211,48 @@ const FormPreview = () => {
     }
   };
 
+  // Empty state
+  if (state.questions.length === 0) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 p-10">
+        <div className="text-6xl mb-6 opacity-40">📝</div>
+        <h3 className="text-lg font-semibold text-slate-700 mb-2">No questions to preview</h3>
+        <p className="text-sm leading-relaxed">Add some questions to your form to see the preview here</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="form-preview">
-      <div className="preview-form">
-        <div className="preview-form-header">
-          <h2>{state.title}</h2>
-          {state.description && <p>{state.description}</p>}
+    <div className="h-full p-5 bg-slate-50 overflow-y-auto">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        {/* Form Header */}
+        <div className="px-5 py-6 bg-slate-50 border-b border-slate-200 text-center">
+          <h2 className="text-xl font-bold text-slate-800 mb-2">
+            {state.title || 'Untitled Form'}
+          </h2>
+          {state.description && (
+            <p className="text-sm text-slate-600 leading-relaxed">
+              {state.description}
+            </p>
+          )}
         </div>
         
-        <div className="preview-questions">
-          {state.questions.length === 0 ? (
-            <p className="preview-placeholder">No questions to preview</p>
-          ) : (
-            state.questions.map((question, index) => renderQuestion(question, index))
-          )}
+        {/* Form Questions */}
+        <div className="p-5">
+          <form onSubmit={handleSubmit}>
+            {state.questions.map((question, index) => renderQuestion(question, index))}
+            
+            {/* Submit Button */}
+            <div className="mt-5 pt-4 border-t border-slate-200 text-center">
+              <button 
+                type="submit"
+                className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors cursor-not-allowed"
+                disabled={true}
+              >
+                Submit Form (Preview Mode)
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

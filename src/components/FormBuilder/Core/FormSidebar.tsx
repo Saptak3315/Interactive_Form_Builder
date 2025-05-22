@@ -2,7 +2,6 @@ import { setForm } from '../../../context/FormContext/formActions';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 import FormStorageService from '../../../services/FormStorageService';
 import DraggableQuestionType from './DraggableQuestionType';
-import './FormSidebar.css';
 
 interface QuestionTypeOption {
   type: string;
@@ -35,21 +34,21 @@ const FormSidebar = () => {
   }, {} as Record<string, QuestionTypeOption[]>);
 
   const handleSaveForm = () => {
-  try {
-    // Save the current form state
-    const savedForm = FormStorageService.saveForm(state);
-    // Update the form ID if it was newly created
-    if (state.formId !== savedForm.formId) {
-      dispatch(setForm({ formId: savedForm.formId }));
+    try {
+      // Save the current form state
+      const savedForm = FormStorageService.saveForm(state);
+      // Update the form ID if it was newly created
+      if (state.formId !== savedForm.formId) {
+        dispatch(setForm({ formId: savedForm.formId }));
+      }
+      // Update saved status
+      dispatch(setForm({ isFormSaved: true }));
+      alert('Form saved successfully!');
+    } catch (error) {
+      console.error('Error saving form:', error);
+      alert('There was an error saving your form. Please try again.');
     }
-    // Update saved status
-    dispatch(setForm({ isFormSaved: true }));
-    alert('Form saved successfully!');
-  } catch (error) {
-    console.error('Error saving form:', error);
-    alert('There was an error saving your form. Please try again.');
-  }
-};
+  };
 
   const handlePublishForm = () => {
     // TODO: Implement publish functionality
@@ -62,20 +61,29 @@ const FormSidebar = () => {
   };
 
   return (
-    <div className="form-sidebar">
-      <div className="sidebar-header">
-        <h2>FormCraft</h2>
-        <p>Drag questions to build your form</p>
+    <div className="h-full flex flex-col bg-slate-50">
+      {/* Sidebar Header */}
+      <div className="px-5 py-6 border-b border-slate-200 bg-white">
+        <h2 className="text-2xl font-bold text-slate-800 mb-2 m-0">
+          FormCraft
+        </h2>
+        <p className="text-sm text-slate-600 m-0">
+          Drag questions to build your form
+        </p>
       </div>
 
       {/* Question Types Section */}
-      <div className="sidebar-section">
-        <h3 className="sidebar-section-title">Question Types</h3>
-        <div className="question-categories">
+      <div className="p-5 border-b border-slate-200">
+        <h3 className="text-base font-semibold text-gray-700 mb-4 m-0">
+          Question Types
+        </h3>
+        <div className="flex flex-col gap-5">
           {Object.entries(groupedQuestionTypes).map(([category, types]) => (
-            <div key={category} className="question-category">
-              <h4 className="category-title">{category}</h4>
-              <div className="question-types-list">
+            <div key={category} className="bg-white rounded-lg p-4 border border-slate-200">
+              <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 m-0">
+                {category}
+              </h4>
+              <div className="flex flex-col gap-2">
                 {types.map((questionType) => (
                   <DraggableQuestionType
                     key={questionType.type}
@@ -89,50 +97,66 @@ const FormSidebar = () => {
       </div>
 
       {/* Form Actions Section */}
-      <div className="sidebar-section">
-        <h3 className="sidebar-section-title">Form Actions</h3>
-        <div className="form-actions">
+      <div className="p-5 border-b border-slate-200">
+        <h3 className="text-base font-semibold text-gray-700 mb-4 m-0">
+          Form Actions
+        </h3>
+        <div className="flex flex-col gap-3">
           <button 
-            className="sidebar-btn save-btn"
+            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-green-500 hover:text-white hover:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-900 disabled:hover:border-slate-300"
             onClick={handleSaveForm}
             disabled={state.isFormSaved}
           >
-            <span className="btn-icon">💾</span>
+            <span className="text-base">💾</span>
             Save Form
           </button>
           <button 
-            className="sidebar-btn preview-btn"
+            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-blue-500 hover:text-white hover:border-blue-500"
             onClick={handlePreviewForm}
           >
-            <span className="btn-icon">👁️</span>
+            <span className="text-base">👁️</span>
             Full Preview
           </button>
           <button 
-            className="sidebar-btn publish-btn"
+            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-purple-500 hover:text-white hover:border-purple-500"
             onClick={handlePublishForm}
           >
-            <span className="btn-icon">🚀</span>
+            <span className="text-base">🚀</span>
             Publish Form
           </button>
         </div>
       </div>
 
       {/* Form Stats Section */}
-      <div className="sidebar-section">
-        <h3 className="sidebar-section-title">Form Statistics</h3>
-        <div className="form-stats">
-          <div className="stat-card">
-            <div className="stat-icon">📋</div>
-            <div className="stat-content">
-              <div className="stat-value">{state.questions.length}</div>
-              <div className="stat-label">Questions</div>
+      <div className="p-5 flex-1">
+        <h3 className="text-base font-semibold text-gray-700 mb-4 m-0">
+          Form Statistics
+        </h3>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
+            <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
+              📋
+            </div>
+            <div className="flex-1">
+              <div className="text-xl font-bold text-slate-800 leading-none">
+                {state.questions.length}
+              </div>
+              <div className="text-sm text-slate-500 mt-1">
+                Questions
+              </div>
             </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-icon">📊</div>
-            <div className="stat-content">
-              <div className="stat-value">0</div>
-              <div className="stat-label">Responses</div>
+          <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
+            <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
+              📊
+            </div>
+            <div className="flex-1">
+              <div className="text-xl font-bold text-slate-800 leading-none">
+                0
+              </div>
+              <div className="text-sm text-slate-500 mt-1">
+                Responses
+              </div>
             </div>
           </div>
         </div>
