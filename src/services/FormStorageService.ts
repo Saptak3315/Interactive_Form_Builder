@@ -35,9 +35,8 @@ export const FormStorageService = {
   },
   
   saveForm: (form: FormState): FormState => {
-    const temp=localStorage.getItem("form_description"),temp1=localStorage.getItem("form_name")
-    form.description = temp ?? "";
-    form.title=temp1??""
+    form.description = localStorage.getItem("form_description") ?? "";
+    form.title=localStorage.getItem("form_name")??""
     const forms = FormStorageService.getForms();
     const updatedForm: StoredForm = {
       ...form,
