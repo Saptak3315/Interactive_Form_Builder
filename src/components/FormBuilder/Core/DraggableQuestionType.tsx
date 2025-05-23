@@ -6,6 +6,8 @@ import {
   addQuestion,
   createDefaultQuestion,
 } from "../../../context/FormContext/formActions";
+import { PdndDraggable } from "../../../utils/pdnd-components";
+import { pdndUtils } from "../../../utils/pdnd-core";
 
 interface QuestionTypeOption {
   type: string;
@@ -24,20 +26,24 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
 }) => {
   const { state, dispatch } = useFormContext();
 
-  const handleDragStart = (e: React.DragEvent) => {
-    console.log(`Starting drag for ${questionType.type} question`);
-    e.dataTransfer.setData(
-      "application/json",
-      JSON.stringify({
-        type: "question-type",
-        questionType: questionType.type,
-      })
-    );
-    e.dataTransfer.effectAllowed = "copy";
+  // Create PDND compatible drag data
+  const dragData = pdndUtils.createDragData(
+    `question-type-${questionType.type}`,
+    'question-type',
+    {
+      questionType: questionType.type,
+      label: questionType.label,
+      icon: questionType.icon,
+      description: questionType.description
+    }
+  );
 
-    // Add this to verify the data is being set correctly
-    const data = e.dataTransfer.getData("application/json");
-    console.log("Drag data set:", data || "No data available during dragStart");
+  const handleDragStart = () => {
+    console.log(`Starting PDND drag for ${questionType.type} question`);
+  };
+
+  const handleDragEnd = () => {
+    console.log(`Ended PDND drag for ${questionType.type} question`);
   };
 
   const handleClick = () => {
@@ -51,14 +57,17 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
   };
 
   return (
-    <div
-      className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-md cursor-grab transition-all duration-200 select-none hover:border-indigo-500 hover:bg-indigo-50 hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing active:translate-y-0 group"
-      draggable={true}
+    <PdndDraggable
+      dragData={dragData}
       onDragStart={handleDragStart}
-      onClick={handleClick}
-      title={`${questionType.description} (Click or drag to add)`}
+      onDragEnd={handleDragEnd}
+      className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-md transition-all duration-200 select-none hover:border-indigo-500 hover:bg-indigo-50 hover:shadow-md group"
     >
-      <div className="flex items-center gap-3 flex-1">
+      <div 
+        onClick={handleClick}
+        className="flex items-center gap-3 flex-1 cursor-pointer"
+        title={`${questionType.description} (Click or drag to add)`}
+      >
         <div className="flex items-center justify-center w-8 h-8 text-xl bg-slate-100 rounded-md group-hover:bg-indigo-100">
           {questionType.icon}
         </div>
@@ -74,7 +83,7 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
       <div className="text-slate-400 font-bold text-base opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         ⋯
       </div>
-    </div>
+    </PdndDraggable>
   );
 };
 
