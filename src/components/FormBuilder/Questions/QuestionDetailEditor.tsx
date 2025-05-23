@@ -97,7 +97,7 @@ const QuestionDetailEditor: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg">
       <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-        <h3 className="m-0 text-lg font-semibold text-slate-800">Question Details</h3>
+        <h3 className="m-0 text-lg font-semibold text-slate-800">Field Details</h3>
         <div className="flex gap-2.5">
           <button
             className={`
@@ -121,7 +121,7 @@ const QuestionDetailEditor: React.FC = () => {
         {/* Question Type */}
         <div className="mb-5">
           <label htmlFor="question-type" className="block mb-1.5 text-sm font-medium text-gray-700">
-            Question Type
+            Field Type
           </label>
           <select
             id="question-type"
@@ -140,7 +140,7 @@ const QuestionDetailEditor: React.FC = () => {
         {/* Question Content */}
         <div className="mb-5">
           <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
-            Question Text
+            Field Label
           </label>
           <textarea
             id="question-content"

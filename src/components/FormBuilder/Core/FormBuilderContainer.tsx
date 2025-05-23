@@ -102,7 +102,7 @@ const FormBuilderContainer: React.FC = () => {
                     : 'text-slate-300 cursor-not-allowed'
               }`}
               onClick={() => setActivePanel('details')}
-              title="Question Details"
+              title="Field Details"
               disabled={!state.activeQuestionId}
             >
               ⚙️

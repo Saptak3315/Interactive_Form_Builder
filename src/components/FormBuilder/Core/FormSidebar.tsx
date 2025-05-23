@@ -75,7 +75,7 @@ const FormSidebar = () => {
       {/* Question Types Section */}
       <div className="p-5 border-b border-slate-200">
         <h3 className="text-base font-semibold text-gray-700 mb-4 m-0">
-          Question Types
+          Field Types
         </h3>
         <div className="flex flex-col gap-5">
           {Object.entries(groupedQuestionTypes).map(([category, types]) => (
