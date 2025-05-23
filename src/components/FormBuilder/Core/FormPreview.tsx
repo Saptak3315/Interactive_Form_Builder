@@ -23,6 +23,7 @@ const FormPreview = () => {
   };
 
   const renderQuestion = (question: any, index: number) => {
+    console.log(question);
     // Add specific rendering for different question types
     switch (question.type) {
       case 'text':
@@ -31,10 +32,9 @@ const FormPreview = () => {
             <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
               {index + 1}. {question.content || 'Short Text Question'}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+              {question.validationPattern}
             </label>
-            {question.explanation && (
-              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
-            )}
+            
             <input 
               type="text"
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"

@@ -82,7 +82,6 @@ export const createDefaultQuestion = (
     type,
     orderPosition,
     isRequired:false,
-    explanation:""
   };
 
   // Type-specific configurations
@@ -92,7 +91,9 @@ export const createDefaultQuestion = (
         ...baseQuestion,
         content: 'New Text Question',
         placeholder: 'Enter your answer here',
-        validationType: 'none', // Default to no validation
+        validationType: 'none',
+        validationPattern:'',
+        explanation:"aaa" // Default to no validation
       };
       
     case 'textarea':
