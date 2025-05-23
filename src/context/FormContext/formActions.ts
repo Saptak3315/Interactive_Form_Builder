@@ -92,22 +92,62 @@ export const createDefaultQuestion = (
         ...baseQuestion,
         content: 'New Text Question',
         placeholder: 'Enter your answer here',
+        validationType: 'none', // Default to no validation
       };
-      case 'textarea':
+      
+    case 'textarea':
       return {
         ...baseQuestion,
-        content: 'New Text Question',
-        placeholder: 'Enter your answer here',
+        content: 'New Long Text Question',
+        placeholder: 'Enter your detailed answer here',
+        validationType: 'none', // Default to no validation
       };
-    // case 'multiple_choice':
-    // case 'checkbox':
-    //   return {
-    //     ...baseQuestion,
-    //     options: [
-    //       { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
-    //       { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
-    //     ],
-    //   };
+      
+    case 'number':
+      return {
+        ...baseQuestion,
+        content: 'New Number Question',
+        placeholder: 'Enter a number',
+      };
+      
+    case 'multiple_choice':
+      return {
+        ...baseQuestion,
+        content: 'New Multiple Choice Question',
+        options: [
+          { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
+          { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
+        ],
+      };
+      
+    case 'checkbox':
+      return {
+        ...baseQuestion,
+        content: 'New Checkbox Question',
+        options: [
+          { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
+          { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
+        ],
+      };
+      
+    case 'file':
+      return {
+        ...baseQuestion,
+        content: 'New File Upload Question',
+      };
+      
+    case 'audio':
+      return {
+        ...baseQuestion,
+        content: 'New Audio Question',
+      };
+      
+    case 'calculated':
+      return {
+        ...baseQuestion,
+        content: 'New Calculated Question',
+      };
+      
     default:
       return baseQuestion;
   }

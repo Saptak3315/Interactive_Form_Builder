@@ -16,6 +16,34 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
   const [inputValue, setInputValue] = useState(value);
   const [error, setError] = useState<string | null>(null);
   
+  const getValidationPattern = (validationType?: string): string | null => {
+    const patterns: Record<string, string> = {
+      email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+      url: "^https?:\\/\\/(?:[-\\w.])+(?:\\:[0-9]+)?(?:\\/(?:[\\w\\/_.])*(?:\\?(?:[\\w&=%.])*)?(?:\\#(?:[\\w.])*)?)?$",
+      phone: "^[\\+]?[1-9][\\d]{0,15}$",
+      number: "^\\d+$",
+      alphanumeric: "^[a-zA-Z0-9]+$",
+    };
+
+    if (validationType && patterns[validationType]) {
+      return patterns[validationType];
+    }
+    
+    return question.validationPattern || null;
+  };
+
+  const getValidationMessage = (validationType?: string): string => {
+    const messages: Record<string, string> = {
+      email: "Please enter a valid email address",
+      url: "Please enter a valid URL (e.g., https://example.com)",
+      phone: "Please enter a valid phone number",
+      number: "Please enter numbers only",
+      alphanumeric: "Please enter letters and numbers only",
+    };
+
+    return messages[validationType || ''] || "Input does not match the required format";
+  };
+  
   const validateInput = (value: string): boolean => {
     if (question.isRequired && !value.trim()) {
       setError('This field is required');
@@ -32,15 +60,19 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
       return false;
     }
     
-    if (question.validationPattern && value) {
+    // Use validation type or custom pattern
+    const pattern = getValidationPattern(question.validationType);
+    if (pattern && value) {
       try {
-        const regex = new RegExp(question.validationPattern);
+        const regex = new RegExp(pattern);
         if (!regex.test(value)) {
-          setError('Input does not match the required format');
+          setError(getValidationMessage(question.validationType));
           return false;
         }
       } catch (e) {
         console.error('Invalid regex pattern:', e);
+        setError('Invalid validation pattern configured');
+        return false;
       }
     }
     
@@ -55,6 +87,21 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
     const isValid = validateInput(newValue);
     if (onChange) {
       onChange(newValue, isValid);
+    }
+  };
+
+  const getInputType = (): string => {
+    switch (question.validationType) {
+      case 'email':
+        return 'email';
+      case 'url':
+        return 'url';
+      case 'phone':
+        return 'tel';
+      case 'number':
+        return 'number';
+      default:
+        return 'text';
     }
   };
   
@@ -72,7 +119,7 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
       )}
       
       <input
-        type="text"
+        type={getInputType()}
         value={inputValue}
         onChange={handleChange}
         placeholder={question.placeholder || ''}
@@ -84,6 +131,17 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
         required={question.isRequired}
         maxLength={question.maxLength}
       />
+      
+      {/* Validation hint */}
+      {question.validationType && question.validationType !== 'none' && !error && (
+        <div className="text-xs text-slate-500 mt-1">
+          {question.validationType === 'email' && 'Enter a valid email address'}
+          {question.validationType === 'url' && 'Enter a valid URL (e.g., https://example.com)'}
+          {question.validationType === 'phone' && 'Enter a valid phone number'}
+          {question.validationType === 'number' && 'Numbers only'}
+          {question.validationType === 'alphanumeric' && 'Letters and numbers only'}
+        </div>
+      )}
       
       {/* Character count indicator */}
       {(question.minLength || question.maxLength) && (
