@@ -276,12 +276,12 @@ const QuestionEditor: React.FC = () => {
       </div>
 
       {/* Debug button */}
-      <button
+      {/* <button
         className="absolute bottom-2.5 right-2.5 p-1.5 bg-gray-100 border border-gray-300 rounded text-xs z-25"
         onClick={() => console.log('Current state:', state)}
       >
-        Debug State
-      </button>
+        
+      </button> */}
     </div>
   );
 };

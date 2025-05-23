@@ -311,6 +311,7 @@ const QuestionDetailEditor: React.FC = () => {
         )}
 
         {/* Text Input Settings */}
+        {/* Text Input Settings */}
         {activeQuestion.type === "text" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Text Input Settings</label>
@@ -352,15 +353,68 @@ const QuestionDetailEditor: React.FC = () => {
                   min="0"
                 />
               </div>
-              <input
-                type="text"
-                placeholder="Validation pattern (regex)"
-                value={localQuestion.validationPattern || ""}
-                onChange={(e) =>
-                  handleFieldChange("validationPattern", e.target.value)
-                }
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-              />
+              
+              {/* VALIDATION DROPDOWN - This is what you're looking for */}
+              <div>
+                <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Type</label>
+                <select
+                  value={localQuestion.validationType || "none"}
+                  onChange={(e) => {
+                    const selectedType = e.target.value;
+                    console.log("Validation type selected:", selectedType);
+                    
+                    handleFieldChange("validationType", selectedType);
+                    
+                    // Auto-set regex patterns
+                    const patterns: Record<string, string> = {
+                      email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+                      url: "^https?:\\/\\/(?:[-\\w.])+(?:\\:[0-9]+)?(?:\\/(?:[\\w\\/_.])*(?:\\?(?:[\\w&=%.])*)?(?:\\#(?:[\\w.])*)?)?$",
+                      phone: "^[\\+]?[1-9][\\d]{0,15}$",
+                      number: "^\\d+$",
+                      alphanumeric: "^[a-zA-Z0-9]+$"
+                    };
+                    
+                    if (selectedType in patterns) {
+                      handleFieldChange("validationPattern", patterns[selectedType]);
+                    } else if (selectedType === "none") {
+                      handleFieldChange("validationPattern", "");
+                    }
+                  }}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                >
+                  <option value="none">No validation</option>
+                  <option value="email">Email address</option>
+                  <option value="url">Website URL</option>
+                  <option value="phone">Phone number</option>
+                  <option value="number">Numbers only</option>
+                  <option value="alphanumeric">Letters and numbers only</option>
+                  <option value="custom">Custom pattern</option>
+                </select>
+                
+                {/* Show current pattern for debugging */}
+                {localQuestion.validationPattern && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    Pattern: {localQuestion.validationPattern}
+                  </div>
+                )}
+              </div>
+              
+              {/* Custom pattern input - only show for custom option */}
+              {localQuestion.validationType === "custom" && (
+                <div>
+                  <label className="block mb-1.5 text-sm font-medium text-gray-700">Custom Validation Pattern</label>
+                  <input
+                    type="text"
+                    placeholder="Enter regex pattern (e.g., ^[0-9]+$)"
+                    value={localQuestion.validationPattern || ""}
+                    onChange={(e) =>
+                      handleFieldChange("validationPattern", e.target.value)
+                    }
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  />
+                </div>
+              )}
+              
             </div>
           </div>
         )}
