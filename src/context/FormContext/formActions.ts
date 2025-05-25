@@ -82,6 +82,7 @@ export const createDefaultQuestion = (
     type,
     orderPosition,
     isRequired:false,
+    explanation:"aaaa"
   };
 
   // Type-specific configurations
@@ -93,7 +94,7 @@ export const createDefaultQuestion = (
         placeholder: 'Enter your answer here',
         validationType: 'none',
         validationPattern:'',
-        explanation:"aaa" // Default to no validation
+        explanation:"" // Default to no validation
       };
       
     case 'textarea':

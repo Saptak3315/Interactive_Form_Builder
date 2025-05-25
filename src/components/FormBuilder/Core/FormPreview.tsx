@@ -1,4 +1,4 @@
-// Updated FormPreview.tsx with Tailwind CSS
+// Updated FormPreview.tsx with media display support
 import { useFormContext } from "../../../context/FormContext/FormProvider";
 import type { QuestionResponse } from "../../../services/FormStorageService";
 import { useState } from "react";
@@ -22,6 +22,60 @@ const FormPreview = () => {
     });
   };
 
+  // Helper function to get file type from media type
+  const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
+    if (!mediaType) return 'unknown';
+    if (mediaType.startsWith('image/')) return 'image';
+    if (mediaType.startsWith('video/')) return 'video';
+    if (mediaType.startsWith('audio/')) return 'audio';
+    return 'unknown';
+  };
+
+  // Component to render question media
+  const renderQuestionMedia = (question: any) => {
+    if (!question.mediaUrl) return null;
+
+    const fileType = getFileType(question.mediaType);
+
+    return (
+      <div className="mb-3 p-3 bg-slate-50 border border-slate-200 rounded-md">
+        {fileType === 'image' && (
+          <img
+            src={question.mediaUrl}
+            alt="Question media"
+            className="max-w-full h-40 object-cover rounded border"
+          />
+        )}
+        
+        {fileType === 'video' && (
+          <video
+            src={question.mediaUrl}
+            controls
+            className="max-w-full h-40 rounded border"
+          >
+            Your browser does not support video playback.
+          </video>
+        )}
+        
+        {fileType === 'audio' && (
+          <audio
+            src={question.mediaUrl}
+            controls
+            className="w-full"
+          >
+            Your browser does not support audio playback.
+          </audio>
+        )}
+        
+        {/* {fileType === 'unknown' && question.mediaUrl && (
+          <div className="text-sm text-slate-500 italic">
+            📎 Media file attached
+          </div>
+        )} */}
+      </div>
+    );
+  };
+
   const renderQuestion = (question: any, index: number) => {
     console.log(question);
     // Add specific rendering for different question types
@@ -32,8 +86,9 @@ const FormPreview = () => {
             <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
               {index + 1}. {question.content || 'Short Text Question'}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
-              {question.validationPattern}
             </label>
+            
+            {renderQuestionMedia(question)}
             
             <input 
               type="text"
@@ -54,6 +109,9 @@ const FormPreview = () => {
             {question.explanation && (
               <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
             )}
+            
+            {renderQuestionMedia(question)}
+            
             <textarea 
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 min-h-16 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               placeholder={question.placeholder || "Enter your detailed answer"}
@@ -73,6 +131,9 @@ const FormPreview = () => {
             {question.explanation && (
               <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
             )}
+            
+            {renderQuestionMedia(question)}
+            
             <input 
               type="number"
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -92,6 +153,9 @@ const FormPreview = () => {
             {question.explanation && (
               <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
             )}
+            
+            {renderQuestionMedia(question)}
+            
             <div className="flex flex-col gap-2">
               {question.options?.map((option: any, optIndex: number) => (
                 <div key={option.id} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md">
@@ -120,6 +184,9 @@ const FormPreview = () => {
             {question.explanation && (
               <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
             )}
+            
+            {renderQuestionMedia(question)}
+            
             <div className="flex flex-col gap-2">
               {question.options?.map((option: any, optIndex: number) => (
                 <div key={option.id} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md">
@@ -147,6 +214,9 @@ const FormPreview = () => {
             {question.explanation && (
               <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
             )}
+            
+            {renderQuestionMedia(question)}
+            
             <div className="flex items-center gap-3 p-3 border border-dashed border-slate-300 rounded-md bg-slate-50">
               <button className="px-3 py-1.5 bg-slate-500 text-white text-xs font-medium rounded border-0 cursor-not-allowed">
                 Choose File
@@ -155,7 +225,6 @@ const FormPreview = () => {
             </div>
           </div>
         );
-      
       case 'audio':
         return (
           <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
@@ -166,6 +235,9 @@ const FormPreview = () => {
             {question.explanation && (
               <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
             )}
+            
+            {renderQuestionMedia(question)}
+            
             <div className="p-3 border border-slate-300 rounded-md bg-slate-50 text-center">
               <button className="px-4 py-2 bg-slate-500 text-white text-xs font-medium rounded border-0 cursor-not-allowed">
                 🎤 Record Audio
@@ -181,6 +253,9 @@ const FormPreview = () => {
               {index + 1}. {question.content || `Question ${index + 1}`}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
+            
+            {renderQuestionMedia(question)}
+            
             <p className="text-sm text-slate-400 italic">({question.type})</p>
           </div>
         );

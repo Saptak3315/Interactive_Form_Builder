@@ -22,6 +22,51 @@ const QuestionEditor: React.FC = () => {
     setForceUpdate(prev => prev + 1);
   }, [state.questions]);
 
+  // Helper function to get file type from media type
+  const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
+    if (!mediaType) return 'unknown';
+    if (mediaType.startsWith('image/')) return 'image';
+    if (mediaType.startsWith('video/')) return 'video';
+    if (mediaType.startsWith('audio/')) return 'audio';
+    return 'unknown';
+  };
+
+  // Component to render media preview in question list
+  const renderMediaPreview = (question: any) => {
+    if (!question.mediaUrl) return null;
+
+    const fileType = getFileType(question.mediaType);
+
+    return (
+      <div className="mt-2 p-2 bg-gray-50 rounded-md border border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+          <span>📎</span>
+          <span>Media attached</span>
+        </div>
+        
+        {fileType === 'image' && (
+          <img
+            src={question.mediaUrl}
+            alt="Question media"
+            className="w-full h-16 object-cover rounded border"
+          />
+        )}
+        
+        {fileType === 'video' && (
+          <div className="w-full h-16 bg-gray-200 rounded border flex items-center justify-center">
+            <span className="text-xs text-gray-500">🎥 Video</span>
+          </div>
+        )}
+        
+        {fileType === 'audio' && (
+          <div className="w-full h-16 bg-gray-200 rounded border flex items-center justify-center">
+            <span className="text-xs text-gray-500">🎵 Audio</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Handle dropping new question types from sidebar
   const handleQuestionTypeDrop = (data: PdndData) => {
     console.log('PDND: Question type dropped:', data);
@@ -167,9 +212,12 @@ const QuestionEditor: React.FC = () => {
 
                 {question.explanation && (
                   <div className="text-sm text-gray-500 mt-1.5 italic">
-                    {question.validationPattern}
+                    {question.explanation}
                   </div>
                 )}
+
+                {/* Render media preview */}
+                {renderMediaPreview(question)}
 
                 {question.options && question.options.length > 0 && (
                   <div className="mt-2.5 p-3 bg-gray-50 rounded-md border border-gray-100">
@@ -187,7 +235,9 @@ const QuestionEditor: React.FC = () => {
                   {question.points ? `${question.points} pts` : 'No scoring'}
                 </span>
                 {question.mediaUrl && (
-                  <span className="flex items-center gap-1">📎 Media attached</span>
+                  <span className="flex items-center gap-1 text-green-600 font-medium">
+                    📎 Media attached
+                  </span>
                 )}
               </div>
             </div>
