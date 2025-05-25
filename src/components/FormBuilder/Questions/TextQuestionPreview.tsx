@@ -16,6 +16,60 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
   const [inputValue, setInputValue] = useState(value);
   const [error, setError] = useState<string | null>(null);
   
+  // Helper function to get file type from media type
+  const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
+    if (!mediaType) return 'unknown';
+    if (mediaType.startsWith('image/')) return 'image';
+    if (mediaType.startsWith('video/')) return 'video';
+    if (mediaType.startsWith('audio/')) return 'audio';
+    return 'unknown';
+  };
+
+  // Component to render question media
+  const renderQuestionMedia = () => {
+    if (!question.mediaUrl) return null;
+
+    const fileType = getFileType(question.mediaType);
+
+    return (
+      <div className="mb-3 p-3 bg-slate-50 border border-slate-200 rounded-md">
+        {fileType === 'image' && (
+          <img
+            src={question.mediaUrl}
+            alt="Question media"
+            className="max-w-full h-40 object-cover rounded border"
+          />
+        )}
+        
+        {fileType === 'video' && (
+          <video
+            src={question.mediaUrl}
+            controls
+            className="max-w-full h-40 rounded border"
+          >
+            Your browser does not support video playback.
+          </video>
+        )}
+        
+        {fileType === 'audio' && (
+          <audio
+            src={question.mediaUrl}
+            controls
+            className="w-full"
+          >
+            Your browser does not support audio playback.
+          </audio>
+        )}
+        
+        {fileType === 'unknown' && question.mediaUrl && (
+          <div className="text-sm text-slate-500 italic">
+            📎 Media file attached
+          </div>
+        )}
+      </div>
+    );
+  };
+  
   const getValidationPattern = (validationType?: string): string | null => {
     const patterns: Record<string, string> = {
       email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
@@ -117,6 +171,9 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
           {question.explanation}
         </p>
       )}
+      
+      {/* Render media if present */}
+      {renderQuestionMedia()}
       
       <input
         type={getInputType()}
