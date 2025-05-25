@@ -162,7 +162,21 @@ const QuestionDetailEditor: React.FC = () => {
             rows={3}
           />
         </div>
+        
 
+        <div className="mb-5">
+          <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+            Explanation
+          </label>
+          <textarea
+            id="question-content"
+            value={localQuestion.explanation || ""}
+            onChange={(e) => handleFieldChange('explanation', e.target.value)}
+            placeholder="Enter explanation..."
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+            rows={3}
+          />
+        </div>
         {/* Required checkbox */}
         <div className="mb-5">
           <div className="flex items-center gap-2">
@@ -207,11 +221,8 @@ const QuestionDetailEditor: React.FC = () => {
 
         {/* Media URL field */}
         <div className="mb-5">
-          <label
-            htmlFor="question-media"
-            className="block mb-1.5 text-sm font-medium text-gray-700"
-          >
-            Media URL
+          <label className="block mb-1.5 text-sm font-medium text-gray-700">
+            Field Media
           </label>
           <input
             type="url"
@@ -229,8 +240,6 @@ const QuestionDetailEditor: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Options for choice-based questions */}
         {hasOptions && (
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
@@ -326,7 +335,7 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
-        {/* Text Input Settings */}
+        {/* Text Input Settings */} 
         {activeQuestion.type === "text" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">
