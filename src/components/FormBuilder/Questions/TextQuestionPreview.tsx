@@ -61,11 +61,11 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
           </audio>
         )}
         
-        {fileType === 'unknown' && question.mediaUrl && (
+        {/* {fileType === 'unknown' && question.mediaUrl && (
           <div className="text-sm text-slate-500 italic">
             📎 Media file attached
           </div>
-        )}
+        )} */}
       </div>
     );
   };
