@@ -13,9 +13,11 @@ export interface Question {
   placeholder?: string;
   minLength?: number;
   maxLength?: number;
+  errorMessageForLength?:string;
   validationType?: string; // Add this line
   validationPattern?: string;
   options?: QuestionOption[];
+  errorMessageForPattern?:string
 }
 
 export interface QuestionOption {

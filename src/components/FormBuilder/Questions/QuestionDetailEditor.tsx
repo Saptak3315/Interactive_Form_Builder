@@ -23,12 +23,131 @@ const QuestionDetailEditor: React.FC = () => {
   useEffect(() => {
     if (activeQuestion) {
       setLocalQuestion(activeQuestion);
+      // Reset file states when switching questions
+      setUploadedFile(null);
+      setFilePreview(null);
+
+      // If question has existing media URL, set it as preview
+      if (activeQuestion.mediaUrl) {
+        setFilePreview(activeQuestion.mediaUrl);
+      }
     }
   }, [activeQuestion]);
 
   // Handle field updates
   const handleFieldChange = (field: keyof Question, value: any) => {
     setLocalQuestion((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'audio/mp3', 'audio/wav'];
+
+    if (!file) return;
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload an image, video, or audio file');
+      return;
+    }
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5 MB');
+      return;
+    }
+
+    // Validate file type
+
+
+    setUploadedFile(file);
+
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setFilePreview(result);
+
+      // Update question with file data
+      handleFieldChange('mediaUrl', result);
+      handleFieldChange('mediaType', file.type);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove uploaded file
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
+    setFilePreview(null);
+    handleFieldChange('mediaUrl', '');
+    handleFieldChange('mediaType', '');
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Get file type for display
+  const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
+    if (!mediaType) return 'unknown';
+    if (mediaType.startsWith('image/')) return 'image';
+    if (mediaType.startsWith('video/')) return 'video';
+    if (mediaType.startsWith('audio/')) return 'audio';
+    return 'unknown';
+  };
+
+  // Render media preview
+  const renderMediaPreview = () => {
+    if (!filePreview) return null;
+
+    const fileType = getFileType(localQuestion.mediaType);
+    const fileName = uploadedFile?.name || 'uploaded-file';
+
+    return (
+      <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50">
+        <div className="flex justify-between items-start mb-2">
+          <span className="text-sm font-medium text-gray-700">Uploaded Media:</span>
+          <button
+            type="button"
+            onClick={handleRemoveFile}
+            className="text-red-600 hover:text-red-800 text-sm"
+          >
+            ✕ Remove
+          </button>
+        </div>
+
+        {fileType === 'image' && (
+          <img
+            src={filePreview}
+            alt={fileName}
+            className="max-w-full h-32 object-cover rounded border"
+          />
+        )}
+
+        {fileType === 'video' && (
+          <video
+            src={filePreview}
+            controls
+            className="max-w-full h-32 rounded border"
+          >
+            Your browser does not support video playback.
+          </video>
+        )}
+
+        {fileType === 'audio' && (
+          <audio
+            src={filePreview}
+            controls
+            className="w-full"
+          >
+            Your browser does not support audio playback.
+          </audio>
+        )}
+
+        <div className="mt-2 text-xs text-gray-500">
+          {fileName} • {uploadedFile ? `${(uploadedFile.size / 1024).toFixed(1)} KB` : 'External file'}
+        </div>
+      </div>
+    );
   };
 
   // Save changes to the question
@@ -162,7 +281,7 @@ const QuestionDetailEditor: React.FC = () => {
             rows={3}
           />
         </div>
-        
+
 
         <div className="mb-5">
           <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
@@ -243,9 +362,7 @@ const QuestionDetailEditor: React.FC = () => {
         {hasOptions && (
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Answer Options
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Answer Options</label>
               <button
                 className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
                 onClick={handleAddOption}
@@ -267,10 +384,9 @@ const QuestionDetailEditor: React.FC = () => {
                     <button
                       className={`
                         px-2 py-1 border-none rounded cursor-pointer text-xs transition-all duration-200
-                        ${
-                          activeQuestion.options!.length <= 2
-                            ? "opacity-50 cursor-not-allowed bg-red-50 text-red-600"
-                            : "bg-red-50 text-red-600 hover:bg-red-100"
+                        ${activeQuestion.options!.length <= 2
+                          ? 'opacity-50 cursor-not-allowed bg-red-50 text-red-600'
+                          : 'bg-red-50 text-red-600 hover:bg-red-100'
                         }
                       `}
                       onClick={() => handleDeleteOption(option.id)}
@@ -335,7 +451,7 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
-        {/* Text Input Settings */} 
+        {/* Text Input Settings */}
         {activeQuestion.type === "text" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">
@@ -379,7 +495,20 @@ const QuestionDetailEditor: React.FC = () => {
                   min="0"
                 />
               </div>
-
+              
+               <div className="mb-5">
+                  <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message 
+                  </label>
+                  <textarea
+                    id="question-content"
+                    value={localQuestion.errorMessageForLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForLength", e.target.value)}
+                    placeholder="Your Result should be between Min and Max Legth"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
               {/* VALIDATION DROPDOWN */}
               <div>
                 <label className="block mb-1.5 text-sm font-medium text-gray-700">
@@ -423,12 +552,10 @@ const QuestionDetailEditor: React.FC = () => {
 
               {/* Editable pattern input - show for any validation type except none */}
               {localQuestion.validationType &&
-                localQuestion.validationType !== "none" &&
-                localQuestion.validationType !== "" && (
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
                   <div>
-                    <label className="block mb-1.5 text-sm font-medium text-gray-700">
-                      Validation Pattern
-                    </label>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Pattern</label>
                     <input
                       type="text"
                       placeholder="Enter regex pattern (e.g., ^[0-9]+$)"
@@ -440,6 +567,7 @@ const QuestionDetailEditor: React.FC = () => {
                     />
                   </div>
                 )}
+
             </div>
           </div>
         )}
