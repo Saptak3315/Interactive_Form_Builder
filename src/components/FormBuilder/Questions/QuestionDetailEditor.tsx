@@ -29,7 +29,7 @@ const QuestionDetailEditor: React.FC = () => {
       // Reset file states when switching questions
       setUploadedFile(null);
       setFilePreview(null);
-      
+
       // If question has existing media URL, set it as preview
       if (activeQuestion.mediaUrl) {
         setFilePreview(activeQuestion.mediaUrl);
@@ -46,7 +46,7 @@ const QuestionDetailEditor: React.FC = () => {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'audio/mp3', 'audio/wav'];
-    
+
     if (!file) return;
     if (!allowedTypes.includes(file.type)) {
       alert('Please upload an image, video, or audio file');
@@ -59,7 +59,7 @@ const QuestionDetailEditor: React.FC = () => {
     }
 
     // Validate file type
-    
+
 
     setUploadedFile(file);
 
@@ -68,7 +68,7 @@ const QuestionDetailEditor: React.FC = () => {
     reader.onload = (e) => {
       const result = e.target?.result as string;
       setFilePreview(result);
-      
+
       // Update question with file data
       handleFieldChange('mediaUrl', result);
       handleFieldChange('mediaType', file.type);
@@ -82,7 +82,7 @@ const QuestionDetailEditor: React.FC = () => {
     setFilePreview(null);
     handleFieldChange('mediaUrl', '');
     handleFieldChange('mediaType', '');
-    
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -117,7 +117,7 @@ const QuestionDetailEditor: React.FC = () => {
             ✕ Remove
           </button>
         </div>
-        
+
         {fileType === 'image' && (
           <img
             src={filePreview}
@@ -125,7 +125,7 @@ const QuestionDetailEditor: React.FC = () => {
             className="max-w-full h-32 object-cover rounded border"
           />
         )}
-        
+
         {fileType === 'video' && (
           <video
             src={filePreview}
@@ -135,7 +135,7 @@ const QuestionDetailEditor: React.FC = () => {
             Your browser does not support video playback.
           </video>
         )}
-        
+
         {fileType === 'audio' && (
           <audio
             src={filePreview}
@@ -145,7 +145,7 @@ const QuestionDetailEditor: React.FC = () => {
             Your browser does not support audio playback.
           </audio>
         )}
-        
+
         <div className="mt-2 text-xs text-gray-500">
           {fileName} • {uploadedFile ? `${(uploadedFile.size / 1024).toFixed(1)} KB` : 'External file'}
         </div>
@@ -273,7 +273,7 @@ const QuestionDetailEditor: React.FC = () => {
             rows={3}
           />
         </div>
-        
+
 
         <div className="mb-5">
           <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
@@ -347,7 +347,7 @@ const QuestionDetailEditor: React.FC = () => {
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">Answer Options</label>
-              <button 
+              <button
                 className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
                 onClick={handleAddOption}
               >
@@ -365,8 +365,8 @@ const QuestionDetailEditor: React.FC = () => {
                     <button
                       className={`
                         px-2 py-1 border-none rounded cursor-pointer text-xs transition-all duration-200
-                        ${activeQuestion.options!.length <= 2 
-                          ? 'opacity-50 cursor-not-allowed bg-red-50 text-red-600' 
+                        ${activeQuestion.options!.length <= 2
+                          ? 'opacity-50 cursor-not-allowed bg-red-50 text-red-600'
                           : 'bg-red-50 text-red-600 hover:bg-red-100'
                         }
                       `}
@@ -429,7 +429,7 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
-        {/* Text Input Settings */} 
+        {/* Text Input Settings */}
         {activeQuestion.type === "text" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Text Input Settings</label>
@@ -472,6 +472,19 @@ const QuestionDetailEditor: React.FC = () => {
                 />
               </div>
               
+               <div className="mb-5">
+                  <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message 
+                  </label>
+                  <textarea
+                    id="question-content"
+                    value={localQuestion.errorMessageForLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForLength", e.target.value)}
+                    placeholder="Your Result should be between Min and Max Legth"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
               {/* VALIDATION DROPDOWN */}
               <div>
                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Type</label>
@@ -480,7 +493,7 @@ const QuestionDetailEditor: React.FC = () => {
                   onChange={(e) => {
                     const selectedType = e.target.value;
                     handleFieldChange("validationType", selectedType);
-                    
+
                     // Auto-set regex patterns
                     const patterns: Record<string, string> = {
                       email: "example@gmail.com",
@@ -489,7 +502,7 @@ const QuestionDetailEditor: React.FC = () => {
                       number: "Please Enter a number",
                       alphanumeric: "Write according to Question"
                     };
-                    
+
                     if (selectedType in patterns) {
                       handleFieldChange("validationPattern", patterns[selectedType]);
                     } else if (selectedType === "none") {
@@ -507,25 +520,25 @@ const QuestionDetailEditor: React.FC = () => {
                   <option value="custom">Custom pattern</option>
                 </select>
               </div>
-              
+
               {/* Editable pattern input - show for any validation type except none */}
-              {localQuestion.validationType && 
-               localQuestion.validationType !== 'none' && 
-               localQuestion.validationType !== '' && (
-                <div>
-                  <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Pattern</label>
-                  <input
-                    type="text"
-                    placeholder="Enter regex pattern (e.g., ^[0-9]+$)"
-                    value={localQuestion.validationPattern || ""}
-                    onChange={(e) =>
-                      handleFieldChange("validationPattern", e.target.value)
-                    }
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-                  />
-                </div>
-              )}
-              
+              {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Pattern</label>
+                    <input
+                      type="text"
+                      placeholder="Enter regex pattern (e.g., ^[0-9]+$)"
+                      value={localQuestion.validationPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("validationPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
+
             </div>
           </div>
         )}
