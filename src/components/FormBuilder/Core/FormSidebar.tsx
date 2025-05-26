@@ -100,8 +100,18 @@ const FormSidebar = () => {
       return;
     }
     
-    // TODO: Implement full screen preview
-    alert('Opening full preview... (This feature will open in a new window)');
+    // Save current form state before navigating to preview
+    if (!state.isFormSaved) {
+      try {
+        saveCurrentForm();
+      } catch (error) {
+        console.error('Error saving form before preview:', error);
+        // Continue to preview even if save fails
+      }
+    }
+    
+    // Navigate to full preview page
+    navigate('/form-preview');
   };
 
   const handleBackToDashboard = () => {
