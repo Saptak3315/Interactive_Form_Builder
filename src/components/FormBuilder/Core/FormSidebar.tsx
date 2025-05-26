@@ -1,7 +1,9 @@
+// src/components/FormBuilder/Core/FormSidebar.tsx
+
 import { setForm } from '../../../context/FormContext/formActions';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
-import FormStorageService from '../../../services/FormStorageService';
 import DraggableQuestionType from './DraggableQuestionType';
+import { useNavigate } from 'react-router-dom';
 
 interface QuestionTypeOption {
   type: string;
@@ -12,7 +14,8 @@ interface QuestionTypeOption {
 }
 
 const FormSidebar = () => {
-  const { state, dispatch } = useFormContext();
+  const { state, dispatch, saveCurrentForm, clearCurrentForm } = useFormContext();
+  const navigate = useNavigate();
 
   const questionTypes: QuestionTypeOption[] = [
     { type: 'text', label: 'Short Text', icon: '📝', description: 'Single line text input', category: 'Basic' },
@@ -35,14 +38,8 @@ const FormSidebar = () => {
 
   const handleSaveForm = () => {
     try {
-      // Save the current form state
-      const savedForm = FormStorageService.saveForm(state);
-      // Update the form ID if it was newly created
-      if (state.formId !== savedForm.formId) {
-        dispatch(setForm({ formId: savedForm.formId }));
-      }
-      // Update saved status
-      dispatch(setForm({ isFormSaved: true }));
+      // Use the context's save function
+      saveCurrentForm();
       alert('Form saved successfully!');
     } catch (error) {
       console.error('Error saving form:', error);
@@ -50,14 +47,90 @@ const FormSidebar = () => {
     }
   };
 
+  const handleNewForm = () => {
+    if (!state.isFormSaved && state.questions.length > 0) {
+      const shouldSave = window.confirm(
+        'You have unsaved changes. Would you like to save before creating a new form?'
+      );
+      if (shouldSave) {
+        try {
+          saveCurrentForm();
+        } catch (error) {
+          console.error('Error saving form:', error);
+          alert('There was an error saving your form.');
+          return;
+        }
+      }
+    }
+    
+    clearCurrentForm();
+    alert('New form created! Start building...');
+  };
+
   const handlePublishForm = () => {
-    // TODO: Implement publish functionality
-    alert('Form published successfully! (This is temporary)');
+    // Save the form first if it has changes
+    if (!state.isFormSaved) {
+      try {
+        saveCurrentForm();
+      } catch (error) {
+        console.error('Error saving form:', error);
+        alert('There was an error saving your form. Please try again.');
+        return;
+      }
+    }
+    
+    // Check if form has content
+    if (state.questions.length === 0) {
+      alert('Please add at least one question before publishing.');
+      return;
+    }
+    
+    if (!state.title.trim()) {
+      alert('Please add a title to your form before publishing.');
+      return;
+    }
+    
+    // Navigate to publish page
+    navigate('/publish-form');
   };
 
   const handlePreviewForm = () => {
-    // TODO: Implement full screen preview
-    alert('Opening full preview... (This is temporary)');
+    if (state.questions.length === 0) {
+      alert('Please add some questions to preview the form.');
+      return;
+    }
+    
+    // Save current form state before navigating to preview
+    if (!state.isFormSaved) {
+      try {
+        saveCurrentForm();
+      } catch (error) {
+        console.error('Error saving form before preview:', error);
+        // Continue to preview even if save fails
+      }
+    }
+    
+    // Navigate to full preview page
+    navigate('/form-preview');
+  };
+
+  const handleBackToDashboard = () => {
+    if (!state.isFormSaved && state.questions.length > 0) {
+      const shouldSave = window.confirm(
+        'You have unsaved changes. Would you like to save before leaving?'
+      );
+      if (shouldSave) {
+        try {
+          saveCurrentForm();
+        } catch (error) {
+          console.error('Error saving form:', error);
+          alert('There was an error saving your form.');
+          return;
+        }
+      }
+    }
+    
+    navigate('/');
   };
 
   return (
@@ -103,13 +176,21 @@ const FormSidebar = () => {
         </h3>
         <div className="flex flex-col gap-3">
           <button 
-            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-green-500 hover:text-white hover:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-900 disabled:hover:border-slate-300"
+            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-green-500 hover:text-white hover:border-green-500"
             onClick={handleSaveForm}
-            disabled={state.isFormSaved}
           >
             <span className="text-base">💾</span>
             Save Form
           </button>
+          
+          <button 
+            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-indigo-500 hover:text-white hover:border-indigo-500"
+            onClick={handleNewForm}
+          >
+            <span className="text-base">📝</span>
+            New Form
+          </button>
+          
           <button 
             className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-blue-500 hover:text-white hover:border-blue-500"
             onClick={handlePreviewForm}
@@ -117,12 +198,26 @@ const FormSidebar = () => {
             <span className="text-base">👁️</span>
             Full Preview
           </button>
+          
           <button 
-            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-purple-500 hover:text-white hover:border-purple-500"
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer font-medium transition-all duration-200 text-left ${
+              state.questions.length > 0 && state.title.trim()
+                ? 'border-slate-300 bg-white hover:bg-purple-500 hover:text-white hover:border-purple-500'
+                : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+            }`}
             onClick={handlePublishForm}
+            disabled={state.questions.length === 0 || !state.title.trim()}
           >
             <span className="text-base">🚀</span>
             Publish Form
+          </button>
+          
+          <button 
+            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-gray-500 hover:text-white hover:border-gray-500"
+            onClick={handleBackToDashboard}
+          >
+            <span className="text-base">🏠</span>
+            Dashboard
           </button>
         </div>
       </div>
@@ -146,6 +241,7 @@ const FormSidebar = () => {
               </div>
             </div>
           </div>
+          
           <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
             <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
               📊
@@ -156,6 +252,20 @@ const FormSidebar = () => {
               </div>
               <div className="text-sm text-slate-500 mt-1">
                 Responses
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
+            <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
+              {state.isFormSaved ? '✅' : '⏳'}
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-slate-800 leading-none">
+                {state.isFormSaved ? 'Saved' : 'Auto-saving...'}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                Status
               </div>
             </div>
           </div>

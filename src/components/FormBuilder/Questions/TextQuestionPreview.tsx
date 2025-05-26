@@ -174,7 +174,6 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
       
       {/* Render media if present */}
       {renderQuestionMedia()}
-      
       <input
         type={getInputType()}
         value={inputValue}

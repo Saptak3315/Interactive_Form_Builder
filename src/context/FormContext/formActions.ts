@@ -82,7 +82,7 @@ export const createDefaultQuestion = (
     type,
     orderPosition,
     isRequired:false,
-    explanation:"aaaa"
+    explanation:""
   };
 
   // Type-specific configurations

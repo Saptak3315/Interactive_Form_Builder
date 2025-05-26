@@ -1,3 +1,5 @@
+// src/components/FormBuilder/Core/FormHeader.tsx
+
 import React, { useEffect, useRef, useState } from 'react'
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 import { setForm } from '../../../context/FormContext/formActions';
@@ -8,32 +10,22 @@ const FormHeader = () => {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [titleInput, setTitleInput] = useState("");
   const [tempDescription, setTempDescription] = useState("");
-  const [storedFormName, setStoredFormName] = useState("");
-  const [storedDescription, setStoredDescription] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Sync local editing states with context state
   useEffect(() => {
-    const savedName = localStorage.getItem("form_name");
-    if (savedName) {
-      setStoredFormName(savedName);
-    }
-  }, []);
-
-  useEffect(() => {
-    const savedDescription = localStorage.getItem("form_description");
-    if (savedDescription) {
-      setStoredDescription(savedDescription);
-    }
-  }, []);
+    setTitleInput(state.title || "");
+    setTempDescription(state.description || "");
+  }, [state.title, state.description]);
 
   const handleTitleEdit = () => {
-    setTitleInput(storedFormName || state.title || "");
+    setTitleInput(state.title || "");
     setIsEditingTitle(true);
   };
 
   const handleDescriptionEdit = () => {
-    setTempDescription(storedDescription || state.description || "");
+    setTempDescription(state.description || "");
     setIsEditingDescription(true);
   };
 
@@ -41,33 +33,33 @@ const FormHeader = () => {
     const newTitle = titleInput.trim();
     if (newTitle !== "") {
       dispatch(setForm({ title: newTitle }));
+      
+      // Keep the localStorage sync for backward compatibility
       localStorage.setItem("form_name", newTitle);
-      setStoredFormName(newTitle);
     } else {
       alert("Form name cannot be empty");
+      setTitleInput(state.title || ""); // Reset to current state
     }
     setIsEditingTitle(false);
   };
 
   const handleDescriptionSave = () => {
     const newDescription = tempDescription.trim();
-    if (newDescription !== "") {
-      dispatch(setForm({ description: newDescription }));
-      localStorage.setItem("form_description", newDescription);
-      setStoredDescription(newDescription);
-    } else {
-      alert("Form description cannot be empty");
-    }
+    // Allow empty descriptions
+    dispatch(setForm({ description: newDescription }));
+    
+    // Keep the localStorage sync for backward compatibility
+    localStorage.setItem("form_description", newDescription);
     setIsEditingDescription(false);
   };
 
   const handleTitleCancel = () => {
-    setTitleInput(storedFormName || state.title || "");
+    setTitleInput(state.title || "");
     setIsEditingTitle(false);
   };
 
   const handleDescriptionCancel = () => {
-    setTempDescription(storedDescription || state.description || "");
+    setTempDescription(state.description || "");
     setIsEditingDescription(false);
   };
 
@@ -138,7 +130,7 @@ const FormHeader = () => {
               onClick={handleTitleEdit}
               title="Click to edit title"
             >
-              {storedFormName || state.title || 'Untitled Form'}
+              {state.title || 'Untitled Form'}
               <span className="ml-2 text-base opacity-0 group-hover:opacity-100 transition-opacity duration-200">✏️</span>
             </h1>
           )}
@@ -174,14 +166,20 @@ const FormHeader = () => {
               onClick={handleDescriptionEdit}
               title="Click to edit description"
             >
-              {storedDescription || state.description || 'Click to add a description...'}
+              {state.description || 'Click to add a description...'}
               <span className="ml-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">✏️</span>
             </p>
           )}
         </div>
 
         {/* Form Meta Information */}
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          {/* <div className="text-sm text-gray-500">
+            {state.formId && (
+              <span className="mr-4">Form ID: {state.formId}</span>
+            )}
+            <span>Last saved: {new Date().toLocaleTimeString()}</span>
+          </div> */}
           <span className="text-sm text-gray-500">
             {state.isFormSaved ? (
               <span className="text-green-600 flex items-center gap-1">
@@ -191,7 +189,7 @@ const FormHeader = () => {
             ) : (
               <span className="text-orange-500 flex items-center gap-1">
                 <span>○</span>
-                <span>Unsaved changes</span>
+                <span>Auto-saving...</span>
               </span>
             )}
           </span>
