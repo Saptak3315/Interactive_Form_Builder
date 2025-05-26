@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import FormHeader from './FormHeader';
 import FormSidebar from './FormSidebar';
 import QuestionEditor from './QuestionEditor';
-import FormPreview from './FormPreview';
 import QuestionDetailEditor from '../Questions/QuestionDetailEditor';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 
@@ -11,7 +10,6 @@ const FormBuilderContainer: React.FC = () => {
   const { state } = useFormContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [updateCounter, setUpdateCounter] = useState(0);
-  const [activePanel, setActivePanel] = useState<'preview' | 'details'>('preview');
 
   useEffect(() => {
     // Debug to verify state is being properly passed
@@ -26,13 +24,6 @@ const FormBuilderContainer: React.FC = () => {
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
-  // Show details panel when a question is selected
-  useEffect(() => {
-    if (state.activeQuestionId) {
-      setActivePanel('details');
-    }
-  }, [state.activeQuestionId]);
 
   return (
     <div className="h-screen flex flex-col bg-slate-50">
@@ -75,50 +66,20 @@ const FormBuilderContainer: React.FC = () => {
           </div>
         </div>
         
-        {/* Right Panel (Preview/Details) */}
+        {/* Right Panel (Details Only) */}
         <div className="w-96 border-l border-slate-200 flex flex-col bg-white">
-          {/* Panel Tabs */}
+          {/* Panel Header */}
           <div className="flex border-b border-slate-200 bg-slate-50">
-            <button 
-              className={`px-4 py-3 bg-none border-0 text-lg cursor-pointer relative transition-all duration-200 ${
-                activePanel === 'preview' 
-                  ? 'text-indigo-600' 
-                  : 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-600'
-              }`}
-              onClick={() => setActivePanel('preview')}
-              title="Preview Form"
-            >
-              👁️
-              {activePanel === 'preview' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-              )}
-            </button>
-            <button 
-              className={`px-4 py-3 bg-none border-0 text-lg cursor-pointer relative transition-all duration-200 ${
-                activePanel === 'details' 
-                  ? 'text-indigo-600' 
-                  : state.activeQuestionId 
-                    ? 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-600' 
-                    : 'text-slate-300 cursor-not-allowed'
-              }`}
-              onClick={() => setActivePanel('details')}
-              title="Field Details"
-              disabled={!state.activeQuestionId}
-            >
-              ⚙️
-              {activePanel === 'details' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-              )}
-            </button>
+            <div className="px-4 py-3 text-lg text-indigo-600 relative flex items-center gap-2 flex-1">
+              <span>⚙️</span>
+              <span className="font-medium">Field Details</span>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
+            </div>
           </div>
           
           {/* Panel Content */}
           <div className="flex-1 overflow-auto">
-            {activePanel === 'preview' ? (
-              <FormPreview />
-            ) : (
-              <QuestionDetailEditor />
-            )}
+            <QuestionDetailEditor />
           </div>
         </div>
       </div>      

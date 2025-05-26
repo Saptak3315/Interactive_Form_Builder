@@ -667,7 +667,7 @@ const FormsDashboard: React.FC = () => {
                 >
                   <FontAwesomeIcon icon={faChevronLeft} />
                 </button>
-                {[1, 2, 3].map((page) => (
+                {/* {[1, 2, 3].map((page) => (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
@@ -690,7 +690,7 @@ const FormsDashboard: React.FC = () => {
                   >
                     {page}
                   </button>
-                ))}
+                ))} */}
                 <button
                   style={{
                     width: "35px",

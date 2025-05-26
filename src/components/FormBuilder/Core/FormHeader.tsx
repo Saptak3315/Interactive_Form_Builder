@@ -174,12 +174,12 @@ const FormHeader = () => {
 
         {/* Form Meta Information */}
         <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-500">
+          {/* <div className="text-sm text-gray-500">
             {state.formId && (
               <span className="mr-4">Form ID: {state.formId}</span>
             )}
             <span>Last saved: {new Date().toLocaleTimeString()}</span>
-          </div>
+          </div> */}
           <span className="text-sm text-gray-500">
             {state.isFormSaved ? (
               <span className="text-green-600 flex items-center gap-1">
