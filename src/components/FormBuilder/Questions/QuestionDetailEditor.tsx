@@ -496,11 +496,11 @@ const QuestionDetailEditor: React.FC = () => {
 
                     // Auto-set regex patterns
                     const patterns: Record<string, string> = {
-                      email: "example@gmail.com",
-                      url: "https://example.com",
-                      phone: "Please Enter Valid Phone Number",
-                      number: "Please Enter a number",
-                      alphanumeric: "Write according to Question"
+                      email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+                      url: "^(https?:\/\/)?(www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$",
+                      phone: "^(\+?\d{1,4}[\s-]?)?(\d{10,14})$",
+                      number: "^\d+$",
+                      alphanumeric:"^[a-zA-Z0-9]+$"
                     };
 
                     if (selectedType in patterns) {
@@ -538,7 +538,20 @@ const QuestionDetailEditor: React.FC = () => {
                     />
                   </div>
                 )}
-
+               
+               <div className="mb-5">
+                  <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message For Wrong Pattern
+                  </label>
+                  <textarea
+                    id="question-content"
+                    value={localQuestion.errorMessageForPattern || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForPattern", e.target.value)}
+                    placeholder="Please answer according to the type"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
             </div>
           </div>
         )}
