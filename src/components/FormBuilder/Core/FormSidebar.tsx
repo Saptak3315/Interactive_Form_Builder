@@ -2,6 +2,7 @@ import { setForm } from '../../../context/FormContext/formActions';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 import FormStorageService from '../../../services/FormStorageService';
 import DraggableQuestionType from './DraggableQuestionType';
+import { useNavigate } from 'react-router-dom';
 
 interface QuestionTypeOption {
   type: string;
@@ -13,6 +14,7 @@ interface QuestionTypeOption {
 
 const FormSidebar = () => {
   const { state, dispatch } = useFormContext();
+  const navigate = useNavigate();
 
   const questionTypes: QuestionTypeOption[] = [
     { type: 'text', label: 'Short Text', icon: '📝', description: 'Single line text input', category: 'Basic' },
@@ -51,8 +53,23 @@ const FormSidebar = () => {
   };
 
   const handlePublishForm = () => {
-    // TODO: Implement publish functionality
-    alert('Form published successfully! (This is temporary)');
+    // First save the form if it's not saved
+    if (!state.isFormSaved) {
+      try {
+        const savedForm = FormStorageService.saveForm(state);
+        if (state.formId !== savedForm.formId) {
+          dispatch(setForm({ formId: savedForm.formId }));
+        }
+        dispatch(setForm({ isFormSaved: true }));
+      } catch (error) {
+        console.error('Error saving form:', error);
+        alert('There was an error saving your form. Please try again.');
+        return;
+      }
+    }
+    
+    // Navigate to publish page
+    navigate('/publish-form');
   };
 
   const handlePreviewForm = () => {
