@@ -11,6 +11,7 @@ import {
 } from '../../../context/FormContext/formActions';
 import { PdndDropZone, PdndDraggable } from '../../../utils/pdnd-components';
 import { pdndUtils, type PdndData } from '../../../utils/pdnd-core';
+import Swal from 'sweetalert2';
 
 const QuestionEditor: React.FC = () => {
   const { state, dispatch } = useFormContext();
@@ -173,7 +174,7 @@ const QuestionEditor: React.FC = () => {
                     className="w-8 h-8 border-none rounded-md cursor-pointer transition-all duration-200 flex items-center justify-center text-sm bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
                     onClick={(e) => {
                       e.stopPropagation();
-                      alert('Duplicate functionality coming soon!');
+                      Swal.fire('Duplicate functionality coming soon!');
                     }}
                     title="Duplicate question"
                   >
@@ -295,7 +296,7 @@ const QuestionEditor: React.FC = () => {
         <button
           className="px-5 py-2.5 bg-indigo-500 text-white border-none rounded-md font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600 hover:-translate-y-0.5"
           onClick={() => {
-            alert('Question type selector coming soon!');
+            Swal.fire('Question type selector coming soon!');
           }}
         >
           + Add Question

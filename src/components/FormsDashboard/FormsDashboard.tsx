@@ -15,6 +15,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import FormStorageService from "../../services/FormStorageService";
+import Swal from "sweetalert2";
 
 // TypeScript interfaces
 interface FormData {
@@ -100,13 +101,13 @@ const FormsDashboard: React.FC = () => {
         const success = FormStorageService.deleteForm(formId);
         if (success) {
           setForms(forms.filter((form) => form.formId !== formId));
-          alert('Form deleted successfully!');
+          Swal.fire('Form deleted successfully!');
         } else {
-          alert('Error deleting form. Please try again.');
+          Swal.fire('Error deleting form. Please try again.');
         }
       } catch (error) {
         console.error('Error deleting form:', error);
-        alert('Error deleting form. Please try again.');
+        Swal.fire('Error deleting form. Please try again.');
       }
     }
   };
@@ -133,7 +134,7 @@ const FormsDashboard: React.FC = () => {
 
   const handleViewResponses = (formId: number) => {
     // TODO: Navigate to responses view
-    alert(`Viewing responses for form ${formId} (Feature coming soon)`);
+    Swal.fire(`Viewing responses for form ${formId} (Feature coming soon)`);
   };
 
   if (loading) {

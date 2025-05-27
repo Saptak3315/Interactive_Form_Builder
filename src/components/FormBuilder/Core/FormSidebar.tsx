@@ -1,5 +1,6 @@
 // src/components/FormBuilder/Core/FormSidebar.tsx
 
+import Swal from 'sweetalert2';
 import { setForm } from '../../../context/FormContext/formActions';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 import DraggableQuestionType from './DraggableQuestionType';
@@ -40,10 +41,10 @@ const FormSidebar = () => {
     try {
       // Use the context's save function
       saveCurrentForm();
-      alert('Form saved successfully!');
+      Swal.fire('Form saved successfully!');
     } catch (error) {
       console.error('Error saving form:', error);
-      alert('There was an error saving your form. Please try again.');
+      Swal.fire('There was an error saving your form. Please try again.');
     }
   };
 
@@ -57,14 +58,14 @@ const FormSidebar = () => {
           saveCurrentForm();
         } catch (error) {
           console.error('Error saving form:', error);
-          alert('There was an error saving your form.');
+          Swal.fire('There was an error saving your form.');
           return;
         }
       }
     }
     
     clearCurrentForm();
-    alert('New form created! Start building...');
+    Swal.fire('New form created! Start building...');
   };
 
   const handlePublishForm = () => {
@@ -74,19 +75,19 @@ const FormSidebar = () => {
         saveCurrentForm();
       } catch (error) {
         console.error('Error saving form:', error);
-        alert('There was an error saving your form. Please try again.');
+        Swal.fire('There was an error saving your form. Please try again.');
         return;
       }
     }
     
     // Check if form has content
     if (state.questions.length === 0) {
-      alert('Please add at least one question before publishing.');
+      Swal.fire('Please add at least one question before publishing.');
       return;
     }
     
     if (!state.title.trim()) {
-      alert('Please add a title to your form before publishing.');
+      Swal.fire('Please add a title to your form before publishing.');
       return;
     }
     
@@ -96,7 +97,7 @@ const FormSidebar = () => {
 
   const handlePreviewForm = () => {
     if (state.questions.length === 0) {
-      alert('Please add some questions to preview the form.');
+      Swal.fire('Please add some questions to preview the form.');
       return;
     }
     
@@ -124,7 +125,7 @@ const FormSidebar = () => {
           saveCurrentForm();
         } catch (error) {
           console.error('Error saving form:', error);
-          alert('There was an error saving your form.');
+          Swal.fire('There was an error saving your form.');
           return;
         }
       }
