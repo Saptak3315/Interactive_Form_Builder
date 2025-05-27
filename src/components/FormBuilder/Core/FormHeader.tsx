@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 import { setForm } from '../../../context/FormContext/formActions';
+import Swal from 'sweetalert2';
 
 const FormHeader = () => {
   const { state, dispatch } = useFormContext();
@@ -37,7 +38,7 @@ const FormHeader = () => {
       // Keep the localStorage sync for backward compatibility
       localStorage.setItem("form_name", newTitle);
     } else {
-      alert("Form name cannot be empty");
+      Swal.fire("Form name cannot be empty");
       setTitleInput(state.title || ""); // Reset to current state
     }
     setIsEditingTitle(false);

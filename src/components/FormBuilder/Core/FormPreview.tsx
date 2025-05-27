@@ -1,4 +1,5 @@
 // Updated FormPreview.tsx with media display support
+import Swal from "sweetalert2";
 import { useFormContext } from "../../../context/FormContext/FormProvider";
 import type { QuestionResponse } from "../../../services/FormStorageService";
 import { useState } from "react";
@@ -280,9 +281,9 @@ const FormPreview = () => {
       });
       
       // Here you would call the service to save the submission
-      alert('Form submitted successfully!');
+      Swal.fire('Form submitted successfully!');
     } else {
-      alert('Please complete all required questions correctly.');
+      Swal.fire('Please complete all required questions correctly.');
     }
   };
 

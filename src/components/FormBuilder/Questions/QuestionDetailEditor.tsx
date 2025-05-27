@@ -9,6 +9,7 @@ import {
   updateOption,
   updateQuestion,
 } from "../../../context/FormContext/formActions";
+import Swal from "sweetalert2";
 
 const QuestionDetailEditor: React.FC = () => {
   const { state, dispatch } = useFormContext();
@@ -49,12 +50,12 @@ const QuestionDetailEditor: React.FC = () => {
 
     if (!file) return;
     if (!allowedTypes.includes(file.type)) {
-      alert('Please upload an image, video, or audio file');
+      Swal.fire('Please upload an image, video, or audio file');
       return;
     }
     // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5 MB');
+      Swal.fire('File size must be less than 5 MB');
       return;
     }
 
@@ -183,7 +184,7 @@ const QuestionDetailEditor: React.FC = () => {
   const handleDeleteOption = (optionId: number) => {
     if (!activeQuestion) return;
     if (activeQuestion.options && activeQuestion.options.length <= 2) {
-      alert("A choice question must have at least 2 options");
+      Swal.fire("A choice question must have at least 2 options");
       return;
     }
     dispatch(deleteOption(activeQuestion.id, optionId));

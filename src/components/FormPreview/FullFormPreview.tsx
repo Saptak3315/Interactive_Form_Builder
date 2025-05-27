@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useFormContext } from "../../context/FormContext/FormProvider";
 import { useFormSubmission } from "../../hooks/useFormSubmission";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Swal from 'sweetalert2';
 import {
   faArrowLeft,
   faEdit,
@@ -73,15 +74,11 @@ const FullFormPreview: React.FC = () => {
     if (question.isRequired && (!value || !value.toString().trim())) {
       return { isValid: false, error: 'This field is required' };
     }
-    
-    // If field is empty and not required, it's valid
     if (!value || !value.toString().trim()) {
       return { isValid: true };
     }
     
     const stringValue = value.toString();
-    
-    // Length validation
     if (question.minLength && stringValue.length < question.minLength) {
       return { 
         isValid: false, 
@@ -95,8 +92,7 @@ const FullFormPreview: React.FC = () => {
         error: question.errorMessageForLength || `Maximum ${question.maxLength} characters allowed` 
       };
     }
-    
-    // Pattern validation
+  
     if (question.validationType && question.validationType !== 'none' && question.validationPattern) {
       try {
         const regex = new RegExp(question.validationPattern);
@@ -490,15 +486,23 @@ const FullFormPreview: React.FC = () => {
     
     setValidationErrors(newErrors);
     
-    if (!hasErrors) {
-      const success = await submitForm();
-      if (success) {
-        alert('Form submitted successfully!');
-        navigate('/');
-      }
+   if (!hasErrors) {
+  try {
+    const success = await submitForm();
+    if (success) {
+      Swal.fire("Success!", "Form submitted successfully!", "success");
+      navigate('/');
     } else {
-      alert('Please complete all required questions correctly.');
+      Swal.fire("Error", "Form submission failed. Please try again.", "error");
     }
+  } catch (error) {
+    console.error('Submission error:', error);
+    Swal.fire("Error", "An unexpected error occurred.", "error");
+  }
+} else {
+  Swal.fire("Validation Error", "Please complete all required questions correctly.", "error");
+}
+
   };
 
   const handleBackToBuilder = () => {
@@ -662,3 +666,7 @@ const FullFormPreview: React.FC = () => {
 };
 
 export default FullFormPreview;
+
+function swal(arg0: string, arg1: string, arg2: string) {
+  throw new Error("Function not implemented.");
+}
