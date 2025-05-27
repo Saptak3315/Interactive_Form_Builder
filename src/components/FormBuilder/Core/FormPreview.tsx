@@ -1,4 +1,4 @@
-// Updated FormPreview.tsx with media display support
+// src/components/FormBuilder/Core/FormPreview.tsx
 import Swal from "sweetalert2";
 import { useFormContext } from "../../../context/FormContext/FormProvider";
 import type { QuestionResponse } from "../../../services/FormStorageService";
@@ -94,7 +94,7 @@ const FormPreview = () => {
             <input 
               type="text"
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              placeholder={question.placeholder || "Enter your answer"}
+              placeholder={question.placeholder || "Enter your answer.."}
               disabled={true}
             />
           </div>

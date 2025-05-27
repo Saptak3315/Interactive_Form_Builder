@@ -91,7 +91,7 @@ export const createDefaultQuestion = (
       return {
         ...baseQuestion,
         content: 'New Text Question',
-        placeholder: 'Enter your answer here',
+        placeholder: '',
         validationType: 'none',
         validationPattern:'',
         explanation:"" // Default to no validation
@@ -103,6 +103,8 @@ export const createDefaultQuestion = (
         content: 'New Long Text Question',
         placeholder: 'Enter your detailed answer here',
         validationType: 'none', // Default to no validation
+        validationPattern:'',
+        explanation:""
       };
       
     case 'number':
