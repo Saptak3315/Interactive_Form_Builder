@@ -172,7 +172,7 @@ const FormHeader = () => {
           )}
         </div>
 
-        {/* Form Meta Information */}
+        {/* Form Meta Information */}.
         <div className="flex justify-between items-center">
           {/* <div className="text-sm text-gray-500">
             {state.formId && (

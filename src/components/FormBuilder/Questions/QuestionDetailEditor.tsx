@@ -301,7 +301,7 @@ const QuestionDetailEditor: React.FC = () => {
               className="w-auto m-0"
             />
             <label htmlFor="question-required" className="m-0 cursor-pointer select-none text-sm font-medium text-gray-700">
-              Required question
+              Required
             </label>
           </div>
         </div>
@@ -432,7 +432,7 @@ const QuestionDetailEditor: React.FC = () => {
         {/* Text Input Settings */}
         {activeQuestion.type === "text" && (
           <div className="mb-5">
-            <label className="block mb-1.5 text-sm font-medium text-gray-700">Text Input Settings</label>
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
               <input
                 type="text"
@@ -559,7 +559,7 @@ const QuestionDetailEditor: React.FC = () => {
         {/* Textarea Settings */}
         {activeQuestion.type === "textarea" && (
           <div className="mb-5">
-            <label className="block mb-1.5 text-sm font-medium text-gray-700">Text Input Settings</label>
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
               <input
                 type="text"
