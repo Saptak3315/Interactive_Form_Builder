@@ -211,6 +211,17 @@ const QuestionEditor: React.FC = () => {
                   </div>
                 )}
 
+                 {question.type === 'textarea' && (
+                  <div className="mt-2.5 w-full block bg-gray-50 bg-opacity-50 p-1.5 rounded-md">
+                    <input
+                      type="textarea"
+                      className="w-full h-9 px-3 py-2 border border-gray-200 rounded-md bg-white text-gray-500 text-sm block shadow-sm"
+                      disabled
+                      placeholder={question.placeholder || "Text input field"}
+                    />
+                  </div>
+                )}
+
                 {question.explanation && (
                   <div className="text-sm text-gray-500 mt-1.5 italic">
                     {question.explanation}
