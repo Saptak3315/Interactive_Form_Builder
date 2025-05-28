@@ -14,6 +14,20 @@ import {
   faClipboardList
 } from "@fortawesome/free-solid-svg-icons";
 
+const getValidationPattern = (validationType?: string, customPattern?: string): string | null => {
+  const patterns: Record<string, string> = {
+    email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+    url: "^https?:\\/\\/(?:[\\w-]+\\.)+[a-zA-Z]{2,}(?::\\d+)?(?:\\/[\\w\\-._~:/?#[\\]@!$&'()*+,;=%]*)?$",
+    phone: "^\\+?[1-9]\\d{0,14}$",
+    number: "^\\d+$",
+    alphanumeric: "^[a-zA-Z0-9]+$"
+  };
+  
+  if (validationType && patterns[validationType]) {
+    return patterns[validationType];
+  }
+  return customPattern || null;
+};
 const FullFormPreview: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useFormContext();
@@ -82,29 +96,32 @@ const FullFormPreview: React.FC = () => {
     if (question.minLength && stringValue.length < question.minLength) {
       return { 
         isValid: false, 
-        error: question.errorMessageForLength || `Minimum ${question.minLength} characters required` 
+        error: question.errorMessageForMinLength || `Minimum ${question.minLength} characters required` 
       };
     }
     
     if (question.maxLength && stringValue.length > question.maxLength) {
       return { 
         isValid: false, 
-        error: question.errorMessageForLength || `Maximum ${question.maxLength} characters allowed` 
+        error: question.errorMessageForMaxLength || `Maximum ${question.maxLength} characters allowed` 
       };
     }
   
-    if (question.validationType && question.validationType !== 'none' && question.validationPattern) {
-      try {
-        const regex = new RegExp(question.validationPattern);
-        if (!regex.test(stringValue)) {
-          return { 
-            isValid: false, 
-            error: question.errorMessageForPattern || 'Invalid format' 
-          };
+    if (question.validationType && question.validationType !== 'none') {
+      const pattern = getValidationPattern(question.validationType, question.validationPattern);
+      if (pattern) {
+        try {
+          const regex = new RegExp(pattern);
+          if (!regex.test(stringValue)) {
+            return { 
+              isValid: false, 
+              error: question.errorMessageForPattern || `Invalid ${question.validationType} format` 
+            };
+          }
+        } catch (e) {
+          console.error('Invalid regex pattern:', e);
+          return { isValid: false, error: 'Invalid validation pattern configured' };
         }
-      } catch (e) {
-        console.error('Invalid regex pattern:', e);
-        return { isValid: false, error: 'Invalid validation pattern configured' };
       }
     }
     
