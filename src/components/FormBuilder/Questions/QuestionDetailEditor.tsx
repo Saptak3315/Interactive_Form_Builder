@@ -204,6 +204,10 @@ const QuestionDetailEditor: React.FC = () => {
 
   const questionTypeOptions = [
     { value: "text", label: "Short Text" },
+    {value:'email',label:"Email"},
+    {value:'name',label:"Full Name"},
+    {value:'address',label:"Address"},
+    {value:'phone',label:"Phone"},
     { value: "textarea", label: "Long Text" },
     { value: "number", label: "Number" },
     { value: "multiple_choice", label: "Multiple Choice" },
@@ -475,12 +479,26 @@ const QuestionDetailEditor: React.FC = () => {
               
                <div className="mb-5">
                   <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
-                    Error Message 
+                    Error Message For Minimum Length
                   </label>
                   <textarea
                     id="question-content"
-                    value={localQuestion.errorMessageForLength || ""}
-                    onChange={(e) => handleFieldChange("errorMessageForLength", e.target.value)}
+                    value={localQuestion.errorMessageForMinLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForMinLength", e.target.value)}
+                    placeholder="Your Result should be between Min and Max Legth"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="mb-5">
+                  <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message For Max Length
+                  </label>
+                  <textarea
+                    id="question-content"
+                    value={localQuestion.errorMessageForMaxLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForMaxLength", e.target.value)}
                     placeholder="Your Result should be between Min and Max Legth"
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                     rows={3}

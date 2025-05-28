@@ -19,6 +19,10 @@ const FormSidebar = () => {
   const navigate = useNavigate();
 
   const questionTypes: QuestionTypeOption[] = [
+    { type: 'text', label: 'Full Name', icon: '👤', description: 'Person\'s full name', category: 'Basic' },
+    { type: 'textarea', label: 'Address', icon: '🏠', description: 'Street address or location', category: 'Basic' },
+    { type: 'text', label: 'Email', icon: '📧', description: 'Email address', category: 'Basic' },
+    { type: 'text', label: 'Phone', icon: '📞', description: 'Phone number', category: 'Basic' },
     { type: 'text', label: 'Short Text', icon: '📝', description: 'Single line text input', category: 'Basic' },
     { type: 'textarea', label: 'Long Text', icon: '📄', description: 'Multi-line text input', category: 'Basic' },
     { type: 'number', label: 'Number', icon: '🔢', description: 'Numeric input', category: 'Basic' },
@@ -63,7 +67,7 @@ const FormSidebar = () => {
         }
       }
     }
-    
+
     clearCurrentForm();
     Swal.fire('New form created! Start building...');
   };
@@ -79,18 +83,18 @@ const FormSidebar = () => {
         return;
       }
     }
-    
+
     // Check if form has content
     if (state.questions.length === 0) {
       Swal.fire('Please add at least one question before publishing.');
       return;
     }
-    
+
     if (!state.title.trim()) {
       Swal.fire('Please add a title to your form before publishing.');
       return;
     }
-    
+
     // Navigate to publish page
     navigate('/publish-form');
   };
@@ -100,7 +104,7 @@ const FormSidebar = () => {
       Swal.fire('Please add some questions to preview the form.');
       return;
     }
-    
+
     // Save current form state before navigating to preview
     if (!state.isFormSaved) {
       try {
@@ -110,7 +114,7 @@ const FormSidebar = () => {
         // Continue to preview even if save fails
       }
     }
-    
+
     // Navigate to full preview page
     navigate('/form-preview');
   };
@@ -130,7 +134,7 @@ const FormSidebar = () => {
         }
       }
     }
-    
+
     navigate('/');
   };
 
@@ -176,44 +180,43 @@ const FormSidebar = () => {
           Form Actions
         </h3>
         <div className="flex flex-col gap-3">
-          <button 
+          <button
             className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-green-500 hover:text-white hover:border-green-500"
             onClick={handleSaveForm}
           >
             <span className="text-base">💾</span>
             Save Form
           </button>
-          
-          <button 
+
+          <button
             className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-indigo-500 hover:text-white hover:border-indigo-500"
             onClick={handleNewForm}
           >
             <span className="text-base">📝</span>
             New Form
           </button>
-          
-          <button 
+
+          <button
             className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-blue-500 hover:text-white hover:border-blue-500"
             onClick={handlePreviewForm}
           >
             <span className="text-base">👁️</span>
             Full Preview
           </button>
-          
-          <button 
-            className={`flex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer font-medium transition-all duration-200 text-left ${
-              state.questions.length > 0 && state.title.trim()
+
+          <button
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer font-medium transition-all duration-200 text-left ${state.questions.length > 0 && state.title.trim()
                 ? 'border-slate-300 bg-white hover:bg-purple-500 hover:text-white hover:border-purple-500'
                 : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-            }`}
+              }`}
             onClick={handlePublishForm}
             disabled={state.questions.length === 0 || !state.title.trim()}
           >
             <span className="text-base">🚀</span>
             Publish Form
           </button>
-          
-          <button 
+
+          <button
             className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-gray-500 hover:text-white hover:border-gray-500"
             onClick={handleBackToDashboard}
           >
@@ -242,7 +245,7 @@ const FormSidebar = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
             <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
               📊
@@ -256,7 +259,7 @@ const FormSidebar = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
             <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
               {state.isFormSaved ? '✅' : '⏳'}

@@ -8,14 +8,14 @@ interface TextQuestionPreviewProps {
   value?: string;
 }
 
-const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({ 
-  question, 
+const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
+  question,
   onChange,
   value = ''
 }) => {
   const [inputValue, setInputValue] = useState(value);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Helper function to get file type from media type
   const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
     if (!mediaType) return 'unknown';
@@ -40,7 +40,7 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
             className="max-w-full h-40 object-cover rounded border"
           />
         )}
-        
+
         {fileType === 'video' && (
           <video
             src={question.mediaUrl}
@@ -50,7 +50,7 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
             Your browser does not support video playback.
           </video>
         )}
-        
+
         {fileType === 'audio' && (
           <audio
             src={question.mediaUrl}
@@ -60,7 +60,7 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
             Your browser does not support audio playback.
           </audio>
         )}
-        
+
         {/* {fileType === 'unknown' && question.mediaUrl && (
           <div className="text-sm text-slate-500 italic">
             📎 Media file attached
@@ -69,22 +69,23 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
       </div>
     );
   };
-  
-  const getValidationPattern = (validationType?: string): string | null => {
-    const patterns: Record<string, string> = {
-      email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
-      url: "^https?:\\/\\/(?:[-\\w.])+(?:\\:[0-9]+)?(?:\\/(?:[\\w\\/_.])*(?:\\?(?:[\\w&=%.])*)?(?:\\#(?:[\\w.])*)?)?$",
-      phone: "^[\\+]?[1-9][\\d]{0,15}$",
-      number: "^\\d+$",
-      alphanumeric: "^[a-zA-Z0-9]+$",
-    };
 
-    if (validationType && patterns[validationType]) {
-      return patterns[validationType];
-    }
-    
-    return question.validationPattern || null;
+  const getValidationPattern = (validationType?: string, customPattern?: string): string | null => {
+  const patterns: Record<string, string> = {
+    email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+    url: "^https?:\\/\\/(?:[\\w-]+\\.)+[a-zA-Z]{2,}(?::\\d+)?(?:\\/[\\w\\-._~:/?#[\\]@!$&'()*+,;=%]*)?$",
+    phone: "^\\+?[1-9]\\d{0,14}$",
+    number: "^\\d+$",
+    alphanumeric: "^[a-zA-Z0-9]+$"
   };
+  
+  if (validationType && patterns[validationType]) {
+    return patterns[validationType];
+  }
+  
+  return customPattern || null;
+};
+
 
   const getValidationMessage = (validationType?: string): string => {
     const messages: Record<string, string> = {
@@ -97,23 +98,23 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
 
     return messages[validationType || ''] || "Input does not match the required format";
   };
-  
+
   const validateInput = (value: string): boolean => {
     if (question.isRequired && !value.trim()) {
       setError('This field is required');
       return false;
     }
-    
+
     if (question.minLength && value.length < question.minLength) {
       setError(`Minimum length is ${question.minLength} characters`);
       return false;
     }
-    
+
     if (question.maxLength && value.length > question.maxLength) {
       setError(`Maximum length is ${question.maxLength} characters`);
       return false;
     }
-    
+
     // Use validation type or custom pattern
     const pattern = getValidationPattern(question.validationType);
     if (pattern && value) {
@@ -129,15 +130,15 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
         return false;
       }
     }
-    
+
     setError(null);
     return true;
   };
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
-    
+
     const isValid = validateInput(newValue);
     if (onChange) {
       onChange(newValue, isValid);
@@ -158,20 +159,20 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
         return 'text';
     }
   };
-  
+
   return (
     <div className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
       <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
         {question.content}
         {question.isRequired && <span className="text-red-500 ml-1">*</span>}
       </label>
-      
+
       {question.explanation && (
         <p className="text-xs text-slate-500 italic mb-2 leading-relaxed">
           {question.explanation}
         </p>
       )}
-      
+
       {/* Render media if present */}
       {renderQuestionMedia()}
       <input
@@ -179,15 +180,14 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
         value={inputValue}
         onChange={handleChange}
         placeholder={question.placeholder || ''}
-        className={`w-full px-3 py-2 border rounded-md text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-          error 
-            ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500' 
+        className={`w-full px-3 py-2 border rounded-md text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${error
+            ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
             : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
-        }`}
+          }`}
         required={question.isRequired}
         maxLength={question.maxLength}
       />
-      
+
       {/* Validation hint */}
       {question.validationType && question.validationType !== 'none' && !error && (
         <div className="text-xs text-slate-500 mt-1">
@@ -198,7 +198,7 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
           {question.validationType === 'alphanumeric' && 'Letters and numbers only'}
         </div>
       )}
-      
+
       {/* Character count indicator */}
       {(question.minLength || question.maxLength) && (
         <div className="flex justify-between items-center mt-1">
@@ -212,19 +212,18 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
             )}
           </div>
           {question.maxLength && (
-            <div className={`text-xs font-medium ${
-              inputValue.length > question.maxLength 
-                ? 'text-red-500' 
-                : inputValue.length > question.maxLength * 0.8 
-                  ? 'text-orange-500' 
+            <div className={`text-xs font-medium ${inputValue.length > question.maxLength
+                ? 'text-red-500'
+                : inputValue.length > question.maxLength * 0.8
+                  ? 'text-orange-500'
                   : 'text-slate-400'
-            }`}>
+              }`}>
               {inputValue.length}/{question.maxLength}
             </div>
           )}
         </div>
       )}
-      
+
       {error && (
         <div className="flex items-center gap-1.5 mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
           <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -233,7 +232,7 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
           <span>{error}</span>
         </div>
       )}
-      
+
       {question.points && (
         <div className="text-xs text-slate-500 font-medium text-right mt-2">
           {question.points} points
