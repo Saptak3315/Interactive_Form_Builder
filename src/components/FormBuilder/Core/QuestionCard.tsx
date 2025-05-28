@@ -131,26 +131,13 @@ function isShallowEqual(a: any, b: any): boolean {
 }
 
 const innerStyles: { [Key in QuestionCardState['type']]?: string } = {
-  idle: 'hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md cursor-grab transition-all duration-200',
-  'is-dragging': 'opacity-40',
+  idle: 'hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md cursor-grab',
+  'is-dragging': 'opacity-40 ring-2 ring-indigo-300 cursor-grabbing',
 };
 
 const outerStyles: { [Key in QuestionCardState['type']]?: string } = {
   'is-dragging-and-left-self': 'hidden',
 };
-
-interface QuestionShadowProps {
-  dragging: DOMRect;
-}
-
-export function QuestionShadow({ dragging }: QuestionShadowProps) {
-  return (
-    <div 
-      className="flex-shrink-0 rounded-lg bg-indigo-100 border-2 border-dashed border-indigo-300 mx-0 my-2" 
-      style={{ height: Math.max(dragging.height, 80) }} 
-    />
-  );
-}
 
 interface QuestionDisplayProps {
   question: Question;
@@ -218,48 +205,57 @@ export function QuestionDisplay({
     );
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't select if clicking on action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    onSelect(question.id);
+  };
+
   return (
     <div
       ref={outerRef}
       className={`flex flex-shrink-0 flex-col ${outerStyles[state.type] || ''}`}
     >
-      {/* Shadow above if dropping at top */}
+      {/* Stable blue shadow above if dropping at top */}
       {state.type === 'is-over' && state.closestEdge === 'top' ? (
-        <QuestionShadow dragging={state.dragging} />
+        <div className="flex-shrink-0 rounded-lg bg-blue-100 border border-blue-300 mx-0 my-2" 
+             style={{ height: Math.max(state.dragging.height, 60) }}>
+        </div>
       ) : null}
       
       <div
         className={`
-          group mb-3 p-4 bg-white border-2 rounded-lg transition-all duration-200 select-none relative block w-full
+          group mb-3 p-4 bg-white border-2 rounded-lg select-none relative block w-full
           ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-gray-200'}
           ${innerStyles[state.type] || ''}
         `}
         ref={innerRef}
+        onClick={handleCardClick}
         style={
           state.type === 'preview'
             ? {
                 width: state.dragging.width,
                 height: state.dragging.height,
                 transform: !isSafari() ? 'rotate(2deg)' : undefined,
-                boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)',
               }
             : undefined
         }
       >
-        <div onClick={() => onSelect(question.id)} className="cursor-pointer">
+        <div className="pointer-events-none">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
-              <span className="text-gray-400 text-sm cursor-grab p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                ⋮⋮
-              </span>
+              {/* No drag handler icon - entire card is draggable */}
               <span className="font-semibold text-indigo-500 text-base">{index + 1}.</span>
               <span className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-500 uppercase font-medium tracking-wide">
                 {question.type}
               </span>
             </div>
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 pointer-events-auto">
               <button
-                className="w-8 h-8 border-none rounded-md cursor-pointer transition-all duration-200 flex items-center justify-center text-sm bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+                className="w-8 h-8 border-none rounded-md cursor-pointer flex items-center justify-center text-sm bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:scale-110"
                 onClick={(e) => {
                   e.stopPropagation();
                   Swal.fire('Duplicate functionality coming soon!');
@@ -269,7 +265,7 @@ export function QuestionDisplay({
                 📋
               </button>
               <button
-                className="w-8 h-8 border-none rounded-md cursor-pointer transition-all duration-200 flex items-center justify-center text-sm bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
+                className="w-8 h-8 border-none rounded-md cursor-pointer flex items-center justify-center text-sm bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 hover:scale-110"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(question.id, question.content);
@@ -342,9 +338,11 @@ export function QuestionDisplay({
         </div>
       </div>
       
-      {/* Shadow below if dropping at bottom */}
+      {/* Stable blue shadow below if dropping at bottom */}
       {state.type === 'is-over' && state.closestEdge === 'bottom' ? (
-        <QuestionShadow dragging={state.dragging} />
+        <div className="flex-shrink-0 rounded-lg bg-blue-100 border border-blue-300 mx-0 my-2" 
+             style={{ height: Math.max(state.dragging.height, 60) }}>
+        </div>
       ) : null}
     </div>
   );
@@ -366,11 +364,12 @@ export function QuestionCard({ question, index, isActive, onSelect, onDelete }: 
   useEffect(() => {
     const outer = outerRef.current;
     const inner = innerRef.current;
+    
     invariant(outer && inner);
 
     return combine(
       draggable({
-        element: inner,
+        element: inner, // Entire card is draggable
         getInitialData: ({ element }) =>
           getQuestionCardData({ question, rect: element.getBoundingClientRect() }),
         onGenerateDragPreview({ nativeSetDragImage, location, source }) {
