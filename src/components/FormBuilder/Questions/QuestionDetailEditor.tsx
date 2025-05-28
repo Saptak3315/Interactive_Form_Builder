@@ -204,10 +204,10 @@ const QuestionDetailEditor: React.FC = () => {
 
   const questionTypeOptions = [
     { value: "text", label: "Short Text" },
-    {value:'email',label:"Email"},
-    {value:'name',label:"Full Name"},
-    {value:'address',label:"Address"},
-    {value:'phone',label:"Phone"},
+    { value: 'email', label: "Email" },
+    { value: 'name', label: "Full Name" },
+    { value: 'address', label: "Address" },
+    { value: 'phone', label: "Phone" },
     { value: "textarea", label: "Long Text" },
     { value: "number", label: "Number" },
     { value: "multiple_choice", label: "Multiple Choice" },
@@ -246,7 +246,7 @@ const QuestionDetailEditor: React.FC = () => {
 
       <div className="flex-1 p-5 overflow-y-auto">
         {/* Question Type */}
-       
+
 
         {/* Question Content */}
         <div className="mb-5">
@@ -460,8 +460,9 @@ const QuestionDetailEditor: React.FC = () => {
                   min="0"
                 />
               </div>
-              
-               <div className="mb-5">
+
+              {typeof localQuestion.minLength === "number" && localQuestion.minLength > 0 && (
+                <div className="mb-5">
                   <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
                     Error Message For Minimum Length
                   </label>
@@ -469,25 +470,28 @@ const QuestionDetailEditor: React.FC = () => {
                     id="question-content"
                     value={localQuestion.errorMessageForMinLength || ""}
                     onChange={(e) => handleFieldChange("errorMessageForMinLength", e.target.value)}
-                    placeholder="Your Result should be between Min and Max Legth"
+                    placeholder="Your result should be between Min and Max Length"
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                     rows={3}
                   />
                 </div>
+              )}
 
+              {typeof localQuestion.maxLength === "number" && localQuestion.maxLength > 0 && (
                 <div className="mb-5">
                   <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
-                    Error Message For Max Length
+                    Error Message For Maximum Length
                   </label>
                   <textarea
                     id="question-content"
                     value={localQuestion.errorMessageForMaxLength || ""}
-                    onChange={(e) => handleFieldChange("errorMessageForMaxLength", e.target.value)}
-                    placeholder="Your Result should be between Min and Max Legth"
+                    onChange={(e) => handleFieldChange("errorMessageForMinLength", e.target.value)}
+                    placeholder="Your Result should be between Min and Max Length"
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                     rows={3}
                   />
                 </div>
+              )}
               {/* VALIDATION DROPDOWN */}
               <div>
                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Type</label>
@@ -502,7 +506,7 @@ const QuestionDetailEditor: React.FC = () => {
                       email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
                       url: "/^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?::\d+)?(\/[^\s]*)?(#[^\s]*)?$/",
                       number: "^\d+$",
-                      alphanumeric:"^[a-zA-Z0-9]+$"
+                      alphanumeric: "^[a-zA-Z0-9]+$"
                     };
 
                     if (selectedType in patterns) {
@@ -540,20 +544,20 @@ const QuestionDetailEditor: React.FC = () => {
                     />
                   </div>
                 )}
-               
-               <div className="mb-5">
-                  <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
-                    Error Message For Wrong Pattern
-                  </label>
-                  <textarea
-                    id="question-content"
-                    value={localQuestion.errorMessageForPattern || ""}
-                    onChange={(e) => handleFieldChange("errorMessageForPattern", e.target.value)}
-                    placeholder="Please answer according to the type"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-                    rows={3}
-                  />
-                </div>
+
+              <div className="mb-5">
+                <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+                  Error Message For Wrong Pattern
+                </label>
+                <textarea
+                  id="question-content"
+                  value={localQuestion.errorMessageForPattern || ""}
+                  onChange={(e) => handleFieldChange("errorMessageForPattern", e.target.value)}
+                  placeholder="Please answer according to the type"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  rows={3}
+                />
+              </div>
             </div>
           </div>
         )}
