@@ -246,23 +246,7 @@ const QuestionDetailEditor: React.FC = () => {
 
       <div className="flex-1 p-5 overflow-y-auto">
         {/* Question Type */}
-        <div className="mb-5">
-          <label htmlFor="question-type" className="block mb-1.5 text-sm font-medium text-gray-700">
-            Field Type
-          </label>
-          <select
-            id="question-type"
-            value={localQuestion.type || ""}
-            onChange={(e) => handleFieldChange("type", e.target.value)}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-          >
-            {questionTypeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+       
 
         {/* Question Content */}
         <div className="mb-5">
@@ -516,8 +500,7 @@ const QuestionDetailEditor: React.FC = () => {
                     // Auto-set regex patterns
                     const patterns: Record<string, string> = {
                       email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-                      url: "^(https?:\/\/)?(www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$",
-                      phone: "^(\+?\d{1,4}[\s-]?)?(\d{10,14})$",
+                      url: "/^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?::\d+)?(\/[^\s]*)?(#[^\s]*)?$/",
                       number: "^\d+$",
                       alphanumeric:"^[a-zA-Z0-9]+$"
                     };
