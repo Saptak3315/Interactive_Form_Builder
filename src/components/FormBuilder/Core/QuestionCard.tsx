@@ -132,12 +132,29 @@ function isShallowEqual(a: any, b: any): boolean {
 
 const innerStyles: { [Key in QuestionCardState['type']]?: string } = {
   idle: 'hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md cursor-grab',
-  'is-dragging': 'opacity-40 ring-2 ring-indigo-300 cursor-grabbing',
+  'is-dragging': 'opacity-50 ring-2 ring-indigo-300 cursor-grabbing',
 };
 
 const outerStyles: { [Key in QuestionCardState['type']]?: string } = {
   'is-dragging-and-left-self': 'hidden',
 };
+
+// Improved shadow component with stable sizing
+export function QuestionCardShadow({ dragging }: { dragging: DOMRect }) {
+  return (
+    <div 
+      className="flex-shrink-0 rounded-lg bg-blue-100 border-2 border-dashed border-blue-300 mx-0 my-2 transition-all duration-150" 
+      style={{ 
+        height: Math.max(dragging.height, 80), // Minimum height to prevent layout shifts
+        minHeight: '80px'
+      }}
+    >
+      <div className="flex items-center justify-center h-full text-blue-500 font-medium text-sm">
+        Drop here
+      </div>
+    </div>
+  );
+}
 
 interface QuestionDisplayProps {
   question: Question;
@@ -218,16 +235,14 @@ export function QuestionDisplay({
       ref={outerRef}
       className={`flex flex-shrink-0 flex-col ${outerStyles[state.type] || ''}`}
     >
-      {/* Stable blue shadow above if dropping at top */}
+      {/* Stable shadow above if dropping at top */}
       {state.type === 'is-over' && state.closestEdge === 'top' ? (
-        <div className="flex-shrink-0 rounded-lg bg-blue-100 border border-blue-300 mx-0 my-2" 
-             style={{ height: Math.max(state.dragging.height, 60) }}>
-        </div>
+        <QuestionCardShadow dragging={state.dragging} />
       ) : null}
       
       <div
         className={`
-          group mb-3 p-4 bg-white border-2 rounded-lg select-none relative block w-full
+          group mb-3 p-4 bg-white border-2 rounded-lg select-none relative block w-full transition-all duration-200
           ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-gray-200'}
           ${innerStyles[state.type] || ''}
         `}
@@ -238,7 +253,7 @@ export function QuestionDisplay({
             ? {
                 width: state.dragging.width,
                 height: state.dragging.height,
-                transform: !isSafari() ? 'rotate(2deg)' : undefined,
+                transform: !isSafari() ? 'rotate(1deg)' : undefined,
                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)',
               }
             : undefined
@@ -247,15 +262,14 @@ export function QuestionDisplay({
         <div className="pointer-events-none">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
-              {/* No drag handler icon - entire card is draggable */}
               <span className="font-semibold text-indigo-500 text-base">{index + 1}.</span>
               <span className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-500 uppercase font-medium tracking-wide">
                 {question.type}
               </span>
             </div>
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 pointer-events-auto">
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 pointer-events-auto transition-opacity duration-200">
               <button
-                className="w-8 h-8 border-none rounded-md cursor-pointer flex items-center justify-center text-sm bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:scale-110"
+                className="w-8 h-8 border-none rounded-md cursor-pointer flex items-center justify-center text-sm bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:scale-110 transition-all duration-150"
                 onClick={(e) => {
                   e.stopPropagation();
                   Swal.fire('Duplicate functionality coming soon!');
@@ -265,7 +279,7 @@ export function QuestionDisplay({
                 📋
               </button>
               <button
-                className="w-8 h-8 border-none rounded-md cursor-pointer flex items-center justify-center text-sm bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 hover:scale-110"
+                className="w-8 h-8 border-none rounded-md cursor-pointer flex items-center justify-center text-sm bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 hover:scale-110 transition-all duration-150"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(question.id, question.content);
@@ -338,11 +352,9 @@ export function QuestionDisplay({
         </div>
       </div>
       
-      {/* Stable blue shadow below if dropping at bottom */}
+      {/* Stable shadow below if dropping at bottom */}
       {state.type === 'is-over' && state.closestEdge === 'bottom' ? (
-        <div className="flex-shrink-0 rounded-lg bg-blue-100 border border-blue-300 mx-0 my-2" 
-             style={{ height: Math.max(state.dragging.height, 60) }}>
-        </div>
+        <QuestionCardShadow dragging={state.dragging} />
       ) : null}
     </div>
   );
@@ -369,7 +381,7 @@ export function QuestionCard({ question, index, isActive, onSelect, onDelete }: 
 
     return combine(
       draggable({
-        element: inner, // Entire card is draggable
+        element: inner,
         getInitialData: ({ element }) =>
           getQuestionCardData({ question, rect: element.getBoundingClientRect() }),
         onGenerateDragPreview({ nativeSetDragImage, location, source }) {
@@ -397,13 +409,13 @@ export function QuestionCard({ question, index, isActive, onSelect, onDelete }: 
       dropTargetForElements({
         element: outer,
         getIsSticky: () => true,
-        canDrop: isDraggingAQuestion,
+        canDrop: ({ source }) => isQuestionCardData(source.data), // Only accept question reordering
         getData: ({ element, input }) => {
           const data = getQuestionDropTargetData({ question });
           return attachClosestEdge(data, { element, input, allowedEdges: ['top', 'bottom'] });
         },
         onDragEnter({ source, self }) {
-          // Handle question reordering
+          // Only handle question reordering, not new question type drops
           if (isQuestionCardData(source.data)) {
             if (source.data.question.id === question.id) return;
             
@@ -412,16 +424,10 @@ export function QuestionCard({ question, index, isActive, onSelect, onDelete }: 
 
             setState({ type: 'is-over', dragging: source.data.rect, closestEdge });
           }
-          // Handle new question type drop
-          else if (isNewQuestionTypeData(source.data)) {
-            const closestEdge = extractClosestEdge(self.data);
-            if (!closestEdge) return;
-
-            setState({ type: 'is-over', dragging: source.data.rect, closestEdge });
-          }
+          // Remove new question type handling to prevent conflicts with main drop zone
         },
         onDrag({ source, self }) {
-          // Handle question reordering
+          // Only handle question reordering, not new question type drops
           if (isQuestionCardData(source.data)) {
             if (source.data.question.id === question.id) return;
             
@@ -434,17 +440,7 @@ export function QuestionCard({ question, index, isActive, onSelect, onDelete }: 
               return proposed;
             });
           }
-          // Handle new question type drop
-          else if (isNewQuestionTypeData(source.data)) {
-            const closestEdge = extractClosestEdge(self.data);
-            if (!closestEdge) return;
-            
-            const proposed: QuestionCardState = { type: 'is-over', dragging: source.data.rect, closestEdge };
-            setState((current) => {
-              if (isShallowEqual(proposed, current)) return current;
-              return proposed;
-            });
-          }
+          // Remove new question type handling to prevent conflicts with main drop zone
         },
         onDragLeave({ source }) {
           if (isQuestionCardData(source.data)) {

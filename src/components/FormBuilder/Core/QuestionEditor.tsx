@@ -1,6 +1,6 @@
 // src/components/FormBuilder/Core/QuestionEditor.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 import {
   addQuestion,
@@ -22,7 +22,6 @@ import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/ad
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
 import Swal from 'sweetalert2';
-import { useRef } from 'react';
 
 const QuestionEditor: React.FC = () => {
   const { state, dispatch } = useFormContext();
@@ -32,9 +31,11 @@ const QuestionEditor: React.FC = () => {
   const lastDropTimeRef = useRef<number>(0);
   const processingDropRef = useRef<boolean>(false);
 
-  // Visual feedback states
-  const [isDragActive, setIsDragActive] = useState(false);
-  const [dropZoneActive, setDropZoneActive] = useState(false);
+  // Simplified drag state management
+  const [dragState, setDragState] = useState({
+    isDragActive: false,
+    dragType: null as 'question' | 'new-question' | null,
+  });
   const [recentlyAddedQuestionId, setRecentlyAddedQuestionId] = useState<number | null>(null);
 
   // Debounced add question function to prevent duplicates
@@ -93,7 +94,7 @@ const QuestionEditor: React.FC = () => {
     setForceUpdate(prev => prev + 1);
   }, [state.questions]);
 
-  // Fast and responsive auto-scroll configuration
+  // Improved auto-scroll configuration for better UX
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer) return;
@@ -103,53 +104,64 @@ const QuestionEditor: React.FC = () => {
       canScroll: ({ source }) => isDraggingAQuestion({ source }),
       getAllowedAxis: () => 'vertical',
       getConfiguration: () => ({
-        // Large hit zones for easy triggering
+        // More conservative hit zones for better control
         startHitbox: { 
-          top: 0.25,    // 25% from top - very responsive
-          bottom: 0.25, // 25% from bottom - very responsive
+          top: 0.15,    // 15% from top - less aggressive
+          bottom: 0.15, // 15% from bottom - less aggressive
           left: 0, 
           right: 0 
         },
-        // Very fast scrolling for better UX
-        maxScrollSpeed: 'fast',
-        // Quick acceleration
-        accelerationPlateauAt: 200,
+        // Medium scroll speed for smooth experience
+        maxScrollSpeed: 'standard',
+        // Smooth acceleration
+        accelerationPlateauAt: 500,
       }),
     });
   }, []);
 
-  // Global drag state monitoring for visual feedback
+  // Simplified global drag state monitoring
   useEffect(() => {
     return monitorForElements({
       canMonitor: isDraggingAQuestion,
-      onDragStart() {
-        setIsDragActive(true);
+      onDragStart({ source }) {
+        const dragType = isQuestionCardData(source.data) ? 'question' : 'new-question';
+        setDragState({
+          isDragActive: true,
+          dragType,
+        });
       },
       onDrop() {
-        setIsDragActive(false);
-        setDropZoneActive(false);
+        setDragState({
+          isDragActive: false,
+          dragType: null,
+        });
       },
     });
   }, []);
 
-  // Monitor for drag and drop operations
+  // Monitor for drag and drop operations with better target filtering
   useEffect(() => {
     return monitorForElements({
       canMonitor: isDraggingAQuestion,
       onDrop({ source, location }) {
         const dragging = source.data;
         
-        // Handle new question type drops
+        // Handle new question type drops - only process if there's a clear drop zone target
         if (isNewQuestionTypeData(dragging)) {
           console.log('Monitor: Dropping new question type:', dragging.questionType);
           
-          // Prevent multiple drops by checking if there's a valid drop target
-          if (location.current.dropTargets.length === 0) {
-            console.log('Monitor: No valid drop targets, ignoring drop');
+          // Check if dropped specifically on the main drop zone
+          const isDropZoneDrop = location.current.dropTargets.some(target => 
+            target.element === dropZoneRef.current
+          );
+          
+          if (isDropZoneDrop) {
+            console.log('Monitor: Dropping in main drop zone');
+            debouncedAddQuestion(dragging.questionType);
             return;
           }
           
-          // Check if dropped on an existing question
+          // Check if dropped between questions for insertion
           const targetDropData = location.current.dropTargets.find(target => 
             isQuestionDropTargetData(target.data)
           );
@@ -166,23 +178,12 @@ const QuestionEditor: React.FC = () => {
             }
             
             debouncedAddQuestion(dragging.questionType, insertIndex);
-            return; // Early return to prevent further processing
-          }
-          
-          // Only process drop zone drops if no question target was found
-          const isDropZoneDrop = location.current.dropTargets.some(target => 
-            target.element === dropZoneRef.current
-          );
-          
-          if (isDropZoneDrop) {
-            console.log('Monitor: Dropping in drop zone');
-            debouncedAddQuestion(dragging.questionType);
           }
           
           return;
         }
         
-        // Handle question reordering
+        // Handle question reordering - only for existing questions
         if (isQuestionCardData(dragging)) {
           const innerMost = location.current.dropTargets[0];
           if (!innerMost) return;
@@ -217,7 +218,7 @@ const QuestionEditor: React.FC = () => {
     });
   }, [state.questions, dispatch, debouncedAddQuestion]);
 
-  // Set up drop zone for empty area with visual feedback
+  // Simplified drop zone setup without hover state tracking
   useEffect(() => {
     const dropZone = dropZoneRef.current;
     if (!dropZone) return;
@@ -225,14 +226,10 @@ const QuestionEditor: React.FC = () => {
     return dropTargetForElements({
       element: dropZone,
       canDrop: ({ source }) => isNewQuestionTypeData(source.data),
-      onDragEnter: () => {
-        setDropZoneActive(true);
-      },
-      onDragLeave: () => {
-        setDropZoneActive(false);
-      },
+      getData: () => ({ dropZone: true }),
+      // Remove onDragEnter and onDragLeave to prevent flickering
+      // We'll rely on the global drag state instead
       onDrop({ source }) {
-        setDropZoneActive(false);
         if (isNewQuestionTypeData(source.data)) {
           console.log('DropZone: Dropping new question type in empty area:', source.data.questionType);
           debouncedAddQuestion(source.data.questionType);
@@ -304,11 +301,9 @@ const QuestionEditor: React.FC = () => {
       <div 
         ref={dropZoneRef}
         className={`
-          flex items-center justify-center h-full border-2 border-dashed rounded-xl
-          ${isDragActive 
-            ? dropZoneActive 
-              ? 'bg-blue-50 border-blue-300' 
-              : 'bg-gray-50 border-gray-300'
+          flex items-center justify-center h-full border-2 border-dashed rounded-xl transition-all duration-200
+          ${dragState.isDragActive && dragState.dragType === 'new-question'
+            ? 'bg-blue-50 border-blue-300' 
             : 'bg-gray-50 hover:bg-blue-50 hover:border-blue-300 border-gray-300'
           }
         `}
@@ -317,22 +312,25 @@ const QuestionEditor: React.FC = () => {
         <div className="text-center text-slate-600 p-10">
           <div className="text-5xl mb-4">📝</div>
           <h3 className="mb-2 text-slate-800 text-xl font-semibold">
-            {isDragActive && dropZoneActive ? 'Drop here to add question!' : 'Start building your form'}
+            {dragState.isDragActive && dragState.dragType === 'new-question' 
+              ? 'Drop here to add question!' 
+              : 'Start building your form'
+            }
           </h3>
           <p className="mb-5 text-base">
-            {isDragActive 
+            {dragState.isDragActive && dragState.dragType === 'new-question'
               ? 'Release to add question to your form' 
               : 'Drag question types from the sidebar or click them to add'
             }
           </p>
           <div className={`
-            px-6 py-3 border border-dashed rounded-md font-medium
-            ${isDragActive && dropZoneActive
-              ? 'bg-blue-100 border-blue-300 text-blue-800'
+            px-6 py-3 border border-dashed rounded-md font-medium transition-all duration-200
+            ${dragState.isDragActive && dragState.dragType === 'new-question'
+              ? 'bg-blue-100 border-blue-400 text-blue-800'
               : 'bg-blue-50 border-blue-300 text-blue-800'
             }
           `}>
-            <span>{isDragActive && dropZoneActive ? 'Drop question here' : 'Drop question types here'}</span>
+            <span>Drop question types here</span>
           </div>
         </div>
       </div>
@@ -404,29 +402,27 @@ const QuestionEditor: React.FC = () => {
         ))}
       </div>
 
-      {/* Stable Drop Zone for Adding Questions at End */}
+      {/* Simplified Drop Zone for Adding Questions at End */}
       <div
         ref={dropZoneRef}
         className={`
-          p-6 border-2 border-dashed rounded-lg text-center flex flex-col items-center gap-3
-          ${isDragActive 
-            ? dropZoneActive 
-              ? 'border-blue-300 bg-blue-50 text-blue-700' 
-              : 'border-gray-300 bg-gray-50 text-gray-600'
+          p-6 border-2 border-dashed rounded-lg text-center flex flex-col items-center gap-3 transition-all duration-200
+          ${dragState.isDragActive && dragState.dragType === 'new-question'
+            ? 'border-blue-300 bg-blue-50 text-blue-700' 
             : 'border-gray-300 bg-gray-50 text-gray-400 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600'
           }
         `}
         style={{ minHeight: "80px" }}
       >
         <span>
-          {isDragActive && dropZoneActive 
+          {dragState.isDragActive && dragState.dragType === 'new-question'
             ? 'Drop new question here!' 
             : 'Drop new questions here or'
           }
         </span>
-        {(!isDragActive || !dropZoneActive) && (
+        {(!dragState.isDragActive || dragState.dragType !== 'new-question') && (
           <button
-            className="px-5 py-2.5 bg-indigo-500 text-white border-none rounded-md font-medium cursor-pointer hover:bg-indigo-600 transform active:scale-95"
+            className="px-5 py-2.5 bg-indigo-500 text-white border-none rounded-md font-medium cursor-pointer hover:bg-indigo-600 transform active:scale-95 transition-all duration-150"
             onClick={handleAddQuestionClick}
           >
             + Add Question

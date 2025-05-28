@@ -48,7 +48,7 @@ function QuestionTypePreview({
       style={{
         width: rect.width,
         height: rect.height,
-        transform: !isSafari() ? 'rotate(3deg) scale(1.05)' : 'scale(1.05)',
+        transform: !isSafari() ? 'rotate(2deg) scale(1.05)' : 'scale(1.05)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
       }}
     >
@@ -187,7 +187,7 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
     // Reset click flag
     clickTimeoutRef.current = setTimeout(() => {
       setJustClicked(false);
-    }, 300); // Reduced timeout for better responsiveness
+    }, 300);
   };
 
   const isDragging = dragState.type === 'is-dragging';
@@ -199,11 +199,13 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
         className={`
           flex items-center justify-between p-3 bg-white border border-slate-200 rounded-md transition-all duration-200 select-none
           hover:border-indigo-500 hover:bg-indigo-50 hover:shadow-md group cursor-grab
-          ${isDragging ? 'opacity-40 scale-95 shadow-lg' : ''}
+          ${isDragging ? 'opacity-40 scale-95 shadow-lg border-indigo-300 bg-indigo-50' : ''}
           ${justClicked ? 'ring-2 ring-indigo-300' : ''}
         `}
         style={{
+          // Ensure smooth transitions without causing layout shifts
           transform: isDragging ? 'scale(0.95)' : '',
+          transition: 'all 0.2s ease-out',
         }}
       >
         <div 
@@ -257,7 +259,7 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
         )
       )}
 
-      {/* Click feedback animation */}
+      {/* Click feedback animation styles */}
       <style>{`
         @keyframes clickPulse {
           0% {
