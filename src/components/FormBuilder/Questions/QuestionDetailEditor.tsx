@@ -485,7 +485,7 @@ const QuestionDetailEditor: React.FC = () => {
                   <textarea
                     id="question-content"
                     value={localQuestion.errorMessageForMaxLength || ""}
-                    onChange={(e) => handleFieldChange("errorMessageForMinLength", e.target.value)}
+                    onChange={(e) => handleFieldChange("errorMessageForMaxLength", e.target.value)}
                     placeholder="Your Result should be between Min and Max Length"
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                     rows={3}
