@@ -247,7 +247,7 @@ export function QuestionDisplay({
       <div
         className={`
           group mb-3 p-4 bg-white border-2 rounded-lg select-none relative block w-full transition-all duration-200
-          ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-gray-200'}
+          ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-100 ring-2 ring-indigo-200' : 'border-gray-200'}
           ${state.type === 'is-over' ? 'ring-2 ring-blue-300 border-blue-300' : ''}
           ${innerStyles[state.type] || ''}
         `}
@@ -268,10 +268,21 @@ export function QuestionDisplay({
         <div className="pointer-events-none">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
-              <span className="font-semibold text-indigo-500 text-base">{index + 1}.</span>
-              <span className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-500 uppercase font-medium tracking-wide">
+              <span className={`font-semibold text-base ${
+                isActive ? 'text-indigo-600' : 'text-indigo-500'
+              }`}>{index + 1}.</span>
+              <span className={`text-xs px-2 py-1 rounded uppercase font-medium tracking-wide ${
+                isActive 
+                  ? 'bg-indigo-100 text-indigo-700' 
+                  : 'bg-gray-100 text-gray-500'
+              }`}>
                 {question.type}
               </span>
+              {isActive && (
+                <span className="text-xs px-2 py-1 bg-indigo-600 text-white rounded font-medium">
+                  ACTIVE
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 pointer-events-auto transition-opacity duration-200">
               <button
@@ -298,7 +309,9 @@ export function QuestionDisplay({
           </div>
           
           <div className="mb-3">
-            <div className="text-base text-gray-800 font-medium leading-6 flex items-center gap-1.5">
+            <div className={`text-base font-medium leading-6 flex items-center gap-1.5 ${
+              isActive ? 'text-indigo-800' : 'text-gray-800'
+            }`}>
               {question.content || `Question ${index + 1}`}
               {question.isRequired && <span className="text-red-600 font-semibold">*</span>}
             </div>
@@ -326,7 +339,9 @@ export function QuestionDisplay({
             )}
 
             {question.explanation && (
-              <div className="text-sm text-gray-500 mt-1.5 italic">
+              <div className={`text-sm mt-1.5 italic ${
+                isActive ? 'text-indigo-600' : 'text-gray-500'
+              }`}>
                 {question.explanation}
               </div>
             )}
@@ -356,6 +371,13 @@ export function QuestionDisplay({
             )}
           </div>
         </div>
+
+        {/* Click hint for active questions */}
+        {isActive && (
+          <div className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">
+            Click again to deselect
+          </div>
+        )}
       </div>
       
       {/* Shadow below if dropping at bottom (reordering only) */}
@@ -372,12 +394,33 @@ interface QuestionCardProps {
   isActive: boolean;
   onSelect: (id: number) => void;
   onDelete: (id: number, title: string) => void;
+  registerRef?: (questionId: number, element: HTMLDivElement | null) => void;
 }
 
-export function QuestionCard({ question, index, isActive, onSelect, onDelete }: QuestionCardProps) {
+export function QuestionCard({ 
+  question, 
+  index, 
+  isActive, 
+  onSelect, 
+  onDelete, 
+  registerRef 
+}: QuestionCardProps) {
   const outerRef = useRef<HTMLDivElement | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<QuestionCardState>(idle);
+
+  // Register ref for auto-scrolling
+  useEffect(() => {
+    if (registerRef && outerRef.current) {
+      registerRef(question.id, outerRef.current);
+    }
+    
+    return () => {
+      if (registerRef) {
+        registerRef(question.id, null);
+      }
+    };
+  }, [question.id, registerRef]);
 
   useEffect(() => {
     const outer = outerRef.current;

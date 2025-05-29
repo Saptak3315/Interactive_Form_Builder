@@ -28,25 +28,124 @@ const QuestionEditor: React.FC = () => {
   const dropZoneRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const monitorsInitialized = useRef<boolean>(false);
+  const questionRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  
+  // Track user interactions and component initialization
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [isDragInProgress, setIsDragInProgress] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const userScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActiveQuestionRef = useRef<number | null>(null);
   
   // Track drag state for better UX
   const [isNewQuestionDragActive, setIsNewQuestionDragActive] = useState(false);
   const [recentlyAddedQuestionId, setRecentlyAddedQuestionId] = useState<number | null>(null);
-  const [dragOverTarget, setDragOverTarget] = useState<{
-    questionId: number;
-    edge: 'top' | 'bottom';
-  } | null>(null);
   
   // Create a stable key that changes when form structure changes significantly
   const formStateKey = useMemo(() => {
     return `${state.formId || 'new'}-${state.questions.length}-${Date.now()}`;
   }, [state.formId, state.questions.length]);
 
-  // Enhanced add question function with better position handling
+  // Register question refs for auto-scrolling
+  const registerQuestionRef = useCallback((questionId: number, element: HTMLDivElement | null) => {
+    if (element) {
+      questionRefs.current.set(questionId, element);
+    } else {
+      questionRefs.current.delete(questionId);
+    }
+  }, []);
+
+  // Simple auto-scroll function - only for specific cases
+  const scrollToQuestion = useCallback((questionId: number) => {
+    // Don't scroll if user is currently scrolling or dragging
+    if (isUserScrolling || isDragInProgress) {
+      console.log('Auto-scroll prevented: user interaction in progress');
+      return;
+    }
+
+    const questionElement = questionRefs.current.get(questionId);
+    const scrollContainer = scrollContainerRef.current;
+    
+    if (!questionElement || !scrollContainer) {
+      console.log('Auto-scroll failed: missing elements');
+      return;
+    }
+
+    try {
+      console.log(`Auto-scrolling to question ${questionId}`);
+      questionElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      });
+    } catch (error) {
+      console.error('Error during auto-scroll:', error);
+    }
+  }, [isUserScrolling, isDragInProgress]);
+
+  // Track user scrolling to prevent auto-scroll conflicts
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      setIsUserScrolling(true);
+      
+      // Clear existing timeout
+      if (userScrollTimeoutRef.current) {
+        clearTimeout(userScrollTimeoutRef.current);
+      }
+      
+      // Reset user scrolling flag after delay
+      userScrollTimeoutRef.current = setTimeout(() => {
+        setIsUserScrolling(false);
+      }, 1000); // 1 second delay
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      if (userScrollTimeoutRef.current) {
+        clearTimeout(userScrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Auto-scroll ONLY for: 1) newly added questions, 2) after page refresh
+  useEffect(() => {
+    if (state.activeQuestionId) {
+      // Case 1: Initial load (page refresh) - scroll to existing active question
+      if (isInitialLoad) {
+        console.log('Initial load: scrolling to active question', state.activeQuestionId);
+        setTimeout(() => scrollToQuestion(state.activeQuestionId!), 300);
+        setIsInitialLoad(false);
+        lastActiveQuestionRef.current = state.activeQuestionId;
+        return;
+      }
+
+      // Case 2: New question added - scroll to newly active question
+      if (lastActiveQuestionRef.current !== state.activeQuestionId) {
+        // Check if this is a newly added question (recently added)
+        if (recentlyAddedQuestionId === state.activeQuestionId) {
+          console.log('New question added: scrolling to', state.activeQuestionId);
+          setTimeout(() => scrollToQuestion(state.activeQuestionId!), 200);
+        }
+        lastActiveQuestionRef.current = state.activeQuestionId;
+      }
+    } else {
+      // No active question
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
+      }
+      lastActiveQuestionRef.current = null;
+    }
+  }, [state.activeQuestionId, isInitialLoad, recentlyAddedQuestionId, scrollToQuestion]);
+
+  // Enhanced add question function
   const addQuestionAtPosition = useCallback((questionType: string, insertIndex?: number) => {
     console.log('Adding question:', { questionType, insertIndex, currentLength: state.questions.length });
     
-    // Get fresh state reference to avoid stale closures
     const currentQuestions = state.questions;
     const orderPosition = insertIndex !== undefined ? insertIndex : currentQuestions.length;
     const newQuestion = createDefaultQuestion(questionType as any, orderPosition);
@@ -74,8 +173,9 @@ const QuestionEditor: React.FC = () => {
       console.log('Question added at end, new length:', currentQuestions.length + 1);
     }
     
+    // Mark as recently added for auto-scroll detection
     setRecentlyAddedQuestionId(newQuestionId);
-    setTimeout(() => setRecentlyAddedQuestionId(null), 1000); // Longer animation time
+    setTimeout(() => setRecentlyAddedQuestionId(null), 1000);
   }, [dispatch, state.questions]);
 
   // Auto-scroll setup - stable reference
@@ -98,19 +198,20 @@ const QuestionEditor: React.FC = () => {
       canMonitor: isDraggingAQuestion,
       onDragStart({ source }) {
         console.log('Drag started:', source.data);
+        setIsDragInProgress(true);
+        
         if (isNewQuestionTypeData(source.data)) {
           setIsNewQuestionDragActive(true);
         }
-        setDragOverTarget(null);
       },
       onDrop({ source, location }) {
         console.log('Drop event:', { source: source.data, location });
         
         // Reset UI state first
+        setIsDragInProgress(false);
         if (isNewQuestionTypeData(source.data)) {
           setIsNewQuestionDragActive(false);
         }
-        setDragOverTarget(null);
 
         const dragging = source.data;
 
@@ -265,9 +366,20 @@ const QuestionEditor: React.FC = () => {
     });
   }, [formStateKey]);
 
+  // Question selection with toggle functionality (NO auto-scroll on manual selection)
   const handleQuestionSelect = useCallback((questionId: number) => {
-    dispatch(setActiveQuestion(questionId));
-  }, [dispatch]);
+    console.log('Question selection triggered:', questionId, 'Current active:', state.activeQuestionId);
+    
+    if (state.activeQuestionId === questionId) {
+      // Toggle off - deactivate the question
+      console.log('Toggling off active question:', questionId);
+      dispatch(setActiveQuestion(null));
+    } else {
+      // Select new question (no auto-scroll for manual selection)
+      console.log('Selecting question:', questionId);
+      dispatch(setActiveQuestion(questionId));
+    }
+  }, [dispatch, state.activeQuestionId]);
 
   const handleQuestionDelete = useCallback((questionId: number, questionTitle: string) => {
     Swal.fire({
@@ -330,9 +442,12 @@ const QuestionEditor: React.FC = () => {
       activeQuestionId: state.activeQuestionId,
       monitorsInitialized: monitorsInitialized.current,
       isNewQuestionDragActive,
-      dragOverTarget
+      isUserScrolling,
+      isDragInProgress,
+      isInitialLoad,
+      recentlyAddedQuestionId
     });
-  }, [state.formId, state.questions.length, state.activeQuestionId, isNewQuestionDragActive, dragOverTarget]);
+  }, [state.formId, state.questions.length, state.activeQuestionId, isNewQuestionDragActive, isUserScrolling, isDragInProgress, isInitialLoad, recentlyAddedQuestionId]);
 
   if (state.questions.length === 0) {
     return (
@@ -400,6 +515,7 @@ const QuestionEditor: React.FC = () => {
               isActive={state.activeQuestionId === question.id}
               onSelect={handleQuestionSelect}
               onDelete={handleQuestionDelete}
+              registerRef={registerQuestionRef}
             />
           </div>
         ))}

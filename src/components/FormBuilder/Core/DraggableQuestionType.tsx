@@ -80,6 +80,7 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
   const [dragState, setDragState] = useState<DragState>({ type: 'idle' });
   const [isDragInProgress, setIsDragInProgress] = useState(false);
   const [justClicked, setJustClicked] = useState(false);
+  const [isClickSuccess, setIsClickSuccess] = useState(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const draggableCleanupRef = useRef<(() => void) | null>(null);
@@ -95,6 +96,10 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
     const orderPosition = state.questions.length;
     const newQuestion = createDefaultQuestion(questionType as any, orderPosition);
     dispatch(addQuestion(newQuestion));
+    
+    // Show success feedback
+    setIsClickSuccess(true);
+    setTimeout(() => setIsClickSuccess(false), 800);
   }, [dispatch, isFormLoading, state.questions.length]);
 
   // Enhanced draggable setup with better data structure
@@ -240,13 +245,14 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
       <div
         ref={elementRef}
         className={`
-          flex items-center justify-between p-3 bg-white border border-slate-200 rounded-md transition-all duration-200 select-none
+          flex items-center justify-between p-3 bg-white border border-slate-200 rounded-md transition-all duration-200 select-none relative overflow-hidden
           ${isDisabled 
             ? 'opacity-50 cursor-not-allowed' 
             : 'hover:border-blue-500 hover:bg-blue-50 hover:shadow-md group cursor-grab'
           }
           ${isDragging ? 'opacity-40 scale-95 shadow-lg border-blue-300 bg-blue-50' : ''}
           ${justClicked ? 'ring-2 ring-blue-300' : ''}
+          ${isClickSuccess ? 'ring-2 ring-green-400 bg-green-50' : ''}
         `}
         style={{
           // Ensure smooth transitions without causing layout shifts
@@ -266,6 +272,7 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
             flex items-center justify-center w-8 h-8 text-xl bg-slate-100 rounded-md transition-all duration-200
             ${!isDisabled && 'group-hover:bg-blue-100'}
             ${isDragging ? 'bg-blue-200' : ''}
+            ${isClickSuccess ? 'bg-green-100' : ''}
           `}>
             {questionType.icon}
           </div>
@@ -274,6 +281,7 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
               text-sm font-semibold text-slate-800 transition-colors duration-200
               ${!isDisabled && 'group-hover:text-blue-800'}
               ${isDragging ? 'text-blue-700' : ''}
+              ${isClickSuccess ? 'text-green-700' : ''}
             `}>
               {questionType.label}
             </span>
@@ -281,22 +289,29 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
               text-xs text-slate-500 leading-tight transition-colors duration-200
               ${!isDisabled && 'group-hover:text-blue-600'}
               ${isDragging ? 'text-blue-500' : ''}
+              ${isClickSuccess ? 'text-green-600' : ''}
             `}>
               {questionType.description}
             </span>
           </div>
         </div>
         <div className={`
-          text-slate-400 font-bold text-base transition-all duration-300
+          text-slate-400 font-bold text-base transition-all duration-300 z-10
           ${isDragging 
             ? 'opacity-100 text-blue-500 animate-pulse scale-110' 
             : !isDisabled 
               ? 'opacity-0 group-hover:opacity-100 group-hover:text-blue-500'
               : 'opacity-30'
           }
+          ${isClickSuccess ? 'opacity-100 text-green-500 scale-110' : ''}
         `}>
-          {isFormLoading ? '⏳' : isDragging ? '🎯' : '➕'}
+          {isFormLoading ? '⏳' : isDragging ? '🎯' : isClickSuccess ? '✅' : '➕'}
         </div>
+
+        {/* Success animation overlay */}
+        {isClickSuccess && (
+          <div className="absolute inset-0 bg-green-100 opacity-50 animate-pulse rounded-md"></div>
+        )}
       </div>
 
       {/* Enhanced Drag Preview Portal */}
@@ -310,8 +325,23 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
         )
       )}
 
-      {/* Enhanced click feedback animation styles */}
+      {/* Enhanced animations */}
       <style>{`
+        @keyframes success-pulse {
+          0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+          }
+          50% {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+          }
+          100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+          }
+        }
+        
         @keyframes enhanced-click-pulse {
           0% {
             transform: scale(1);
@@ -325,6 +355,10 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
             transform: scale(1);
             box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
           }
+        }
+        
+        .success-animate {
+          animation: success-pulse 0.6s ease-in-out;
         }
         
         .enhanced-click-animate {
