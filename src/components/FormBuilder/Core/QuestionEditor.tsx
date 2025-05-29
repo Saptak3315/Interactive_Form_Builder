@@ -1,6 +1,6 @@
 // src/components/FormBuilder/Core/QuestionEditor.tsx
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 import {
   addQuestion,
@@ -27,19 +27,27 @@ const QuestionEditor: React.FC = () => {
   const { state, dispatch } = useFormContext();
   const dropZoneRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const monitorsInitialized = useRef<boolean>(false);
   
-  // FIXED: Only track new question drops - no reorder state
+  // Track drag state
   const [isNewQuestionDragActive, setIsNewQuestionDragActive] = useState(false);
   const [recentlyAddedQuestionId, setRecentlyAddedQuestionId] = useState<number | null>(null);
+  
+  // Create a stable key that changes when form structure changes significantly
+  const formStateKey = useMemo(() => {
+    return `${state.formId || 'new'}-${state.questions.length}-${Date.now()}`;
+  }, [state.formId, state.questions.length]);
 
-  // Debounced add question
+  // Debounced add question with better state management
   const addQuestionDebounced = useCallback((questionType: string, insertIndex?: number) => {
-    const orderPosition = insertIndex !== undefined ? insertIndex : state.questions.length;
+    // Get fresh state reference
+    const currentQuestions = state.questions;
+    const orderPosition = insertIndex !== undefined ? insertIndex : currentQuestions.length;
     const newQuestion = createDefaultQuestion(questionType as any, orderPosition);
     const newQuestionId = Math.floor(Math.random() * 100000);
     
     if (insertIndex !== undefined) {
-      const newQuestions = [...state.questions];
+      const newQuestions = [...currentQuestions];
       const questionWithId = { ...newQuestion, id: newQuestionId };
       newQuestions.splice(insertIndex, 0, questionWithId);
       
@@ -57,9 +65,9 @@ const QuestionEditor: React.FC = () => {
     
     setRecentlyAddedQuestionId(newQuestionId);
     setTimeout(() => setRecentlyAddedQuestionId(null), 500);
-  }, [state.questions, dispatch]);
+  }, [dispatch]); // Removed state.questions dependency to avoid stale closures
 
-  // Auto-scroll setup
+  // Auto-scroll setup - stable reference
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer) return;
@@ -69,19 +77,23 @@ const QuestionEditor: React.FC = () => {
       canScroll: ({ source }) => isDraggingAQuestion({ source }),
       getAllowedAxis: () => 'vertical',
     });
-  }, []);
+  }, [formStateKey]); // Re-establish when form changes
 
-  // FIXED: Single monitor like SingleColumnBoard.tsx pattern
+  // Main drag monitor with fresh state access
   useEffect(() => {
-    return monitorForElements({
+    console.log('Setting up drag monitors for form:', state.formId, 'questions:', state.questions.length);
+    
+    const cleanup = monitorForElements({
       canMonitor: isDraggingAQuestion,
       onDragStart({ source }) {
-        // Only track new questions for UI state
+        console.log('Drag started:', source.data);
         if (isNewQuestionTypeData(source.data)) {
           setIsNewQuestionDragActive(true);
         }
       },
       onDrop({ source, location }) {
+        console.log('Drop event:', source.data, location);
+        
         // Reset UI state first
         if (isNewQuestionTypeData(source.data)) {
           setIsNewQuestionDragActive(false);
@@ -91,12 +103,15 @@ const QuestionEditor: React.FC = () => {
 
         // Handle new question drops
         if (isNewQuestionTypeData(dragging)) {
+          console.log('Handling new question drop:', dragging.questionType);
+          
           const isDropZoneDrop = location.current.dropTargets.some(target => 
             target.element === dropZoneRef.current
           );
           
           if (isDropZoneDrop) {
-            addQuestionDebounced(dragging.questionType);
+            console.log('Dropping in main drop zone');
+            setTimeout(() => addQuestionDebounced(dragging.questionType), 0);
             return;
           }
           
@@ -106,8 +121,11 @@ const QuestionEditor: React.FC = () => {
           );
           
           if (targetDropData && isQuestionDropTargetData(targetDropData.data)) {
+            console.log('Dropping between questions');
             const targetQuestion = targetDropData.data.question;
-            const targetIndex = state.questions.findIndex(q => q.id === targetQuestion.id);
+            // Get fresh questions list
+            const currentQuestions = state.questions;
+            const targetIndex = currentQuestions.findIndex(q => q.id === targetQuestion.id);
             const closestEdge = extractClosestEdge(targetDropData.data);
             
             let insertIndex = targetIndex;
@@ -115,28 +133,31 @@ const QuestionEditor: React.FC = () => {
               insertIndex = targetIndex + 1;
             }
             
-            addQuestionDebounced(dragging.questionType, insertIndex);
+            setTimeout(() => addQuestionDebounced(dragging.questionType, insertIndex), 0);
           }
           return;
         }
 
-        // Handle question reordering - no state updates, just reorder
+        // Handle question reordering
         if (isQuestionCardData(dragging)) {
+          console.log('Handling question reorder');
           const innerMost = location.current.dropTargets[0];
           if (!innerMost) return;
 
           const dropTargetData = innerMost.data;
           if (!isQuestionDropTargetData(dropTargetData)) return;
 
-          const startIndex = state.questions.findIndex(q => q.id === dragging.question.id);
-          const finishIndex = state.questions.findIndex(q => q.id === dropTargetData.question.id);
+          // Get fresh questions list
+          const currentQuestions = state.questions;
+          const startIndex = currentQuestions.findIndex(q => q.id === dragging.question.id);
+          const finishIndex = currentQuestions.findIndex(q => q.id === dropTargetData.question.id);
 
           if (startIndex === -1 || finishIndex === -1 || startIndex === finishIndex) return;
 
           const closestEdge = extractClosestEdge(dropTargetData);
           const reordered = reorderWithEdge({
             axis: 'vertical',
-            list: state.questions,
+            list: currentQuestions,
             startIndex,
             indexOfTarget: finishIndex,
             closestEdgeOfTarget: closestEdge,
@@ -151,19 +172,40 @@ const QuestionEditor: React.FC = () => {
         }
       },
     });
-  }, [state.questions, addQuestionDebounced]);
 
-  // Drop zone setup
+    monitorsInitialized.current = true;
+    return cleanup;
+  }, [formStateKey, addQuestionDebounced]); // Re-establish when form key changes
+
+  // Drop zone setup with fresh reference
   useEffect(() => {
     const dropZone = dropZoneRef.current;
     if (!dropZone) return;
 
+    console.log('Setting up drop zone for form:', state.formId);
+    
     return dropTargetForElements({
       element: dropZone,
-      canDrop: ({ source }) => isNewQuestionTypeData(source.data),
+      canDrop: ({ source }) => {
+        const canDrop = isNewQuestionTypeData(source.data);
+        console.log('Drop zone canDrop:', canDrop, source.data);
+        return canDrop;
+      },
       getData: () => ({ dropZone: true }),
+      onDragEnter: ({ source }) => {
+        if (isNewQuestionTypeData(source.data)) {
+          console.log('Entered drop zone');
+          setIsNewQuestionDragActive(true);
+        }
+      },
+      onDragLeave: ({ source }) => {
+        if (isNewQuestionTypeData(source.data)) {
+          console.log('Left drop zone');
+          setIsNewQuestionDragActive(false);
+        }
+      },
     });
-  }, []);
+  }, [formStateKey]); // Re-establish when form changes
 
   const handleQuestionSelect = useCallback((questionId: number) => {
     dispatch(setActiveQuestion(questionId));
@@ -210,9 +252,20 @@ const QuestionEditor: React.FC = () => {
     });
   };
 
+  // Debug logging
+  useEffect(() => {
+    console.log('QuestionEditor state changed:', {
+      formId: state.formId,
+      questionsCount: state.questions.length,
+      activeQuestionId: state.activeQuestionId,
+      monitorsInitialized: monitorsInitialized.current
+    });
+  }, [state.formId, state.questions.length, state.activeQuestionId]);
+
   if (state.questions.length === 0) {
     return (
       <div 
+        key={`empty-${formStateKey}`} // Force re-render when form changes
         ref={dropZoneRef}
         className={`
           flex items-center justify-center h-full border-2 border-dashed rounded-xl transition-all duration-200
@@ -249,14 +302,14 @@ const QuestionEditor: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col gap-5">
+    <div key={`editor-${formStateKey}`} className="h-full flex flex-col gap-5">
       <div 
         ref={scrollContainerRef}
         className="flex-1 flex flex-col gap-3 overflow-y-auto"
       >
         {state.questions.map((question, index) => (
           <div 
-            key={question.id}
+            key={`${question.id}-${formStateKey}`} // Stable key with form context
             className={recentlyAddedQuestionId === question.id ? 'animate-pulse' : ''}
           >
             <QuestionCard

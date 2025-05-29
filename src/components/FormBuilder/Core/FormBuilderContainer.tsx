@@ -1,5 +1,5 @@
 // src/components/FormBuilder/Core/FormBuilderContainer.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import FormHeader from './FormHeader';
 import FormSidebar from './FormSidebar';
 import QuestionEditor from './QuestionEditor';
@@ -7,26 +7,55 @@ import QuestionDetailEditor from '../Questions/QuestionDetailEditor';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 
 const FormBuilderContainer: React.FC = () => {
-  const { state } = useFormContext();
+  const { state, formVersion, isFormLoading } = useFormContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [updateCounter, setUpdateCounter] = useState(0);
 
+  // Create a stable key for the entire form builder that changes when form significantly changes
+  const builderKey = useMemo(() => {
+    return `builder-${state.formId || 'new'}-${formVersion}`;
+  }, [state.formId, formVersion]);
+
   useEffect(() => {
     // Debug to verify state is being properly passed
-    console.log('FormBuilderContainer state:', state);
-  }, [state]);
+    console.log('FormBuilderContainer state:', {
+      formId: state.formId,
+      questionsCount: state.questions.length,
+      formVersion,
+      isFormLoading
+    });
+  }, [state, formVersion, isFormLoading]);
 
   useEffect(() => {
     console.log('FormBuilderContainer: questions updated', state.questions);
     setUpdateCounter(prev => prev + 1);
   }, [state.questions]);
 
+  // Force re-render when form version changes (after new form creation, etc.)
+  useEffect(() => {
+    console.log('Form version changed, forcing re-render:', formVersion);
+    setUpdateCounter(prev => prev + 1);
+  }, [formVersion]);
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+  // Show loading overlay when form operations are in progress
+  if (isFormLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⏳</div>
+          <h3 className="text-xl font-semibold text-slate-700 mb-2">Processing...</h3>
+          <p className="text-slate-600">Please wait while we process your form</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-screen flex flex-col bg-slate-50">
+    <div key={builderKey} className="h-screen flex flex-col bg-slate-50">
       <FormHeader />
       
       <div className="flex-1 flex min-h-0 relative">
@@ -45,6 +74,7 @@ const FormBuilderContainer: React.FC = () => {
               : 'left-0 rounded-r-md'
           }`}
           onClick={toggleSidebar}
+          title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
         >
           {sidebarOpen ? '◀' : '▶'}
         </button>
@@ -57,12 +87,20 @@ const FormBuilderContainer: React.FC = () => {
             <h3 className="text-lg font-semibold text-slate-800 m-0">
               Edit Form
             </h3>
-            <span className="text-sm text-slate-600">
-              {state.questions.length} {state.questions.length === 1 ? 'Question' : 'Questions'}
-            </span>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-slate-600">
+                {state.questions.length} {state.questions.length === 1 ? 'Question' : 'Questions'}
+              </span>
+              {!state.isFormSaved && state.questions.length > 0 && (
+                <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded-full">
+                  Unsaved changes
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex-1 p-5 overflow-y-auto">
-            <QuestionEditor />
+            {/* Force re-render of QuestionEditor when form structure changes */}
+            <QuestionEditor key={`editor-${builderKey}-${updateCounter}`} />
           </div>
         </div>
         
@@ -79,7 +117,8 @@ const FormBuilderContainer: React.FC = () => {
           
           {/* Panel Content */}
           <div className="flex-1 overflow-auto">
-            <QuestionDetailEditor />
+            {/* Force re-render of QuestionDetailEditor when form structure changes */}
+            <QuestionDetailEditor key={`details-${builderKey}-${updateCounter}`} />
           </div>
         </div>
       </div>      

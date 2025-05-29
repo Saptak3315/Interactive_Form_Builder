@@ -1,10 +1,10 @@
 // src/components/FormBuilder/Core/FormSidebar.tsx
 
 import Swal from 'sweetalert2';
-import { setForm } from '../../../context/FormContext/formActions';
 import { useFormContext } from '../../../context/FormContext/FormProvider';
 import DraggableQuestionType from './DraggableQuestionType';
 import { useNavigate } from 'react-router-dom';
+import { useCallback, useState } from 'react';
 
 interface QuestionTypeOption {
   type: string;
@@ -15,8 +15,9 @@ interface QuestionTypeOption {
 }
 
 const FormSidebar = () => {
-  const { state, dispatch, saveCurrentForm, clearCurrentForm } = useFormContext();
+  const { state, saveCurrentForm, clearCurrentForm, isFormLoading } = useFormContext();
   const navigate = useNavigate();
+  const [isOperationInProgress, setIsOperationInProgress] = useState(false);
 
   const questionTypes: QuestionTypeOption[] = [
     { type: 'text', label: 'Full Name', icon: '👤', description: 'Person\'s full name', category: 'Basic' },
@@ -41,102 +42,169 @@ const FormSidebar = () => {
     return acc;
   }, {} as Record<string, QuestionTypeOption[]>);
 
-  const handleSaveForm = () => {
+  const handleSaveForm = useCallback(async () => {
+    if (isFormLoading || isOperationInProgress) return;
+    
+    setIsOperationInProgress(true);
     try {
-      // Use the context's save function
-      saveCurrentForm();
+      await saveCurrentForm();
       Swal.fire('Form saved successfully!');
     } catch (error) {
       console.error('Error saving form:', error);
       Swal.fire('There was an error saving your form. Please try again.');
+    } finally {
+      setIsOperationInProgress(false);
     }
-  };
+  }, [saveCurrentForm, isFormLoading, isOperationInProgress]);
 
-  const handleNewForm = () => {
+  const handleNewForm = useCallback(async () => {
+    if (isFormLoading || isOperationInProgress) return;
+
     if (!state.isFormSaved && state.questions.length > 0) {
-      const shouldSave = window.confirm(
-        'You have unsaved changes. Would you like to save before creating a new form?'
-      );
-      if (shouldSave) {
+      const result = await Swal.fire({
+        title: 'Unsaved Changes',
+        text: 'You have unsaved changes. Would you like to save before creating a new form?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Save & Create New',
+        cancelButtonText: 'Create New Without Saving',
+        showDenyButton: true,
+        denyButtonText: 'Cancel'
+      });
+
+      if (result.isDenied) {
+        return; // User cancelled
+      }
+
+      if (result.isConfirmed) {
+        setIsOperationInProgress(true);
         try {
-          saveCurrentForm();
+          await saveCurrentForm();
         } catch (error) {
           console.error('Error saving form:', error);
           Swal.fire('There was an error saving your form.');
+          setIsOperationInProgress(false);
           return;
         }
       }
     }
-
-    clearCurrentForm();
-    Swal.fire('New form created! Start building...');
-  };
-
-  const handlePublishForm = () => {
-    // Save the form first if it has changes
-    if (!state.isFormSaved) {
-      try {
-        saveCurrentForm();
-      } catch (error) {
-        console.error('Error saving form:', error);
-        Swal.fire('There was an error saving your form. Please try again.');
-        return;
-      }
+    
+    setIsOperationInProgress(true);
+    try {
+      console.log('Creating new form...');
+      await clearCurrentForm();
+      
+      // Show success message
+      Swal.fire({
+        title: 'New form created!',
+        text: 'Start building your form by adding questions',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      
+      console.log('New form created successfully');
+    } catch (error) {
+      console.error('Error creating new form:', error);
+      Swal.fire('There was an error creating a new form. Please try again.');
+    } finally {
+      setIsOperationInProgress(false);
     }
+  }, [state.isFormSaved, state.questions.length, saveCurrentForm, clearCurrentForm, isFormLoading, isOperationInProgress]);
+
+  const handlePublishForm = useCallback(async () => {
+    if (isFormLoading || isOperationInProgress) return;
 
     // Check if form has content
     if (state.questions.length === 0) {
       Swal.fire('Please add at least one question before publishing.');
       return;
     }
-
+    
     if (!state.title.trim()) {
       Swal.fire('Please add a title to your form before publishing.');
       return;
     }
 
+    // Save the form first if it has changes
+    if (!state.isFormSaved) {
+      setIsOperationInProgress(true);
+      try {
+        await saveCurrentForm();
+      } catch (error) {
+        console.error('Error saving form:', error);
+        Swal.fire('There was an error saving your form. Please try again.');
+        setIsOperationInProgress(false);
+        return;
+      }
+      setIsOperationInProgress(false);
+    }
+    
     // Navigate to publish page
     navigate('/publish-form');
-  };
+  }, [state.questions.length, state.title, state.isFormSaved, saveCurrentForm, navigate, isFormLoading, isOperationInProgress]);
 
-  const handlePreviewForm = () => {
+  const handlePreviewForm = useCallback(async () => {
+    if (isFormLoading || isOperationInProgress) return;
+
     if (state.questions.length === 0) {
       Swal.fire('Please add some questions to preview the form.');
       return;
     }
-
+    
     // Save current form state before navigating to preview
     if (!state.isFormSaved) {
+      setIsOperationInProgress(true);
       try {
-        saveCurrentForm();
+        await saveCurrentForm();
       } catch (error) {
         console.error('Error saving form before preview:', error);
         // Continue to preview even if save fails
       }
+      setIsOperationInProgress(false);
     }
-
+    
     // Navigate to full preview page
     navigate('/form-preview');
-  };
+  }, [state.questions.length, state.isFormSaved, saveCurrentForm, navigate, isFormLoading, isOperationInProgress]);
 
-  const handleBackToDashboard = () => {
+  const handleBackToDashboard = useCallback(async () => {
+    if (isFormLoading || isOperationInProgress) return;
+
     if (!state.isFormSaved && state.questions.length > 0) {
-      const shouldSave = window.confirm(
-        'You have unsaved changes. Would you like to save before leaving?'
-      );
-      if (shouldSave) {
+      const result = await Swal.fire({
+        title: 'Unsaved Changes',
+        text: 'You have unsaved changes. Would you like to save before leaving?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Save & Leave',
+        cancelButtonText: 'Leave Without Saving',
+        showDenyButton: true,
+        denyButtonText: 'Cancel'
+      });
+
+      if (result.isDenied) {
+        return; // User cancelled
+      }
+
+      if (result.isConfirmed) {
+        setIsOperationInProgress(true);
         try {
-          saveCurrentForm();
+          await saveCurrentForm();
         } catch (error) {
           console.error('Error saving form:', error);
           Swal.fire('There was an error saving your form.');
+          setIsOperationInProgress(false);
           return;
         }
+        setIsOperationInProgress(false);
       }
     }
-
+    
     navigate('/');
-  };
+  }, [state.isFormSaved, state.questions.length, saveCurrentForm, navigate, isFormLoading, isOperationInProgress]);
+
+  const isDisabled = isFormLoading || isOperationInProgress;
 
   return (
     <div className="h-full flex flex-col bg-slate-50">
@@ -146,7 +214,7 @@ const FormSidebar = () => {
           FormCraft
         </h2>
         <p className="text-sm text-slate-600 m-0">
-          Drag questions to build your form
+          {isDisabled ? 'Processing...' : 'Drag questions to build your form'}
         </p>
       </div>
 
@@ -180,45 +248,66 @@ const FormSidebar = () => {
           Form Actions
         </h3>
         <div className="flex flex-col gap-3">
-          <button
-            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-green-500 hover:text-white hover:border-green-500"
+          <button 
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
+              isDisabled
+                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'border-slate-300 bg-white hover:bg-green-500 hover:text-white hover:border-green-500 cursor-pointer'
+            }`}
             onClick={handleSaveForm}
+            disabled={isDisabled}
           >
-            <span className="text-base">💾</span>
-            Save Form
+            <span className="text-base">{isOperationInProgress ? '⏳' : '💾'}</span>
+            {isOperationInProgress ? 'Saving...' : 'Save Form'}
           </button>
-
-          <button
-            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-indigo-500 hover:text-white hover:border-indigo-500"
+          
+          <button 
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
+              isDisabled
+                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'border-slate-300 bg-white hover:bg-indigo-500 hover:text-white hover:border-indigo-500 cursor-pointer'
+            }`}
             onClick={handleNewForm}
+            disabled={isDisabled}
           >
-            <span className="text-base">📝</span>
-            New Form
+            <span className="text-base">{isOperationInProgress ? '⏳' : '📝'}</span>
+            {isOperationInProgress ? 'Creating...' : 'New Form'}
           </button>
-
-          <button
-            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-blue-500 hover:text-white hover:border-blue-500"
+          
+          <button 
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
+              isDisabled
+                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'border-slate-300 bg-white hover:bg-blue-500 hover:text-white hover:border-blue-500 cursor-pointer'
+            }`}
             onClick={handlePreviewForm}
+            disabled={isDisabled}
           >
             <span className="text-base">👁️</span>
             Full Preview
           </button>
-
-          <button
-            className={`flex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer font-medium transition-all duration-200 text-left ${state.questions.length > 0 && state.title.trim()
-                ? 'border-slate-300 bg-white hover:bg-purple-500 hover:text-white hover:border-purple-500'
-                : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-              }`}
+          
+          <button 
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
+              (state.questions.length === 0 || !state.title.trim() || isDisabled)
+                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'border-slate-300 bg-white hover:bg-purple-500 hover:text-white hover:border-purple-500 cursor-pointer'
+            }`}
             onClick={handlePublishForm}
-            disabled={state.questions.length === 0 || !state.title.trim()}
+            disabled={state.questions.length === 0 || !state.title.trim() || isDisabled}
           >
             <span className="text-base">🚀</span>
             Publish Form
           </button>
-
-          <button
-            className="flex items-center gap-2 px-4 py-3 border border-slate-300 bg-white rounded-lg cursor-pointer font-medium transition-all duration-200 text-left hover:bg-gray-500 hover:text-white hover:border-gray-500"
+          
+          <button 
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
+              isDisabled
+                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'border-slate-300 bg-white hover:bg-gray-500 hover:text-white hover:border-gray-500 cursor-pointer'
+            }`}
             onClick={handleBackToDashboard}
+            disabled={isDisabled}
           >
             <span className="text-base">🏠</span>
             Dashboard
@@ -245,7 +334,7 @@ const FormSidebar = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
             <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
               📊
@@ -259,14 +348,19 @@ const FormSidebar = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
             <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
-              {state.isFormSaved ? '✅' : '⏳'}
+              {isDisabled ? '⏳' : state.isFormSaved ? '✅' : '⏳'}
             </div>
             <div className="flex-1">
               <div className="text-sm font-bold text-slate-800 leading-none">
-                {state.isFormSaved ? 'Saved' : 'Auto-saving...'}
+                {isDisabled 
+                  ? 'Processing...' 
+                  : state.isFormSaved 
+                    ? 'Saved' 
+                    : 'Auto-saving...'
+                }
               </div>
               <div className="text-xs text-slate-500 mt-1">
                 Status

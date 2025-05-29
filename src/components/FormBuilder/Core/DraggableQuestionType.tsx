@@ -1,6 +1,6 @@
 // src/components/FormBuilder/Core/DraggableQuestionType.tsx
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useFormContext } from "../../../context/FormContext/FormProvider";
 import {
   addQuestion,
@@ -75,26 +75,50 @@ function QuestionTypePreview({
 const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
   questionType,
 }) => {
-  const { state, dispatch } = useFormContext();
+  const { state, dispatch, formVersion, isFormLoading } = useFormContext();
   const elementRef = useRef<HTMLDivElement | null>(null);
   const [dragState, setDragState] = useState<DragState>({ type: 'idle' });
   const [isDragInProgress, setIsDragInProgress] = useState(false);
   const [justClicked, setJustClicked] = useState(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const draggableCleanupRef = useRef<(() => void) | null>(null);
 
+  // Stable add question function
+  const addQuestionStable = useCallback((questionType: string) => {
+    if (isFormLoading) {
+      console.log('Form is loading, skipping question addition');
+      return;
+    }
+    
+    console.log('Adding question via click:', questionType);
+    const orderPosition = state.questions.length;
+    const newQuestion = createDefaultQuestion(questionType as any, orderPosition);
+    dispatch(addQuestion(newQuestion));
+  }, [dispatch, isFormLoading, state.questions.length]);
+
+  // Setup draggable functionality
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
 
-    return draggable({
+    // Clean up previous draggable if exists
+    if (draggableCleanupRef.current) {
+      draggableCleanupRef.current();
+    }
+
+    console.log(`Setting up draggable for ${questionType.type} (form version: ${formVersion})`);
+
+    const cleanup = draggable({
       element,
       getInitialData: ({ element }) => {
-        return getNewQuestionTypeData({
+        const data = getNewQuestionTypeData({
           questionType: questionType.type,
           label: questionType.label,
           rect: element.getBoundingClientRect(),
         });
+        console.log('Draggable data created:', data);
+        return data;
       },
       onGenerateDragPreview({ nativeSetDragImage, location, source }) {
         setCustomNativeDragPreview({
@@ -132,7 +156,10 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
         }, 200);
       },
     });
-  }, [questionType]);
+
+    draggableCleanupRef.current = cleanup;
+    return cleanup;
+  }, [questionType, formVersion]); // Re-setup when form version changes
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -143,10 +170,21 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current);
       }
+      if (draggableCleanupRef.current) {
+        draggableCleanupRef.current();
+      }
     };
   }, []);
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    // Prevent click if form is loading
+    if (isFormLoading) {
+      console.log('Click prevented - form is loading');
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     // Prevent click if drag is in progress
     if (isDragInProgress) {
       console.log('Click prevented - drag in progress');
@@ -176,21 +214,19 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
       }, 150);
     }
     
-    // Add question
-    const orderPosition = state.questions.length;
-    const newQuestion = createDefaultQuestion(
-      questionType.type as any,
-      orderPosition
-    );
-    dispatch(addQuestion(newQuestion));
+    // Add question with slight delay to ensure state is ready
+    setTimeout(() => {
+      addQuestionStable(questionType.type);
+    }, 50);
     
     // Reset click flag
     clickTimeoutRef.current = setTimeout(() => {
       setJustClicked(false);
     }, 300);
-  };
+  }, [isDragInProgress, justClicked, addQuestionStable, questionType.type, isFormLoading]);
 
   const isDragging = dragState.type === 'is-dragging';
+  const isDisabled = isFormLoading;
 
   return (
     <>
@@ -198,7 +234,10 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
         ref={elementRef}
         className={`
           flex items-center justify-between p-3 bg-white border border-slate-200 rounded-md transition-all duration-200 select-none
-          hover:border-indigo-500 hover:bg-indigo-50 hover:shadow-md group cursor-grab
+          ${isDisabled 
+            ? 'opacity-50 cursor-not-allowed' 
+            : 'hover:border-indigo-500 hover:bg-indigo-50 hover:shadow-md group cursor-grab'
+          }
           ${isDragging ? 'opacity-40 scale-95 shadow-lg border-indigo-300 bg-indigo-50' : ''}
           ${justClicked ? 'ring-2 ring-indigo-300' : ''}
         `}
@@ -210,27 +249,30 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
       >
         <div 
           onClick={handleClick}
-          className="flex items-center gap-3 flex-1 cursor-pointer"
-          title={`${questionType.description} (Click or drag to add)`}
+          className={`flex items-center gap-3 flex-1 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+          title={isDisabled 
+            ? 'Please wait...' 
+            : `${questionType.description} (Click or drag to add)`
+          }
         >
           <div className={`
-            flex items-center justify-center w-8 h-8 text-xl bg-slate-100 rounded-md 
-            group-hover:bg-indigo-100 transition-all duration-200
+            flex items-center justify-center w-8 h-8 text-xl bg-slate-100 rounded-md transition-all duration-200
+            ${!isDisabled && 'group-hover:bg-indigo-100'}
             ${isDragging ? 'bg-indigo-200' : ''}
           `}>
             {questionType.icon}
           </div>
           <div className="flex flex-col gap-0.5">
             <span className={`
-              text-sm font-semibold text-slate-800 group-hover:text-indigo-800 
-              transition-colors duration-200
+              text-sm font-semibold text-slate-800 transition-colors duration-200
+              ${!isDisabled && 'group-hover:text-indigo-800'}
               ${isDragging ? 'text-indigo-700' : ''}
             `}>
               {questionType.label}
             </span>
             <span className={`
-              text-xs text-slate-500 leading-tight group-hover:text-indigo-600 
-              transition-colors duration-200
+              text-xs text-slate-500 leading-tight transition-colors duration-200
+              ${!isDisabled && 'group-hover:text-indigo-600'}
               ${isDragging ? 'text-indigo-500' : ''}
             `}>
               {questionType.description}
@@ -241,10 +283,12 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
           text-slate-400 font-bold text-base transition-all duration-200
           ${isDragging 
             ? 'opacity-100 text-indigo-500 animate-pulse' 
-            : 'opacity-0 group-hover:opacity-100'
+            : !isDisabled 
+              ? 'opacity-0 group-hover:opacity-100'
+              : 'opacity-30'
           }
         `}>
-          ⋯
+          {isFormLoading ? '⏳' : '⋯'}
         </div>
       </div>
 
