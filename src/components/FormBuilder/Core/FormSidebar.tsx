@@ -20,10 +20,10 @@ const FormSidebar = () => {
   const [isOperationInProgress, setIsOperationInProgress] = useState(false);
 
   const questionTypes: QuestionTypeOption[] = [
-    { type: 'text', label: 'Full Name', icon: '👤', description: 'Person\'s full name', category: 'Basic' },
-    { type: 'textarea', label: 'Address', icon: '🏠', description: 'Street address or location', category: 'Basic' },
-    { type: 'text', label: 'Email', icon: '📧', description: 'Email address', category: 'Basic' },
-    { type: 'text', label: 'Phone', icon: '📞', description: 'Phone number', category: 'Basic' },
+    { type: 'full_name', label: 'Full Name', icon: '👤', description: 'Person\'s full name', category: 'Basic' },
+    { type: 'address', label: 'Address', icon: '🏠', description: 'Street address or location', category: 'Basic' },
+    { type: 'email', label: 'Email', icon: '📧', description: 'Email address', category: 'Basic' },
+    { type: 'phone', label: 'Phone', icon: '📞', description: 'Phone number', category: 'Basic' },
     { type: 'text', label: 'Short Text', icon: '📝', description: 'Single line text input', category: 'Basic' },
     { type: 'textarea', label: 'Long Text', icon: '📄', description: 'Multi-line text input', category: 'Basic' },
     { type: 'number', label: 'Number', icon: '🔢', description: 'Numeric input', category: 'Basic' },

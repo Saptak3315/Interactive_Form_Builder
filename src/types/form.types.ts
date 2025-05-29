@@ -3,7 +3,7 @@
 export interface Question {
   id: number;
   content: string;
-  type: 'text' | 'textarea' | 'multiple_choice' | 'checkbox' | 'file' | 'audio' | 'number' | 'calculated';
+  type: 'text' | 'textarea' | 'multiple_choice' | 'checkbox' | 'file' | 'audio' | 'number' | 'calculated'|'full_name'|'email'|'address'|'phone';
   orderPosition: number;
   isRequired: boolean;
   points?: number;

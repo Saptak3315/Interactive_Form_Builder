@@ -22,7 +22,7 @@ const getValidationPattern = (validationType?: string, customPattern?: string): 
     number: "^\\d+$",
     alphanumeric: "^[a-zA-Z0-9]+$"
   };
-  
+
   if (validationType && patterns[validationType]) {
     return patterns[validationType];
   }
@@ -33,7 +33,7 @@ const FullFormPreview: React.FC = () => {
   const { state } = useFormContext();
   const { responses, handleQuestionResponse, submitForm, isSubmitting, submitError, validateForm } = useFormSubmission(state);
   const [showValidation, setShowValidation] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<{[key: number]: string}>({});
+  const [validationErrors, setValidationErrors] = useState<{ [key: number]: string }>({});
 
   // Helper function to get file type from media type
   const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
@@ -59,7 +59,7 @@ const FullFormPreview: React.FC = () => {
             className="max-w-full h-48 object-cover rounded border shadow-sm"
           />
         )}
-        
+
         {fileType === 'video' && (
           <video
             src={question.mediaUrl}
@@ -69,7 +69,7 @@ const FullFormPreview: React.FC = () => {
             Your browser does not support video playback.
           </video>
         )}
-        
+
         {fileType === 'audio' && (
           <audio
             src={question.mediaUrl}
@@ -91,31 +91,31 @@ const FullFormPreview: React.FC = () => {
     if (!value || !value.toString().trim()) {
       return { isValid: true };
     }
-    
+
     const stringValue = value.toString();
     if (question.minLength && stringValue.length < question.minLength) {
-      return { 
-        isValid: false, 
-        error: question.errorMessageForMinLength || `Minimum ${question.minLength} characters required` 
+      return {
+        isValid: false,
+        error: question.errorMessageForMinLength || `Minimum ${question.minLength} characters required`
       };
     }
-    
+
     if (question.maxLength && stringValue.length > question.maxLength) {
-      return { 
-        isValid: false, 
-        error: question.errorMessageForMaxLength || `Maximum ${question.maxLength} characters allowed` 
+      return {
+        isValid: false,
+        error: question.errorMessageForMaxLength || `Maximum ${question.maxLength} characters allowed`
       };
     }
-  
+
     if (question.validationType && question.validationType !== 'none') {
       const pattern = getValidationPattern(question.validationType, question.validationPattern);
       if (pattern) {
         try {
           const regex = new RegExp(pattern);
           if (!regex.test(stringValue)) {
-            return { 
-              isValid: false, 
-              error: question.errorMessageForPattern || `Invalid ${question.validationType} format` 
+            return {
+              isValid: false,
+              error: question.errorMessageForPattern || `Invalid ${question.validationType} format`
             };
           }
         } catch (e) {
@@ -124,7 +124,7 @@ const FullFormPreview: React.FC = () => {
         }
       }
     }
-    
+
     return { isValid: true };
   };
 
@@ -148,17 +148,17 @@ const FullFormPreview: React.FC = () => {
   // Real-time validation function
   const performValidation = (questionId: number, question: any, value: any) => {
     let validation: { isValid: boolean; error?: string };
-    
+
     if (question.type === 'text' || question.type === 'textarea') {
       validation = validateInput(question, value);
     } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
       validation = validateMultipleChoice(question, value);
     } else if (question.type === 'file') {
-      validation = question.isRequired && !value 
+      validation = question.isRequired && !value
         ? { isValid: false, error: 'Please upload a file' }
         : { isValid: true };
     } else {
-      validation = question.isRequired && (!value || value === '') 
+      validation = question.isRequired && (!value || value === '')
         ? { isValid: false, error: 'This field is required' }
         : { isValid: true };
     }
@@ -175,7 +175,7 @@ const FullFormPreview: React.FC = () => {
   const handleInputChange = (questionId: number, question: any, value: any) => {
     // Perform validation
     const validation = performValidation(questionId, question, value);
-    
+
     // Update the response
     handleQuestionResponse(questionId, value, validation.isValid);
   };
@@ -193,27 +193,26 @@ const FullFormPreview: React.FC = () => {
               {index + 1}. {question.content || 'Short Text Question'}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
-            
+
             {question.explanation && (
               <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
                 💡 {question.explanation}
               </p>
             )}
-            
+
             {renderQuestionMedia(question)}
-            
-            <input 
+
+            <input
               type="text"
               value={currentValue}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500' 
+              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                  ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
                   : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
-              }`}
+                }`}
               placeholder={question.placeholder || "Enter your answer"}
             />
-            
+
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
@@ -222,7 +221,144 @@ const FullFormPreview: React.FC = () => {
             )}
           </div>
         );
-      
+      case 'email':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || 'Email Address'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <input
+              type="email"
+              value={currentValue || ''}
+              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
+              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                  ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                  : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                }`}
+              placeholder="Enter your email"
+            />
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'phone':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || 'Phone Number'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <input
+              type="tel"
+              value={currentValue || ''}
+              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
+              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                  ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                  : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                }`}
+              placeholder="Enter your phone number"
+            />
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+      case 'address':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || 'Address'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <textarea
+              value={currentValue || ''}
+              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
+              rows={3}
+              className={`w-full px-4 py-3 border rounded-lg text-base resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                  ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                  : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                }`}
+              placeholder="Enter your address"
+            />
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+      case 'full_name':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || 'Full Name'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <input
+              type="text"
+              value={currentValue || ''}
+              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
+              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                  ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                  : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                }`}
+              placeholder="Enter your full name"
+            />
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+
       case 'textarea':
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -235,21 +371,20 @@ const FullFormPreview: React.FC = () => {
                 💡 {question.explanation}
               </p>
             )}
-            
+
             {renderQuestionMedia(question)}
-            
-            <textarea 
+
+            <textarea
               value={currentValue}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg text-base min-h-32 resize-y transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500' 
+              className={`w-full px-4 py-3 border rounded-lg text-base min-h-32 resize-y transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                  ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
                   : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
-              }`}
+                }`}
               placeholder={question.placeholder || "Enter your detailed answer"}
               rows={4}
             />
-            
+
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
@@ -258,7 +393,7 @@ const FullFormPreview: React.FC = () => {
             )}
           </div>
         );
-      
+
       case 'number':
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -271,21 +406,20 @@ const FullFormPreview: React.FC = () => {
                 💡 {question.explanation}
               </p>
             )}
-            
+
             {renderQuestionMedia(question)}
-            
-            <input 
+
+            <input
               type="number"
               value={currentValue}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500' 
+              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                  ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
                   : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
-              }`}
+                }`}
               placeholder={question.placeholder || "Enter a number"}
             />
-            
+
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
@@ -294,7 +428,7 @@ const FullFormPreview: React.FC = () => {
             )}
           </div>
         );
-      
+
       case 'multiple_choice':
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -307,13 +441,13 @@ const FullFormPreview: React.FC = () => {
                 💡 {question.explanation}
               </p>
             )}
-            
+
             {renderQuestionMedia(question)}
-            
+
             <div className="flex flex-col gap-3">
               {question.options?.map((option: any, optIndex: number) => (
                 <div key={option.id} className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
-                  <input 
+                  <input
                     type="radio"
                     name={`question-${question.id}`}
                     value={option.id}
@@ -324,10 +458,10 @@ const FullFormPreview: React.FC = () => {
                   <span className="flex-1 text-base text-slate-700">{option.content || `Option ${optIndex + 1}`}</span>
                 </div>
               )) || (
-                <div className="text-base text-slate-400 italic">No options configured</div>
-              )}
+                  <div className="text-base text-slate-400 italic">No options configured</div>
+                )}
             </div>
-            
+
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
@@ -336,7 +470,7 @@ const FullFormPreview: React.FC = () => {
             )}
           </div>
         );
-      
+
       case 'checkbox':
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -349,20 +483,20 @@ const FullFormPreview: React.FC = () => {
                 💡 {question.explanation}
               </p>
             )}
-            
+
             {renderQuestionMedia(question)}
-            
+
             <div className="flex flex-col gap-3">
               {question.options?.map((option: any, optIndex: number) => {
                 const selectedOptions = Array.isArray(currentValue) ? currentValue : [];
                 return (
                   <div key={option.id} className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
-                    <input 
+                    <input
                       type="checkbox"
                       checked={selectedOptions.includes(option.id)}
                       onChange={(e) => {
                         const current = Array.isArray(currentValue) ? currentValue : [];
-                        const newValue = e.target.checked 
+                        const newValue = e.target.checked
                           ? [...current, option.id]
                           : current.filter(id => id !== option.id);
                         handleInputChange(question.id, question, newValue);
@@ -373,10 +507,10 @@ const FullFormPreview: React.FC = () => {
                   </div>
                 );
               }) || (
-                <div className="text-base text-slate-400 italic">No options configured</div>
-              )}
+                  <div className="text-base text-slate-400 italic">No options configured</div>
+                )}
             </div>
-            
+
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
@@ -385,7 +519,7 @@ const FullFormPreview: React.FC = () => {
             )}
           </div>
         );
-      
+
       case 'file':
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -398,9 +532,9 @@ const FullFormPreview: React.FC = () => {
                 💡 {question.explanation}
               </p>
             )}
-            
+
             {renderQuestionMedia(question)}
-            
+
             <div className="flex items-center gap-4 p-4 border border-dashed border-slate-300 rounded-lg bg-slate-50">
               <input
                 type="file"
@@ -411,7 +545,7 @@ const FullFormPreview: React.FC = () => {
                 className="flex-1 text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
               />
             </div>
-            
+
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
@@ -433,15 +567,15 @@ const FullFormPreview: React.FC = () => {
                 💡 {question.explanation}
               </p>
             )}
-            
+
             {renderQuestionMedia(question)}
-            
+
             <div className="p-6 border border-slate-300 rounded-lg bg-slate-50 text-center">
               <button className="px-6 py-3 bg-indigo-600 text-white text-base font-medium rounded-lg hover:bg-indigo-700 transition-colors">
                 🎤 Record Audio
               </button>
             </div>
-            
+
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
@@ -450,7 +584,7 @@ const FullFormPreview: React.FC = () => {
             )}
           </div>
         );
-      
+
       default:
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -458,9 +592,9 @@ const FullFormPreview: React.FC = () => {
               {index + 1}. {question.content || `Question ${index + 1}`}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
-            
+
             {renderQuestionMedia(question)}
-            
+
             <p className="text-base text-slate-400 italic">({question.type})</p>
           </div>
         );
@@ -470,55 +604,55 @@ const FullFormPreview: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setShowValidation(true);
-    
+
     // Validate all questions
     let hasErrors = false;
-    const newErrors: {[key: number]: string} = {};
-    
+    const newErrors: { [key: number]: string } = {};
+
     state.questions.forEach(question => {
       const response = responses.find(r => r.questionId === question.id);
       const value = response?.answer || '';
-      
+
       let validation: { isValid: boolean; error?: string };
-      
-      if (question.type === 'text' || question.type === 'textarea') {
+
+      if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'full_name' || question.type === 'phone') {
         validation = validateInput(question, value);
       } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
         validation = validateMultipleChoice(question, value);
       } else if (question.type === 'file') {
-        validation = question.isRequired && !value 
+        validation = question.isRequired && !value
           ? { isValid: false, error: 'Please upload a file' }
           : { isValid: true };
       } else {
-        validation = question.isRequired && (!value || value === '') 
+        validation = question.isRequired && (!value || value === '')
           ? { isValid: false, error: 'This field is required' }
           : { isValid: true };
       }
-      
+
       if (!validation.isValid) {
         hasErrors = true;
         newErrors[question.id] = validation.error || 'Invalid input';
       }
     });
-    
+
     setValidationErrors(newErrors);
-    
-   if (!hasErrors) {
-  try {
-    const success = await submitForm();
-    if (success) {
-      Swal.fire("Success!", "Form submitted successfully!", "success");
-      navigate('/');
+
+    if (!hasErrors) {
+      try {
+        const success = await submitForm();
+        if (success) {
+          Swal.fire("Success!", "Form submitted successfully!", "success");
+          navigate('/');
+        } else {
+          Swal.fire("Error", "Form submission failed. Please try again.", "error");
+        }
+      } catch (error) {
+        console.error('Submission error:', error);
+        Swal.fire("Error", "An unexpected error occurred.", "error");
+      }
     } else {
-      Swal.fire("Error", "Form submission failed. Please try again.", "error");
+      Swal.fire("Validation Error", "Please complete all required questions correctly.", "error");
     }
-  } catch (error) {
-    console.error('Submission error:', error);
-    Swal.fire("Error", "An unexpected error occurred.", "error");
-  }
-} else {
-  Swal.fire("Validation Error", "Please complete all required questions correctly.", "error");
-}
 
   };
 
@@ -600,11 +734,10 @@ const FullFormPreview: React.FC = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowValidation(!showValidation)}
-                className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
-                  showValidation 
-                    ? 'bg-orange-50 border-orange-300 text-orange-700' 
+                className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${showValidation
+                    ? 'bg-orange-50 border-orange-300 text-orange-700'
                     : 'bg-slate-50 border-slate-300 text-slate-600'
-                }`}
+                  }`}
               >
                 <FontAwesomeIcon icon={showValidation ? faCheckCircle : faExclamationTriangle} />
                 {showValidation ? 'Hide Validation' : 'Show Validation'}
@@ -647,26 +780,25 @@ const FullFormPreview: React.FC = () => {
               </span>
             </div>
           </div>
-          
+
           {/* Form Questions */}
           <div className="p-8">
             <form onSubmit={handleSubmit}>
               {state.questions.map((question, index) => renderQuestion(question, index))}
-              
+
               {/* Submit Button */}
               <div className="mt-8 pt-6 border-t border-slate-200 text-center">
-                <button 
+                <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-200 ${
-                    isSubmitting
+                  className={`px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-200 ${isSubmitting
                       ? 'bg-slate-400 text-slate-200 cursor-not-allowed'
                       : 'bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-lg hover:shadow-xl'
-                  }`}
+                    }`}
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Form'}
                 </button>
-                
+
                 {submitError && (
                   <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
                     <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2" />
