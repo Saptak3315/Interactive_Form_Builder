@@ -139,18 +139,22 @@ const outerStyles: { [Key in QuestionCardState['type']]?: string } = {
   'is-dragging-and-left-self': 'hidden',
 };
 
-// Improved shadow component with stable sizing
-export function QuestionCardShadow({ dragging }: { dragging: DOMRect }) {
+// Enhanced shadow component for reordering only
+export function QuestionCardShadow({ 
+  dragging
+}: { 
+  dragging: DOMRect;
+}) {
   return (
     <div 
-      className="flex-shrink-0 rounded-lg bg-blue-100 border-2 border-dashed border-blue-300 mx-0 my-2 transition-all duration-150" 
+      className="flex-shrink-0 rounded-lg border-2 border-dashed mx-0 my-2 transition-all duration-150 bg-blue-100 border-blue-400"
       style={{ 
-        height: Math.max(dragging.height, 80), // Minimum height to prevent layout shifts
+        height: Math.max(dragging.height, 80), // Same height as original question
         minHeight: '80px'
       }}
     >
-      <div className="flex items-center justify-center h-full text-blue-500 font-medium text-sm">
-        Drop here
+      <div className="flex items-center justify-center h-full font-medium text-sm text-blue-600">
+        Drop Here
       </div>
     </div>
   );
@@ -235,7 +239,7 @@ export function QuestionDisplay({
       ref={outerRef}
       className={`flex flex-shrink-0 flex-col ${outerStyles[state.type] || ''}`}
     >
-      {/* Stable shadow above if dropping at top */}
+      {/* Shadow above if dropping at top (reordering only) */}
       {state.type === 'is-over' && state.closestEdge === 'top' ? (
         <QuestionCardShadow dragging={state.dragging} />
       ) : null}
@@ -244,6 +248,7 @@ export function QuestionDisplay({
         className={`
           group mb-3 p-4 bg-white border-2 rounded-lg select-none relative block w-full transition-all duration-200
           ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-gray-200'}
+          ${state.type === 'is-over' ? 'ring-2 ring-blue-300 border-blue-300' : ''}
           ${innerStyles[state.type] || ''}
         `}
         ref={innerRef}
@@ -259,6 +264,7 @@ export function QuestionDisplay({
             : undefined
         }
       >
+
         <div className="pointer-events-none">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
@@ -352,7 +358,7 @@ export function QuestionDisplay({
         </div>
       </div>
       
-      {/* Stable shadow below if dropping at bottom */}
+      {/* Shadow below if dropping at bottom (reordering only) */}
       {state.type === 'is-over' && state.closestEdge === 'bottom' ? (
         <QuestionCardShadow dragging={state.dragging} />
       ) : null}
@@ -409,38 +415,64 @@ export function QuestionCard({ question, index, isActive, onSelect, onDelete }: 
       dropTargetForElements({
         element: outer,
         getIsSticky: () => true,
-        canDrop: ({ source }) => isQuestionCardData(source.data), // Only accept question reordering
+        canDrop: ({ source }) => {
+          // Accept both question reordering and new question insertion
+          return isQuestionCardData(source.data) || isNewQuestionTypeData(source.data);
+        },
         getData: ({ element, input }) => {
           const data = getQuestionDropTargetData({ question });
           return attachClosestEdge(data, { element, input, allowedEdges: ['top', 'bottom'] });
         },
         onDragEnter({ source, self }) {
-          // Only handle question reordering, not new question type drops
-          if (isQuestionCardData(source.data)) {
-            if (source.data.question.id === question.id) return;
-            
-            const closestEdge = extractClosestEdge(self.data);
-            if (!closestEdge) return;
+          const closestEdge = extractClosestEdge(self.data);
+          if (!closestEdge) return;
 
-            setState({ type: 'is-over', dragging: source.data.rect, closestEdge });
-          }
-          // Remove new question type handling to prevent conflicts with main drop zone
-        },
-        onDrag({ source, self }) {
-          // Only handle question reordering, not new question type drops
+          // Handle existing question reordering
           if (isQuestionCardData(source.data)) {
             if (source.data.question.id === question.id) return;
-            
-            const closestEdge = extractClosestEdge(self.data);
-            if (!closestEdge) return;
-            
-            const proposed: QuestionCardState = { type: 'is-over', dragging: source.data.rect, closestEdge };
-            setState((current) => {
-              if (isShallowEqual(proposed, current)) return current;
-              return proposed;
+            setState({ 
+              type: 'is-over', 
+              dragging: source.data.rect, 
+              closestEdge
             });
           }
-          // Remove new question type handling to prevent conflicts with main drop zone
+          
+          // Handle new question insertion with same visual feedback
+          else if (isNewQuestionTypeData(source.data)) {
+            setState({ 
+              type: 'is-over', 
+              dragging: source.data.rect, 
+              closestEdge
+            });
+          }
+        },
+        onDrag({ source, self }) {
+          const closestEdge = extractClosestEdge(self.data);
+          if (!closestEdge) return;
+          
+          let proposed: QuestionCardState;
+          
+          if (isQuestionCardData(source.data)) {
+            if (source.data.question.id === question.id) return;
+            proposed = { 
+              type: 'is-over', 
+              dragging: source.data.rect, 
+              closestEdge
+            };
+          } else if (isNewQuestionTypeData(source.data)) {
+            proposed = { 
+              type: 'is-over', 
+              dragging: source.data.rect, 
+              closestEdge
+            };
+          } else {
+            return;
+          }
+          
+          setState((current) => {
+            if (isShallowEqual(proposed, current)) return current;
+            return proposed;
+          });
         },
         onDragLeave({ source }) {
           if (isQuestionCardData(source.data)) {

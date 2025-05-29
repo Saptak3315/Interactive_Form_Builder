@@ -44,7 +44,7 @@ function QuestionTypePreview({
 }) {
   return (
     <div
-      className="flex items-center justify-between p-3 bg-white border-2 border-indigo-500 rounded-md shadow-xl"
+      className="flex items-center justify-between p-3 bg-white border-2 border-blue-500 rounded-md shadow-xl"
       style={{
         width: rect.width,
         height: rect.height,
@@ -53,20 +53,20 @@ function QuestionTypePreview({
       }}
     >
       <div className="flex items-center gap-3 flex-1">
-        <div className="flex items-center justify-center w-8 h-8 text-xl bg-indigo-100 rounded-md">
+        <div className="flex items-center justify-center w-8 h-8 text-xl bg-blue-100 rounded-md">
           {questionType.icon}
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-semibold text-indigo-800">
+          <span className="text-sm font-semibold text-blue-800">
             {questionType.label}
           </span>
-          <span className="text-xs text-indigo-600 leading-tight">
+          <span className="text-xs text-blue-600 leading-tight">
             {questionType.description}
           </span>
         </div>
       </div>
-      <div className="text-indigo-600 font-bold text-base animate-pulse">
-        ⋯
+      <div className="text-blue-600 font-bold text-base animate-pulse">
+        ➕
       </div>
     </div>
   );
@@ -97,7 +97,7 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
     dispatch(addQuestion(newQuestion));
   }, [dispatch, isFormLoading, state.questions.length]);
 
-  // Setup draggable functionality
+  // Enhanced draggable setup with better data structure
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
@@ -107,7 +107,7 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
       draggableCleanupRef.current();
     }
 
-    console.log(`Setting up draggable for ${questionType.type} (form version: ${formVersion})`);
+    console.log(`Setting up enhanced draggable for ${questionType.type} (form version: ${formVersion})`);
 
     const cleanup = draggable({
       element,
@@ -117,7 +117,12 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
           label: questionType.label,
           rect: element.getBoundingClientRect(),
         });
-        console.log('Draggable data created:', data);
+        console.log('Enhanced draggable data created:', {
+          questionType: questionType.type,
+          label: questionType.label,
+          category: questionType.category,
+          description: questionType.description
+        });
         return data;
       },
       onGenerateDragPreview({ nativeSetDragImage, location, source }) {
@@ -134,7 +139,7 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
         });
       },
       onDragStart() {
-        console.log(`Starting drag for ${questionType.type} question`);
+        console.log(`Starting enhanced drag for ${questionType.type} question`);
         setIsDragInProgress(true);
         setDragState({ type: 'is-dragging' });
         
@@ -147,19 +152,19 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
         }
       },
       onDrop() {
-        console.log(`Ended drag for ${questionType.type} question`);
+        console.log(`Completed enhanced drag for ${questionType.type} question`);
         setDragState({ type: 'idle' });
         
         // Reset drag flag after a delay to ensure drop is processed
         dragTimeoutRef.current = setTimeout(() => {
           setIsDragInProgress(false);
-        }, 200);
+        }, 300); // Slightly longer delay for better UX
       },
     });
 
     draggableCleanupRef.current = cleanup;
     return cleanup;
-  }, [questionType, formVersion]); // Re-setup when form version changes
+  }, [questionType, formVersion]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -201,15 +206,17 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
       return;
     }
     
-    console.log('Click handler: Adding question via click');
+    console.log('Enhanced click handler: Adding question via click');
     setJustClicked(true);
     
-    // Add visual feedback for click
+    // Enhanced visual feedback for click
     if (elementRef.current) {
       elementRef.current.style.transform = 'scale(0.95)';
+      elementRef.current.style.transition = 'transform 0.15s ease-out';
       setTimeout(() => {
         if (elementRef.current) {
           elementRef.current.style.transform = '';
+          elementRef.current.style.transition = '';
         }
       }, 150);
     }
@@ -236,10 +243,10 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
           flex items-center justify-between p-3 bg-white border border-slate-200 rounded-md transition-all duration-200 select-none
           ${isDisabled 
             ? 'opacity-50 cursor-not-allowed' 
-            : 'hover:border-indigo-500 hover:bg-indigo-50 hover:shadow-md group cursor-grab'
+            : 'hover:border-blue-500 hover:bg-blue-50 hover:shadow-md group cursor-grab'
           }
-          ${isDragging ? 'opacity-40 scale-95 shadow-lg border-indigo-300 bg-indigo-50' : ''}
-          ${justClicked ? 'ring-2 ring-indigo-300' : ''}
+          ${isDragging ? 'opacity-40 scale-95 shadow-lg border-blue-300 bg-blue-50' : ''}
+          ${justClicked ? 'ring-2 ring-blue-300' : ''}
         `}
         style={{
           // Ensure smooth transitions without causing layout shifts
@@ -252,43 +259,43 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
           className={`flex items-center gap-3 flex-1 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           title={isDisabled 
             ? 'Please wait...' 
-            : `${questionType.description} (Click or drag to add)`
+            : `${questionType.description} (Click to add at end, or drag to main drop zone)`
           }
         >
           <div className={`
             flex items-center justify-center w-8 h-8 text-xl bg-slate-100 rounded-md transition-all duration-200
-            ${!isDisabled && 'group-hover:bg-indigo-100'}
-            ${isDragging ? 'bg-indigo-200' : ''}
+            ${!isDisabled && 'group-hover:bg-blue-100'}
+            ${isDragging ? 'bg-blue-200' : ''}
           `}>
             {questionType.icon}
           </div>
           <div className="flex flex-col gap-0.5">
             <span className={`
               text-sm font-semibold text-slate-800 transition-colors duration-200
-              ${!isDisabled && 'group-hover:text-indigo-800'}
-              ${isDragging ? 'text-indigo-700' : ''}
+              ${!isDisabled && 'group-hover:text-blue-800'}
+              ${isDragging ? 'text-blue-700' : ''}
             `}>
               {questionType.label}
             </span>
             <span className={`
               text-xs text-slate-500 leading-tight transition-colors duration-200
-              ${!isDisabled && 'group-hover:text-indigo-600'}
-              ${isDragging ? 'text-indigo-500' : ''}
+              ${!isDisabled && 'group-hover:text-blue-600'}
+              ${isDragging ? 'text-blue-500' : ''}
             `}>
               {questionType.description}
             </span>
           </div>
         </div>
         <div className={`
-          text-slate-400 font-bold text-base transition-all duration-200
+          text-slate-400 font-bold text-base transition-all duration-300
           ${isDragging 
-            ? 'opacity-100 text-indigo-500 animate-pulse' 
+            ? 'opacity-100 text-blue-500 animate-pulse scale-110' 
             : !isDisabled 
-              ? 'opacity-0 group-hover:opacity-100'
+              ? 'opacity-0 group-hover:opacity-100 group-hover:text-blue-500'
               : 'opacity-30'
           }
         `}>
-          {isFormLoading ? '⏳' : '⋯'}
+          {isFormLoading ? '⏳' : isDragging ? '🎯' : '➕'}
         </div>
       </div>
 
@@ -303,22 +310,38 @@ const DraggableQuestionType: React.FC<DraggableQuestionTypeProps> = ({
         )
       )}
 
-      {/* Click feedback animation styles */}
+      {/* Enhanced click feedback animation styles */}
       <style>{`
-        @keyframes clickPulse {
+        @keyframes enhanced-click-pulse {
           0% {
             transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
           }
           50% {
             transform: scale(0.95);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
           }
           100% {
             transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
           }
         }
         
-        .click-animate {
-          animation: clickPulse 0.15s ease-in-out;
+        .enhanced-click-animate {
+          animation: enhanced-click-pulse 0.3s ease-in-out;
+        }
+
+        @keyframes drag-ready {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-2px);
+          }
+        }
+        
+        .group:hover .animate-drag-ready {
+          animation: drag-ready 2s ease-in-out infinite;
         }
       `}</style>
     </>
