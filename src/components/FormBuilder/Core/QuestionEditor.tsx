@@ -41,6 +41,10 @@ const QuestionEditor: React.FC = () => {
   const [isNewQuestionDragActive, setIsNewQuestionDragActive] = useState(false);
   const [recentlyAddedQuestionId, setRecentlyAddedQuestionId] = useState<number | null>(null);
   
+  // NEW: Track scroll position when adding questions
+  const scrollPositionBeforeAdd = useRef<number>(0);
+  const shouldAutoScroll = useRef<boolean>(true);
+  
   // Create a stable key that changes when form structure changes significantly
   const formStateKey = useMemo(() => {
     return `${state.formId || 'new'}-${state.questions.length}-${Date.now()}`;
@@ -55,11 +59,42 @@ const QuestionEditor: React.FC = () => {
     }
   }, []);
 
-  // Simple auto-scroll function - only for specific cases
-  const scrollToQuestion = useCallback((questionId: number) => {
+  // Check if user is near the bottom of the scroll container
+  const isNearBottom = useCallback(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return false;
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+    const scrollBottom = scrollTop + clientHeight;
+    const threshold = 100; // 100px from bottom is considered "near bottom"
+    
+    const nearBottom = scrollHeight - scrollBottom <= threshold;
+    console.log('isNearBottom check:', {
+      scrollTop,
+      scrollHeight,
+      clientHeight,
+      scrollBottom,
+      threshold,
+      nearBottom
+    });
+    
+    return nearBottom;
+  }, []);
+
+  // COMPLETELY REWRITTEN: Smart scroll function that respects user position
+  const scrollToQuestionIfNeeded = useCallback((questionId: number, context: 'initial' | 'new_question' | 'manual') => {
+    console.log(`scrollToQuestionIfNeeded called: ${questionId}, context: ${context}, shouldAutoScroll: ${shouldAutoScroll.current}`);
+    
     // Don't scroll if user is currently scrolling or dragging
     if (isUserScrolling || isDragInProgress) {
       console.log('Auto-scroll prevented: user interaction in progress');
+      return;
+    }
+
+    // Don't scroll if we explicitly disabled it
+    if (!shouldAutoScroll.current && context === 'new_question') {
+      console.log('Auto-scroll prevented: shouldAutoScroll is false');
+      shouldAutoScroll.current = true; // Reset for next time
       return;
     }
 
@@ -67,14 +102,24 @@ const QuestionEditor: React.FC = () => {
     const scrollContainer = scrollContainerRef.current;
     
     if (!questionElement || !scrollContainer) {
-      console.log('Auto-scroll failed: missing elements');
+      console.log('Auto-scroll prevented: missing elements');
       return;
     }
 
+    // For new questions, check if we should skip scrolling
+    if (context === 'new_question') {
+      // If user was near bottom when adding at end, don't scroll
+      const wasNearBottom = scrollPositionBeforeAdd.current;
+      if (wasNearBottom) {
+        console.log('Auto-scroll prevented: user was near bottom when question was added');
+        return;
+      }
+    }
+
     try {
-      console.log(`Auto-scrolling to question ${questionId}`);
+      console.log(`Auto-scrolling to question ${questionId} (context: ${context})`);
       questionElement.scrollIntoView({
-        behavior: 'smooth',
+        behavior: context === 'initial' ? 'auto' : 'smooth', // Instant for initial load
         block: 'center',
         inline: 'nearest'
       });
@@ -112,24 +157,24 @@ const QuestionEditor: React.FC = () => {
     };
   }, []);
 
-  // Auto-scroll ONLY for: 1) newly added questions, 2) after page refresh
+  // REWRITTEN: Much simpler auto-scroll logic
   useEffect(() => {
     if (state.activeQuestionId) {
-      // Case 1: Initial load (page refresh) - scroll to existing active question
+      // Case 1: Initial load (page refresh) - always scroll, but instantly
       if (isInitialLoad) {
         console.log('Initial load: scrolling to active question', state.activeQuestionId);
-        setTimeout(() => scrollToQuestion(state.activeQuestionId!), 300);
+        setTimeout(() => scrollToQuestionIfNeeded(state.activeQuestionId!, 'initial'), 300);
         setIsInitialLoad(false);
         lastActiveQuestionRef.current = state.activeQuestionId;
         return;
       }
 
-      // Case 2: New question added - scroll to newly active question
+      // Case 2: New question added - smart scroll decision
       if (lastActiveQuestionRef.current !== state.activeQuestionId) {
-        // Check if this is a newly added question (recently added)
+        // Check if this is a newly added question
         if (recentlyAddedQuestionId === state.activeQuestionId) {
-          console.log('New question added: scrolling to', state.activeQuestionId);
-          setTimeout(() => scrollToQuestion(state.activeQuestionId!), 200);
+          console.log('New question added: checking if should scroll to', state.activeQuestionId);
+          setTimeout(() => scrollToQuestionIfNeeded(state.activeQuestionId!, 'new_question'), 200);
         }
         lastActiveQuestionRef.current = state.activeQuestionId;
       }
@@ -140,11 +185,33 @@ const QuestionEditor: React.FC = () => {
       }
       lastActiveQuestionRef.current = null;
     }
-  }, [state.activeQuestionId, isInitialLoad, recentlyAddedQuestionId, scrollToQuestion]);
+  }, [state.activeQuestionId, isInitialLoad, recentlyAddedQuestionId, scrollToQuestionIfNeeded]);
 
-  // Enhanced add question function
+  // Enhanced add question function with scroll position tracking
   const addQuestionAtPosition = useCallback((questionType: string, insertIndex?: number) => {
     console.log('Adding question:', { questionType, insertIndex, currentLength: state.questions.length });
+    
+    // CRITICAL: Capture scroll state BEFORE adding the question
+    const wasNearBottom = isNearBottom();
+    const isAddingAtEnd = insertIndex === undefined || insertIndex >= state.questions.length;
+    
+    console.log('Scroll state before adding question:', {
+      wasNearBottom,
+      isAddingAtEnd,
+      insertIndex,
+      currentLength: state.questions.length
+    });
+    
+    // Set scroll behavior based on position
+    if (isAddingAtEnd && wasNearBottom) {
+      console.log('Adding at end while user is near bottom - DISABLING auto-scroll');
+      shouldAutoScroll.current = false;
+      scrollPositionBeforeAdd.current = 1; // Mark as "was near bottom"
+    } else {
+      console.log('Normal add - auto-scroll enabled');
+      shouldAutoScroll.current = true;
+      scrollPositionBeforeAdd.current = 0; // Mark as "was not near bottom"
+    }
     
     const currentQuestions = state.questions;
     const orderPosition = insertIndex !== undefined ? insertIndex : currentQuestions.length;
@@ -176,7 +243,7 @@ const QuestionEditor: React.FC = () => {
     // Mark as recently added for auto-scroll detection
     setRecentlyAddedQuestionId(newQuestionId);
     setTimeout(() => setRecentlyAddedQuestionId(null), 1000);
-  }, [dispatch, state.questions]);
+  }, [dispatch, state.questions, isNearBottom]);
 
   // Auto-scroll setup - stable reference
   useEffect(() => {
@@ -220,13 +287,23 @@ const QuestionEditor: React.FC = () => {
           if (isNewQuestionTypeData(dragging)) {
             console.log('Processing new question drop:', dragging.questionType);
             
+            // CRITICAL: Capture scroll state BEFORE processing drop
+            const wasNearBottom = isNearBottom();
+            
             // Check if dropped on main drop zone (at end)
             const isDropZoneDrop = location.current.dropTargets.some(target => 
               target.element === dropZoneRef.current
             );
             
             if (isDropZoneDrop) {
-              console.log('Dropping in main drop zone - adding at end');
+              console.log('Dropping in main drop zone - adding at end, wasNearBottom:', wasNearBottom);
+              
+              // If user is near bottom and dropping at end, disable auto-scroll
+              if (wasNearBottom) {
+                shouldAutoScroll.current = false;
+                scrollPositionBeforeAdd.current = 1;
+              }
+              
               setTimeout(() => addQuestionAtPosition(dragging.questionType), 0);
               return;
             }
@@ -258,8 +335,16 @@ const QuestionEditor: React.FC = () => {
                 targetIndex,
                 closestEdge,
                 insertIndex,
-                totalQuestions: currentQuestions.length
+                totalQuestions: currentQuestions.length,
+                wasNearBottom
               });
+              
+              // For insertion, check if inserting at bottom while user is near bottom
+              if (insertIndex >= currentQuestions.length && wasNearBottom) {
+                console.log('Inserting at end while near bottom - disabling auto-scroll');
+                shouldAutoScroll.current = false;
+                scrollPositionBeforeAdd.current = 1;
+              }
               
               // Validate insert index
               if (insertIndex >= 0 && insertIndex <= currentQuestions.length) {
@@ -323,6 +408,9 @@ const QuestionEditor: React.FC = () => {
               newLength: reorderedWithPositions.length
             });
 
+            // For reordering, don't auto-scroll to maintain user's position
+            shouldAutoScroll.current = false;
+
             dispatch(reorderQuestions(reorderedWithPositions));
           }
         } catch (error) {
@@ -334,7 +422,7 @@ const QuestionEditor: React.FC = () => {
 
     monitorsInitialized.current = true;
     return cleanup;
-  }, [formStateKey, addQuestionAtPosition, state.questions]);
+  }, [formStateKey, addQuestionAtPosition, state.questions, isNearBottom]);
 
   // Enhanced drop zone setup
   useEffect(() => {
@@ -445,7 +533,8 @@ const QuestionEditor: React.FC = () => {
       isUserScrolling,
       isDragInProgress,
       isInitialLoad,
-      recentlyAddedQuestionId
+      recentlyAddedQuestionId,
+      shouldAutoScroll: shouldAutoScroll.current
     });
   }, [state.formId, state.questions.length, state.activeQuestionId, isNewQuestionDragActive, isUserScrolling, isDragInProgress, isInitialLoad, recentlyAddedQuestionId]);
 
