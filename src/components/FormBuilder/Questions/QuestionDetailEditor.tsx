@@ -37,12 +37,14 @@ const QuestionDetailEditor: React.FC = () => {
       }
     }
   }, [activeQuestion]);
-
   // Handle field updates
   const handleFieldChange = (field: keyof Question, value: any) => {
     setLocalQuestion((prev) => ({ ...prev, [field]: value }));
   };
-
+  
+  // if (activeQuestion?.type === 'email') {
+  //   handleFieldChange("validationType", "email");
+  // }
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -98,7 +100,7 @@ const QuestionDetailEditor: React.FC = () => {
     if (mediaType.startsWith('audio/')) return 'audio';
     return 'unknown';
   };
-
+  
   // Render media preview
   const renderMediaPreview = () => {
     if (!filePreview) return null;
@@ -296,7 +298,7 @@ const QuestionDetailEditor: React.FC = () => {
         </div>
 
         {/* Points field */}
-        <div className="mb-5">
+        {/* <div className="mb-5">
           <label htmlFor="question-points" className="block mb-1.5 text-sm font-medium text-gray-700">
             Points (for scoring)
           </label>
@@ -311,7 +313,7 @@ const QuestionDetailEditor: React.FC = () => {
             className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
             min="-100"
           />
-        </div>
+        </div> */}
 
         {/* Media Upload field - REPLACED MEDIA URL */}
         <div className="mb-5">
@@ -545,23 +547,46 @@ const QuestionDetailEditor: React.FC = () => {
                   </div>
                 )}
 
-              <div className="mb-5">
-                <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
-                  Error Message For Wrong Pattern
-                </label>
-                <textarea
-                  id="question-content"
-                  value={localQuestion.errorMessageForPattern || ""}
-                  onChange={(e) => handleFieldChange("errorMessageForPattern", e.target.value)}
-                  placeholder="Please answer according to the type"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-                  rows={3}
-                />
-              </div>
+                {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Pattern</label>
+                    <input
+                      type="text"
+                      placeholder="Enter regex pattern (e.g., ^[0-9]+$)"
+                      value={localQuestion.errorMessageForPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("errorMessageForPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
+
             </div>
           </div>
         )}
 
+
+        {activeQuestion.type==='email'&&(
+          
+          <div className="mb-5">
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Placeholder text"
+                value={localQuestion.placeholder || ""}
+                onChange={(e) =>
+                  handleFieldChange("placeholder", e.target.value)
+                }
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+              />
+            
+            </div>
+          </div>
+        )}
         {/* Textarea Settings */}
         {activeQuestion.type === "textarea" && (
           <div className="mb-5">

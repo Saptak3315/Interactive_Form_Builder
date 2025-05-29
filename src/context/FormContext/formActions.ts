@@ -87,74 +87,118 @@ export const createDefaultQuestion = (
 
   // Type-specific configurations
   switch (type) {
-    case 'text':
-      return {
-        ...baseQuestion,
-        content: 'New Text Question',
-        placeholder: '',
-        validationType: 'none',
-        validationPattern:'',
-        explanation:"" // Default to no validation
-      };
-      
-    case 'textarea':
-      return {
-        ...baseQuestion,
-        content: 'New Long Text Question',
-        placeholder: 'Enter your detailed answer here',
-        validationType: 'none', // Default to no validation
-        validationPattern:'',
-        explanation:""
-      };
-      
-    case 'number':
-      return {
-        ...baseQuestion,
-        content: 'New Number Question',
-        placeholder: 'Enter a number',
-      };
-      
-    case 'multiple_choice':
-      return {
-        ...baseQuestion,
-        content: 'New Multiple Choice Question',
-        options: [
-          { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
-          { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
-        ],
-      };
-      
-    case 'checkbox':
-      return {
-        ...baseQuestion,
-        content: 'New Checkbox Question',
-        options: [
-          { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
-          { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
-        ],
-      };
-      
-    case 'file':
-      return {
-        ...baseQuestion,
-        content: 'New File Upload Question',
-      };
-      
-    case 'audio':
-      return {
-        ...baseQuestion,
-        content: 'New Audio Question',
-      };
-      
-    case 'calculated':
-      return {
-        ...baseQuestion,
-        content: 'New Calculated Question',
-      };
-      
-    default:
-      return baseQuestion;
-  }
+  case 'full_name':
+    return {
+      ...baseQuestion,
+      content: 'Full Name',
+      placeholder: 'Enter your full name',
+      validationType: 'text',
+      validationPattern: '',
+      explanation: '',
+    };
+
+  case 'address':
+    return {
+      ...baseQuestion,
+      content: 'Address',
+      placeholder: 'Enter your address',
+      validationType: 'text',
+      validationPattern: '',
+      explanation: '',
+    };
+
+  case 'email':
+    return {
+      ...baseQuestion,
+      content: 'Email Address',
+      placeholder: 'example@email.com',
+      validationType: 'email',
+      validationPattern: '',
+      explanation: 'Must be a valid email address',
+    };
+
+  case 'phone':
+    return {
+      ...baseQuestion,
+      content: 'Phone Number',
+      placeholder: 'Enter your phone number',
+      validationType: 'phone',
+      validationPattern: '',
+      explanation: 'Must be a valid phone number',
+    };
+
+  case 'text': // short_text
+    return {
+      ...baseQuestion,
+      content: 'Short Text Question',
+      placeholder: 'Enter short text',
+      validationType: 'none',
+      validationPattern: '',
+      explanation: '',
+    };
+
+  case 'textarea': // long_text
+    return {
+      ...baseQuestion,
+      content: 'Long Text Question',
+      placeholder: 'Enter your detailed answer here',
+      validationType: 'none',
+      validationPattern: '',
+      explanation: '',
+    };
+
+  case 'number':
+    return {
+      ...baseQuestion,
+      content: 'Number Question',
+      placeholder: 'Enter a number',
+      validationType: 'number',
+      validationPattern: '',
+      explanation: '',
+    };
+
+  case 'multiple_choice':
+    return {
+      ...baseQuestion,
+      content: 'Multiple Choice Question',
+      options: [
+        { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
+        { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
+      ],
+    };
+
+  case 'checkbox':
+    return {
+      ...baseQuestion,
+      content: 'Checkbox Question',
+      options: [
+        { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
+        { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
+      ],
+    };
+
+  case 'file':
+    return {
+      ...baseQuestion,
+      content: 'File Upload Question',
+    };
+
+  case 'audio':
+    return {
+      ...baseQuestion,
+      content: 'Audio Upload Question',
+    };
+
+  case 'calculated':
+    return {
+      ...baseQuestion,
+      content: 'Calculated Field',
+    };
+
+  default:
+    return baseQuestion;
+}
+
 };
 
 // Utility action to duplicate a question
