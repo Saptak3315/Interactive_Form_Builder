@@ -104,6 +104,7 @@ export const createDefaultQuestion = (
       placeholder: 'Enter your address',
       validationType: 'text',
       validationPattern: '',
+      maxLength:320,
       explanation: '',
     };
 
@@ -113,7 +114,8 @@ export const createDefaultQuestion = (
       content: 'Email Address',
       placeholder: 'example@email.com',
       validationType: 'email',
-      validationPattern: '',
+      validationPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
+      errorMessageForPattern:'Please Enter an email',
       explanation: 'Must be a valid email address',
     };
 

@@ -26,7 +26,16 @@ const QuestionDetailEditor: React.FC = () => {
   // Update local state when active question changes
   useEffect(() => {
     if (activeQuestion) {
-      setLocalQuestion(activeQuestion);
+      let questionData = { ...activeQuestion };
+
+      // Auto-set validation for email type
+      if (activeQuestion.type === 'email') {
+        questionData.validationType = 'email';
+        questionData.validationPattern = '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+      }
+
+      setLocalQuestion(questionData);
+
       // Reset file states when switching questions
       setUploadedFile(null);
       setFilePreview(null);
@@ -41,7 +50,7 @@ const QuestionDetailEditor: React.FC = () => {
   const handleFieldChange = (field: keyof Question, value: any) => {
     setLocalQuestion((prev) => ({ ...prev, [field]: value }));
   };
-  
+
   // if (activeQuestion?.type === 'email') {
   //   handleFieldChange("validationType", "email");
   // }
@@ -100,7 +109,7 @@ const QuestionDetailEditor: React.FC = () => {
     if (mediaType.startsWith('audio/')) return 'audio';
     return 'unknown';
   };
-  
+
   // Render media preview
   const renderMediaPreview = () => {
     if (!filePreview) return null;
@@ -534,6 +543,23 @@ const QuestionDetailEditor: React.FC = () => {
                 localQuestion.validationType !== 'none' &&
                 localQuestion.validationType !== '' && (
                   <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                    <input
+                      type="text"
+                      placeholder="Enter error message for validation failure"
+                      value={localQuestion.errorMessageForPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("errorMessageForPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
+
+              {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
                     <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Pattern</label>
                     <input
                       type="text"
@@ -547,30 +573,13 @@ const QuestionDetailEditor: React.FC = () => {
                   </div>
                 )}
 
-                {localQuestion.validationType &&
-                localQuestion.validationType !== 'none' &&
-                localQuestion.validationType !== '' && (
-                  <div>
-                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Pattern</label>
-                    <input
-                      type="text"
-                      placeholder="Enter regex pattern (e.g., ^[0-9]+$)"
-                      value={localQuestion.errorMessageForPattern || ""}
-                      onChange={(e) =>
-                        handleFieldChange("errorMessageForPattern", e.target.value)
-                      }
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-                    />
-                  </div>
-                )}
-
             </div>
           </div>
         )}
 
 
-        {activeQuestion.type==='email'&&(
-          
+        {activeQuestion.type === 'email' && (
+
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
@@ -583,8 +592,24 @@ const QuestionDetailEditor: React.FC = () => {
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
-            
+
             </div>
+             {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                    <input
+                      type="text"
+                      placeholder="Enter error message for validation failure"
+                      value={localQuestion.errorMessageForPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("errorMessageForPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
           </div>
         )}
         {/* Textarea Settings */}

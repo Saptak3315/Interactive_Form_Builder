@@ -107,6 +107,9 @@ const FullFormPreview: React.FC = () => {
       };
     }
 
+    if (question.type === 'email' && (!question.validationType || question.validationType === 'none')) {
+    question = { ...question, validationType: 'email' }; // Create new object instead of mutating
+  }
     if (question.validationType && question.validationType !== 'none') {
       const pattern = getValidationPattern(question.validationType, question.validationPattern);
       if (pattern) {
@@ -149,7 +152,7 @@ const FullFormPreview: React.FC = () => {
   const performValidation = (questionId: number, question: any, value: any) => {
     let validation: { isValid: boolean; error?: string };
 
-    if (question.type === 'text' || question.type === 'textarea') {
+    if (question.type === 'text' || question.type === 'textarea'||question.type==='email') {
       validation = validateInput(question, value);
     } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
       validation = validateMultipleChoice(question, value);
@@ -157,7 +160,8 @@ const FullFormPreview: React.FC = () => {
       validation = question.isRequired && !value
         ? { isValid: false, error: 'Please upload a file' }
         : { isValid: true };
-    } else {
+    }
+    else {
       validation = question.isRequired && (!value || value === '')
         ? { isValid: false, error: 'This field is required' }
         : { isValid: true };
@@ -207,8 +211,8 @@ const FullFormPreview: React.FC = () => {
               value={currentValue}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
-                  : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
+                ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
+                : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
                 }`}
               placeholder={question.placeholder || "Enter your answer"}
             />
@@ -238,11 +242,11 @@ const FullFormPreview: React.FC = () => {
 
             <input
               type="email"
-              value={currentValue || ''}
+              value={currentValue}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                  : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
                 }`}
               placeholder="Enter your email"
             />
@@ -276,8 +280,8 @@ const FullFormPreview: React.FC = () => {
               value={currentValue || ''}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                  : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
                 }`}
               placeholder="Enter your phone number"
             />
@@ -310,8 +314,8 @@ const FullFormPreview: React.FC = () => {
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
               rows={3}
               className={`w-full px-4 py-3 border rounded-lg text-base resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                  : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
                 }`}
               placeholder="Enter your address"
             />
@@ -344,8 +348,8 @@ const FullFormPreview: React.FC = () => {
               value={currentValue || ''}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                  : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
                 }`}
               placeholder="Enter your full name"
             />
@@ -378,8 +382,8 @@ const FullFormPreview: React.FC = () => {
               value={currentValue}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg text-base min-h-32 resize-y transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
-                  : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
+                ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
+                : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
                 }`}
               placeholder={question.placeholder || "Enter your detailed answer"}
               rows={4}
@@ -414,8 +418,8 @@ const FullFormPreview: React.FC = () => {
               value={currentValue}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                  ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
-                  : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
+                ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
+                : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
                 }`}
               placeholder={question.placeholder || "Enter a number"}
             />
@@ -735,8 +739,8 @@ const FullFormPreview: React.FC = () => {
               <button
                 onClick={() => setShowValidation(!showValidation)}
                 className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${showValidation
-                    ? 'bg-orange-50 border-orange-300 text-orange-700'
-                    : 'bg-slate-50 border-slate-300 text-slate-600'
+                  ? 'bg-orange-50 border-orange-300 text-orange-700'
+                  : 'bg-slate-50 border-slate-300 text-slate-600'
                   }`}
               >
                 <FontAwesomeIcon icon={showValidation ? faCheckCircle : faExclamationTriangle} />
@@ -792,8 +796,8 @@ const FullFormPreview: React.FC = () => {
                   type="submit"
                   disabled={isSubmitting}
                   className={`px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-200 ${isSubmitting
-                      ? 'bg-slate-400 text-slate-200 cursor-not-allowed'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-lg hover:shadow-xl'
+                    ? 'bg-slate-400 text-slate-200 cursor-not-allowed'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-lg hover:shadow-xl'
                     }`}
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Form'}
