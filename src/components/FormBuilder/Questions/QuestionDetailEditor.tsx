@@ -29,11 +29,6 @@ const QuestionDetailEditor: React.FC = () => {
       let questionData = { ...activeQuestion };
 
       // Auto-set validation for email type
-      if (activeQuestion.type === 'email') {
-        questionData.validationType = 'email';
-        questionData.validationPattern = '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
-      }
-
       setLocalQuestion(questionData);
 
       // Reset file states when switching questions
@@ -612,8 +607,43 @@ const QuestionDetailEditor: React.FC = () => {
                 )}
           </div>
         )}
+
+        {activeQuestion.type === 'phone' && (
+
+          <div className="mb-5">
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Placeholder text"
+                value={localQuestion.placeholder || ""}
+                onChange={(e) =>
+                  handleFieldChange("placeholder", e.target.value)
+                }
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+              />
+
+            </div>
+             {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                    <input
+                      type="text"
+                      placeholder="Enter error message for validation failure"
+                      value={localQuestion.errorMessageForPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("errorMessageForPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
+          </div>
+        )}
         {/* Textarea Settings */}
-        {activeQuestion.type === "textarea" && (
+       {activeQuestion.type === "textarea" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
@@ -654,6 +684,108 @@ const QuestionDetailEditor: React.FC = () => {
                   min="0"
                 />
               </div>
+
+              {typeof localQuestion.minLength === "number" && localQuestion.minLength > 0 && (
+                <div className="mb-5">
+                  <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message For Minimum Length
+                  </label>
+                  <textarea
+                    id="question-content"
+                    value={localQuestion.errorMessageForMinLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForMinLength", e.target.value)}
+                    placeholder="Your result should be between Min and Max Length"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              {typeof localQuestion.maxLength === "number" && localQuestion.maxLength > 0 && (
+                <div className="mb-5">
+                  <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message For Maximum Length
+                  </label>
+                  <textarea
+                    id="question-content"
+                    value={localQuestion.errorMessageForMaxLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForMaxLength", e.target.value)}
+                    placeholder="Your Result should be between Min and Max Length"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
+              )}
+              {/* VALIDATION DROPDOWN */}
+              <div>
+                <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Type</label>
+                <select
+                  value={localQuestion.validationType || "none"}
+                  onChange={(e) => {
+                    const selectedType = e.target.value;
+                    handleFieldChange("validationType", selectedType);
+
+                    // Auto-set regex patterns
+                    const patterns: Record<string, string> = {
+                      email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+                      url: "/^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?::\d+)?(\/[^\s]*)?(#[^\s]*)?$/",
+                      number: "^\d+$",
+                      alphanumeric: "^[a-zA-Z0-9]+$"
+                    };
+
+                    if (selectedType in patterns) {
+                      handleFieldChange("validationPattern", patterns[selectedType]);
+                    } else if (selectedType === "none") {
+                      handleFieldChange("validationPattern", "");
+                    }
+                  }}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                >
+                  <option value="none">No validation</option>
+                  <option value="email">Email address</option>
+                  <option value="url">Website URL</option>
+                  <option value="phone">Phone number</option>
+                  <option value="number">Numbers only</option>
+                  <option value="alphanumeric">Letters and numbers only</option>
+                  <option value="custom">Custom pattern</option>
+                </select>
+              </div>
+
+              {/* Editable pattern input - show for any validation type except none */}
+              {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                    <input
+                      type="text"
+                      placeholder="Enter error message for validation failure"
+                      value={localQuestion.errorMessageForPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("errorMessageForPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
+
+              {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Pattern</label>
+                    <input
+                      type="text"
+                      placeholder="Enter regex pattern (e.g., ^[0-9]+$)"
+                      value={localQuestion.validationPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("validationPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
+
             </div>
           </div>
         )}

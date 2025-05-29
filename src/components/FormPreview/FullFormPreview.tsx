@@ -108,8 +108,8 @@ const FullFormPreview: React.FC = () => {
     }
 
     if (question.type === 'email' && (!question.validationType || question.validationType === 'none')) {
-    question = { ...question, validationType: 'email' }; // Create new object instead of mutating
-  }
+      question = { ...question, validationType: 'email' }; // Create new object instead of mutating
+    }
     if (question.validationType && question.validationType !== 'none') {
       const pattern = getValidationPattern(question.validationType, question.validationPattern);
       if (pattern) {
@@ -135,12 +135,12 @@ const FullFormPreview: React.FC = () => {
   const validateMultipleChoice = (question: any, value: any): { isValid: boolean; error?: string } => {
     if (question.isRequired) {
       if (question.type === 'checkbox') {
-        const selectedOptions = Array.isArray(value) ? value : [];
+        const selectedOptions = Array.isArray(value.trim()) ? value.trim() : [];
         if (selectedOptions.length === 0) {
           return { isValid: false, error: 'Please select at least one option' };
         }
       } else if (question.type === 'multiple_choice') {
-        if (!value || value === '') {
+        if (!value.trim() || value.trim() === '') {
           return { isValid: false, error: 'Please select an option' };
         }
       }
@@ -152,17 +152,17 @@ const FullFormPreview: React.FC = () => {
   const performValidation = (questionId: number, question: any, value: any) => {
     let validation: { isValid: boolean; error?: string };
 
-    if (question.type === 'text' || question.type === 'textarea'||question.type==='email') {
-      validation = validateInput(question, value);
+    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email'|| question.type==='phone') {
+      validation = validateInput(question, value.trim());
     } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
-      validation = validateMultipleChoice(question, value);
+      validation = validateMultipleChoice(question, value.trim());
     } else if (question.type === 'file') {
-      validation = question.isRequired && !value
+      validation = question.isRequired && !value.trim()
         ? { isValid: false, error: 'Please upload a file' }
         : { isValid: true };
     }
     else {
-      validation = question.isRequired && (!value || value === '')
+      validation = question.isRequired && (!value.trim() || value === '')
         ? { isValid: false, error: 'This field is required' }
         : { isValid: true };
     }
@@ -178,7 +178,7 @@ const FullFormPreview: React.FC = () => {
 
   const handleInputChange = (questionId: number, question: any, value: any) => {
     // Perform validation
-    const validation = performValidation(questionId, question, value);
+    const validation = performValidation(questionId, question, value.trim());
 
     // Update the response
     handleQuestionResponse(questionId, value, validation.isValid);
@@ -620,9 +620,9 @@ const FullFormPreview: React.FC = () => {
       let validation: { isValid: boolean; error?: string };
 
       if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'full_name' || question.type === 'phone') {
-        validation = validateInput(question, value);
+        validation = validateInput(question, value.trim());
       } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
-        validation = validateMultipleChoice(question, value);
+        validation = validateMultipleChoice(question, value.trim());
       } else if (question.type === 'file') {
         validation = question.isRequired && !value
           ? { isValid: false, error: 'Please upload a file' }

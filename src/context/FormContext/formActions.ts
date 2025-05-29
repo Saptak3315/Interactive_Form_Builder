@@ -125,7 +125,8 @@ export const createDefaultQuestion = (
       content: 'Phone Number',
       placeholder: 'Enter your phone number',
       validationType: 'phone',
-      validationPattern: '',
+      validationPattern: '/^\+?[1-9]\d{7,14}$/',
+      errorMessageForPattern:'Please Enter an Phone Number',
       explanation: 'Must be a valid phone number',
     };
 
