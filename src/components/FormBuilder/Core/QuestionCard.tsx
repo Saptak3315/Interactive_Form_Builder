@@ -139,18 +139,22 @@ const outerStyles: { [Key in QuestionCardState['type']]?: string } = {
   'is-dragging-and-left-self': 'hidden',
 };
 
-// Improved shadow component with stable sizing
-export function QuestionCardShadow({ dragging }: { dragging: DOMRect }) {
+// Enhanced shadow component for reordering only
+export function QuestionCardShadow({ 
+  dragging
+}: { 
+  dragging: DOMRect;
+}) {
   return (
     <div 
-      className="flex-shrink-0 rounded-lg bg-blue-100 border-2 border-dashed border-blue-300 mx-0 my-2 transition-all duration-150" 
+      className="flex-shrink-0 rounded-lg border-2 border-dashed mx-0 my-2 transition-all duration-150 bg-blue-100 border-blue-400"
       style={{ 
-        height: Math.max(dragging.height, 80), // Minimum height to prevent layout shifts
+        height: Math.max(dragging.height, 80), // Same height as original question
         minHeight: '80px'
       }}
     >
-      <div className="flex items-center justify-center h-full text-blue-500 font-medium text-sm">
-        Drop here
+      <div className="flex items-center justify-center h-full font-medium text-sm text-blue-600">
+        Drop Here
       </div>
     </div>
   );
@@ -235,7 +239,7 @@ export function QuestionDisplay({
       ref={outerRef}
       className={`flex flex-shrink-0 flex-col ${outerStyles[state.type] || ''}`}
     >
-      {/* Stable shadow above if dropping at top */}
+      {/* Shadow above if dropping at top (reordering only) */}
       {state.type === 'is-over' && state.closestEdge === 'top' ? (
         <QuestionCardShadow dragging={state.dragging} />
       ) : null}
@@ -243,7 +247,8 @@ export function QuestionDisplay({
       <div
         className={`
           group mb-3 p-4 bg-white border-2 rounded-lg select-none relative block w-full transition-all duration-200
-          ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-gray-200'}
+          ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-lg shadow-indigo-100 ring-2 ring-indigo-200' : 'border-gray-200'}
+          ${state.type === 'is-over' ? 'ring-2 ring-blue-300 border-blue-300' : ''}
           ${innerStyles[state.type] || ''}
         `}
         ref={innerRef}
@@ -259,13 +264,25 @@ export function QuestionDisplay({
             : undefined
         }
       >
+
         <div className="pointer-events-none">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
-              <span className="font-semibold text-indigo-500 text-base">{index + 1}.</span>
-              <span className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-500 uppercase font-medium tracking-wide">
+              <span className={`font-semibold text-base ${
+                isActive ? 'text-indigo-600' : 'text-indigo-500'
+              }`}>{index + 1}.</span>
+              <span className={`text-xs px-2 py-1 rounded uppercase font-medium tracking-wide ${
+                isActive 
+                  ? 'bg-indigo-100 text-indigo-700' 
+                  : 'bg-gray-100 text-gray-500'
+              }`}>
                 {question.type}
               </span>
+              {isActive && (
+                <span className="text-xs px-2 py-1 bg-indigo-600 text-white rounded font-medium">
+                  ACTIVE
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 pointer-events-auto transition-opacity duration-200">
               <button
@@ -292,7 +309,9 @@ export function QuestionDisplay({
           </div>
           
           <div className="mb-3">
-            <div className="text-base text-gray-800 font-medium leading-6 flex items-center gap-1.5">
+            <div className={`text-base font-medium leading-6 flex items-center gap-1.5 ${
+              isActive ? 'text-indigo-800' : 'text-gray-800'
+            }`}>
               {question.content || `Question ${index + 1}`}
               {question.isRequired && <span className="text-red-600 font-semibold">*</span>}
             </div>
@@ -320,7 +339,9 @@ export function QuestionDisplay({
             )}
 
             {question.explanation && (
-              <div className="text-sm text-gray-500 mt-1.5 italic">
+              <div className={`text-sm mt-1.5 italic ${
+                isActive ? 'text-indigo-600' : 'text-gray-500'
+              }`}>
                 {question.explanation}
               </div>
             )}
@@ -350,9 +371,16 @@ export function QuestionDisplay({
             )}
           </div>
         </div>
+
+        {/* Click hint for active questions */}
+        {isActive && (
+          <div className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">
+            Click again to deselect
+          </div>
+        )}
       </div>
       
-      {/* Stable shadow below if dropping at bottom */}
+      {/* Shadow below if dropping at bottom (reordering only) */}
       {state.type === 'is-over' && state.closestEdge === 'bottom' ? (
         <QuestionCardShadow dragging={state.dragging} />
       ) : null}
@@ -366,12 +394,33 @@ interface QuestionCardProps {
   isActive: boolean;
   onSelect: (id: number) => void;
   onDelete: (id: number, title: string) => void;
+  registerRef?: (questionId: number, element: HTMLDivElement | null) => void;
 }
 
-export function QuestionCard({ question, index, isActive, onSelect, onDelete }: QuestionCardProps) {
+export function QuestionCard({ 
+  question, 
+  index, 
+  isActive, 
+  onSelect, 
+  onDelete, 
+  registerRef 
+}: QuestionCardProps) {
   const outerRef = useRef<HTMLDivElement | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<QuestionCardState>(idle);
+
+  // Register ref for auto-scrolling
+  useEffect(() => {
+    if (registerRef && outerRef.current) {
+      registerRef(question.id, outerRef.current);
+    }
+    
+    return () => {
+      if (registerRef) {
+        registerRef(question.id, null);
+      }
+    };
+  }, [question.id, registerRef]);
 
   useEffect(() => {
     const outer = outerRef.current;
@@ -409,38 +458,64 @@ export function QuestionCard({ question, index, isActive, onSelect, onDelete }: 
       dropTargetForElements({
         element: outer,
         getIsSticky: () => true,
-        canDrop: ({ source }) => isQuestionCardData(source.data), // Only accept question reordering
+        canDrop: ({ source }) => {
+          // Accept both question reordering and new question insertion
+          return isQuestionCardData(source.data) || isNewQuestionTypeData(source.data);
+        },
         getData: ({ element, input }) => {
           const data = getQuestionDropTargetData({ question });
           return attachClosestEdge(data, { element, input, allowedEdges: ['top', 'bottom'] });
         },
         onDragEnter({ source, self }) {
-          // Only handle question reordering, not new question type drops
-          if (isQuestionCardData(source.data)) {
-            if (source.data.question.id === question.id) return;
-            
-            const closestEdge = extractClosestEdge(self.data);
-            if (!closestEdge) return;
+          const closestEdge = extractClosestEdge(self.data);
+          if (!closestEdge) return;
 
-            setState({ type: 'is-over', dragging: source.data.rect, closestEdge });
-          }
-          // Remove new question type handling to prevent conflicts with main drop zone
-        },
-        onDrag({ source, self }) {
-          // Only handle question reordering, not new question type drops
+          // Handle existing question reordering
           if (isQuestionCardData(source.data)) {
             if (source.data.question.id === question.id) return;
-            
-            const closestEdge = extractClosestEdge(self.data);
-            if (!closestEdge) return;
-            
-            const proposed: QuestionCardState = { type: 'is-over', dragging: source.data.rect, closestEdge };
-            setState((current) => {
-              if (isShallowEqual(proposed, current)) return current;
-              return proposed;
+            setState({ 
+              type: 'is-over', 
+              dragging: source.data.rect, 
+              closestEdge
             });
           }
-          // Remove new question type handling to prevent conflicts with main drop zone
+          
+          // Handle new question insertion with same visual feedback
+          else if (isNewQuestionTypeData(source.data)) {
+            setState({ 
+              type: 'is-over', 
+              dragging: source.data.rect, 
+              closestEdge
+            });
+          }
+        },
+        onDrag({ source, self }) {
+          const closestEdge = extractClosestEdge(self.data);
+          if (!closestEdge) return;
+          
+          let proposed: QuestionCardState;
+          
+          if (isQuestionCardData(source.data)) {
+            if (source.data.question.id === question.id) return;
+            proposed = { 
+              type: 'is-over', 
+              dragging: source.data.rect, 
+              closestEdge
+            };
+          } else if (isNewQuestionTypeData(source.data)) {
+            proposed = { 
+              type: 'is-over', 
+              dragging: source.data.rect, 
+              closestEdge
+            };
+          } else {
+            return;
+          }
+          
+          setState((current) => {
+            if (isShallowEqual(proposed, current)) return current;
+            return proposed;
+          });
         },
         onDragLeave({ source }) {
           if (isQuestionCardData(source.data)) {
