@@ -19,37 +19,20 @@ const QuestionDetailEditor: React.FC = () => {
 
   // Local state for form fields
   const [localQuestion, setLocalQuestion] = useState<Partial<Question>>({});
+  const [localOptions, setLocalOptions] = useState<QuestionOption[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [optionErrors, setOptionErrors] = useState<{ [optionId: number]: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [localOptions, setLocalOptions] = useState<QuestionOption[]>([]);
-  // Add MCQ-specific local state
-  const [mcqSettings, setMcqSettings] = useState(activeQuestion?.mcqSettings || {
-    shuffleOptions: false,
-    allowMultipleCorrect: false,
-    showCorrectAnswers: true,
-    partialCredit: false,
-    scoringMethod: 'standard' as const,
-    defaultPoints: 1,
-    defaultNegativePoints: 0,
-  });
 
   // Update local state when active question changes
   useEffect(() => {
     if (activeQuestion) {
       let questionData = { ...activeQuestion };
 
+      // Auto-set validation for email type
       setLocalQuestion(questionData);
-      setLocalOptions(activeQuestion.options || []);
-      setMcqSettings(activeQuestion.mcqSettings || {
-        shuffleOptions: false,
-        allowMultipleCorrect: false,
-        showCorrectAnswers: true,
-        partialCredit: false,
-        scoringMethod: 'standard',
-        defaultPoints: 1,
-        defaultNegativePoints: 0,
-      });
+      setLocalOptions(activeQuestion.options || []); //  Set local options for full_name
 
       // Reset file states when switching questions
       setUploadedFile(null);
@@ -61,21 +44,52 @@ const QuestionDetailEditor: React.FC = () => {
       }
     }
   }, [activeQuestion]);
+
   // Handle field updates
   const handleFieldChange = (field: keyof Question, value: any) => {
     setLocalQuestion((prev) => ({ ...prev, [field]: value }));
   };
-
-  // Handle MCQ settings updates
-  const handleMcqSettingsChange = (field: string, value: any) => {
-    const newSettings = { ...mcqSettings, [field]: value };
-    setMcqSettings(newSettings);
-    handleFieldChange('mcqSettings', newSettings);
+  const handleLocalOptionChange = (
+    optionId: number,
+    field: keyof QuestionOption,
+    value: any
+  ) => {
+    setLocalOptions(prev =>
+      prev.map(option =>
+        option.id === optionId
+          ? { ...option, [field]: value }
+          : option
+      )
+    );
   };
 
-  // if (activeQuestion?.type === 'email') {
-  //   handleFieldChange("validationType", "email");
-  // }
+  const validateOptionContent = (optionId: number, content: string) => {
+    const trimmedContent = content.trim();
+
+    if (content.length > 0 && trimmedContent.length === 0) {
+      // Has content but only spaces
+      setOptionErrors(prev => ({
+        ...prev,
+        [optionId]: 'Option cannot contain only spaces'
+      }));
+      return false;
+    } else if (trimmedContent.length === 0) {
+      // Completely empty
+      setOptionErrors(prev => ({
+        ...prev,
+        [optionId]: 'Option content is required'
+      }));
+      return false;
+    } else {
+      // Valid content
+      setOptionErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[optionId];
+        return newErrors;
+      });
+      return true;
+    }
+  };
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -91,9 +105,6 @@ const QuestionDetailEditor: React.FC = () => {
       Swal.fire('File size must be less than 5 MB');
       return;
     }
-
-    // Validate file type
-
 
     setUploadedFile(file);
 
@@ -187,14 +198,24 @@ const QuestionDetailEditor: React.FC = () => {
     );
   };
 
-  // Save changes to the question
+  //  Save changes to the question (including local options for full_name)
   const saveChanges = () => {
     if (activeQuestion && localQuestion) {
-      dispatch(updateQuestion(activeQuestion.id, localQuestion));
+      if (activeQuestion.type === 'full_name') {
+        // For full_name, include local options in the update
+        const updatedQuestion = {
+          ...localQuestion,
+          options: localOptions
+        };
+        dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+      } else {
+        // For other question types, save normally
+        dispatch(updateQuestion(activeQuestion.id, localQuestion));
+      }
     }
   };
 
-  // Handle option changes
+  // Handle option changes (for multiple_choice and checkbox - keep original behavior)
   const handleOptionChange = (
     optionId: number,
     field: keyof QuestionOption,
@@ -210,31 +231,28 @@ const QuestionDetailEditor: React.FC = () => {
       content: "",
       orderPosition: activeQuestion.options?.length || 0,
       isCorrect: false,
+      // placeholder: activeQuestion.type === 'full_name' ? '' : undefined, // ✅ Add placeholder for full_name
     };
     dispatch(addOption(activeQuestion.id, newOption));
   };
 
   const handleDeleteOption = (optionId: number) => {
     if (!activeQuestion) return;
-    if (activeQuestion.options && activeQuestion.options.length <= 2) {
-      Swal.fire("A choice question must have at least 2 options");
-      return;
-    }
-    dispatch(deleteOption(activeQuestion.id, optionId));
-  };
 
-  const handleLocalOptionChange = (
-    optionId: number,
-    field: keyof QuestionOption,
-    value: any
-  ) => {
-    setLocalOptions(prev => 
-      prev.map(option => 
-        option.id === optionId 
-          ? { ...option, [field]: value }
-          : option
-      )
-    );
+    //  Different minimum requirements for different question types
+    if (activeQuestion.type === 'full_name') {
+      if (activeQuestion.options && activeQuestion.options.length <= 1) {
+        Swal.fire("A full name field must have at least 1 name field");
+        return;
+      }
+    } else {
+      if (activeQuestion.options && activeQuestion.options.length <= 2) {
+        Swal.fire("A choice question must have at least 2 options");
+        return;
+      }
+    }
+
+    dispatch(deleteOption(activeQuestion.id, optionId));
   };
 
   if (!activeQuestion) {
@@ -249,9 +267,40 @@ const QuestionDetailEditor: React.FC = () => {
     );
   }
 
+  const questionTypeOptions = [
+    { value: "text", label: "Short Text" },
+    { value: 'email', label: "Email" },
+    { value: 'full_name', label: "Full Name" }, //  Fixed value from 'name' to 'full_name'
+    { value: 'address', label: "Address" },
+    { value: 'phone', label: "Phone" },
+    { value: "textarea", label: "Long Text" },
+    { value: "number", label: "Number" },
+    { value: "multiple_choice", label: "Multiple Choice" },
+    { value: "checkbox", label: "Checkboxes" },
+    { value: "file", label: "File Upload" },
+    { value: "audio", label: "Audio" },
+    { value: "calculated", label: "Calculated" },
+  ];
+
+  //  Add full_name to hasOptions
   const hasOptions =
     activeQuestion.type === "multiple_choice" ||
-    activeQuestion.type === "checkbox";
+    activeQuestion.type === "checkbox" ||
+    activeQuestion.type === "full_name";
+
+  //  Check if there are unsaved changes (include options for full_name)
+  const hasUnsavedChanges = () => {
+    // Check if there are any option validation errors
+    const hasOptionErrors = Object.keys(optionErrors).length > 0;
+    if (hasOptionErrors) return false; // Disable save if there are errors
+
+    const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
+    if (activeQuestion.type === 'full_name') {
+      const optionsChanged = JSON.stringify(localOptions) !== JSON.stringify(activeQuestion.options || []);
+      return questionChanged || optionsChanged;
+    }
+    return questionChanged;
+  };
 
   return (
     <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg">
@@ -261,15 +310,13 @@ const QuestionDetailEditor: React.FC = () => {
           <button
             className={`
               px-4 py-2 border-none rounded-md font-medium cursor-pointer transition-all duration-200 flex items-center gap-1.5
-              ${JSON.stringify(localQuestion) === JSON.stringify(activeQuestion)
+              ${!hasUnsavedChanges()
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
                 : 'bg-emerald-500 text-white hover:bg-emerald-600'
               }
             `}
             onClick={saveChanges}
-            disabled={
-              JSON.stringify(localQuestion) === JSON.stringify(activeQuestion)
-            }
+            disabled={!hasUnsavedChanges()}
           >
             💾 Save Changes
           </button>
@@ -277,9 +324,6 @@ const QuestionDetailEditor: React.FC = () => {
       </div>
 
       <div className="flex-1 p-5 overflow-y-auto">
-        {/* Question Type */}
-
-
         {/* Question Content */}
         <div className="mb-5">
           <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
@@ -295,13 +339,12 @@ const QuestionDetailEditor: React.FC = () => {
           />
         </div>
 
-
         <div className="mb-5">
-          <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+          <label htmlFor="question-explanation" className="block mb-1.5 text-sm font-medium text-gray-700">
             Explanation
           </label>
           <textarea
-            id="question-content"
+            id="question-explanation"
             value={localQuestion.explanation || ""}
             onChange={(e) => handleFieldChange('explanation', e.target.value)}
             placeholder="Enter explanation..."
@@ -309,6 +352,7 @@ const QuestionDetailEditor: React.FC = () => {
             rows={3}
           />
         </div>
+
         {/* Required checkbox */}
         <div className="mb-5">
           <div className="flex items-center gap-2">
@@ -327,25 +371,7 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         </div>
 
-        {/* Points field */}
-        {/* <div className="mb-5">
-          <label htmlFor="question-points" className="block mb-1.5 text-sm font-medium text-gray-700">
-            Points (for scoring)
-          </label>
-          <input
-            type="number"
-            id="question-points"
-            value={localQuestion.points || ""}
-            onChange={(e) =>
-              handleFieldChange("points", parseInt(e.target.value) || undefined)
-            }
-            placeholder="0"
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-            min="-100"
-          />
-        </div> */}
-
-        {/* Media Upload field - REPLACED MEDIA URL */}
+        {/* Media Upload field */}
         <div className="mb-5">
           <label className="block mb-1.5 text-sm font-medium text-gray-700">
             Field Media
@@ -364,137 +390,50 @@ const QuestionDetailEditor: React.FC = () => {
             {renderMediaPreview()}
           </div>
         </div>
+
+        {/*  Enhanced options section with full_name support */}
         {hasOptions && (
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">
-                {activeQuestion.type === 'full_name' ? 'Name Fields' : 
-                 activeQuestion.type === 'multiple_choice' ? 'Answer Options' : 'Answer Options'}
+                {activeQuestion.type === 'full_name' ? 'Name Fields' : 'Answer Options'}
               </label>
-              
-              {/* MCQ Settings for multiple_choice */}
-              {activeQuestion.type === 'multiple_choice' && (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleMcqSettingsChange('allowMultipleCorrect', !mcqSettings.allowMultipleCorrect)}
-                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                      mcqSettings.allowMultipleCorrect
-                        ? 'bg-blue-100 border-blue-300 text-blue-700'
-                        : 'bg-gray-100 border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {mcqSettings.allowMultipleCorrect ? '☑️ Multi-Select' : '🔘 Single Select'}
-                  </button>
+              {activeQuestion.type === 'full_name' ? (
+                localOptions.length < 5 && (
                   <button
                     className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
                     onClick={handleAddOption}
                   >
-                    + Add Option
-                  </button>
-                </div>
-              )}
-              
-              {/* Other question types */}
-              {activeQuestion.type !== 'multiple_choice' && (
-                activeQuestion.type === 'full_name' ? (
-                  localOptions.length < 5 && (
-                    <button
-                      className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
-                      onClick={handleAddOption}
-                    >
-                      + Add Name Field
-                    </button>
-                  )
-                ) : (
-                  <button
-                    className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
-                    onClick={handleAddOption}
-                  >
-                    + Add Option
+                    + Add Name Field
                   </button>
                 )
+              ) : (
+                <button
+                  className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
+                  onClick={handleAddOption}
+                >
+                  + Add Option
+                </button>
               )}
             </div>
 
-            {/* MCQ Scoring Settings */}
-            {activeQuestion.type === 'multiple_choice' && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="text-sm font-medium text-blue-800 mb-3">📊 Scoring Settings</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Default Points per Option</label>
-                    <input
-                      type="number"
-                      value={mcqSettings.defaultPoints || 1}
-                      onChange={(e) => handleMcqSettingsChange('defaultPoints', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      min="0"
-                      step="0.1"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Negative Marking</label>
-                    <input
-                      type="number"
-                      value={mcqSettings.defaultNegativePoints || 0}
-                      onChange={(e) => handleMcqSettingsChange('defaultNegativePoints', parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      min="0"
-                      step="0.1"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Scoring Method</label>
-                    <select
-                      value={mcqSettings.scoringMethod || 'standard'}
-                      onChange={(e) => handleMcqSettingsChange('scoringMethod', e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    >
-                      <option value="standard">Standard (No negative)</option>
-                      <option value="negative_marking">Negative Marking</option>
-                      <option value="no_negative">No Negative Points</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="shuffle-options"
-                      checked={mcqSettings.shuffleOptions || false}
-                      onChange={(e) => handleMcqSettingsChange('shuffleOptions', e.target.checked)}
-                      className="w-4 h-4 mr-2"
-                    />
-                    <label htmlFor="shuffle-options" className="text-xs font-medium text-gray-700">
-                      Shuffle Options
-                    </label>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="flex flex-col gap-3">
-              {(activeQuestion.type === 'full_name' ? localOptions : activeQuestion.options)?.map((option: any, index: number) => (
-                <div key={option.id} className={`p-4 border rounded-lg ${
-                  activeQuestion.type === 'multiple_choice' 
-                    ? 'border-blue-200 bg-blue-50' 
-                    : 'border-gray-200 bg-gray-50'
-                }`}>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                      activeQuestion.type === 'multiple_choice'
-                        ? 'bg-blue-200 text-blue-800'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {activeQuestion.type === 'full_name' ? `Field ${index + 1}` : 
-                       activeQuestion.type === 'multiple_choice' ? String.fromCharCode(65 + index) : `${index + 1}`}
+              {/*  Use localOptions for full_name, activeQuestion.options for others */}
+              {(activeQuestion.type === 'full_name' ? localOptions : activeQuestion.options)?.map((option, index) => (
+                <div key={option.id} className="p-3 border border-gray-200 rounded-md bg-gray-50">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-semibold text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                      {activeQuestion.type === 'full_name' ? `Field ${index + 1}` : `${index + 1}`}
                     </span>
                     <button
-                      className={`px-2 py-1 border-none rounded cursor-pointer text-xs transition-all duration-200 ${
-                        (activeQuestion.type === 'full_name' && localOptions.length <= 1) || 
-                        (activeQuestion.type !== 'full_name' && (activeQuestion.options?.length || 0) <= 2)
+                      className={`
+                        px-2 py-1 border-none rounded cursor-pointer text-xs transition-all duration-200
+                        ${(activeQuestion.type === 'full_name' && localOptions.length <= 1) ||
+                          (activeQuestion.type !== 'full_name' && (activeQuestion.options?.length || 0) <= 2)
                           ? 'opacity-50 cursor-not-allowed bg-red-50 text-red-600'
                           : 'bg-red-50 text-red-600 hover:bg-red-100'
-                      }`}
+                        }
+                      `}
                       onClick={() => handleDeleteOption(option.id)}
                       disabled={
                         (activeQuestion.type === 'full_name' && localOptions.length <= 1) ||
@@ -506,86 +445,69 @@ const QuestionDetailEditor: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Option Content */}
+                  {/*  Use different handlers based on question type */}
                   <input
+                    key={`content-${option.id}`}
                     type="text"
                     value={option.content}
                     onChange={(e) => {
+                      const newValue = e.target.value;
                       if (activeQuestion.type === 'full_name') {
-                        handleLocalOptionChange(option.id, "content", e.target.value);
+                        handleLocalOptionChange(option.id, "content", newValue);
                       } else {
-                        handleOptionChange(option.id, "content", e.target.value);
+                        handleOptionChange(option.id, "content", newValue);
                       }
+                      // Validate the content
+                      validateOptionContent(option.id, newValue);
                     }}
-                    placeholder={activeQuestion.type === 'full_name' ? `Field ${index + 1} Label` : 
-                              activeQuestion.type === 'multiple_choice' ? `Option ${String.fromCharCode(65 + index)}` : 
-                              `Option ${index + 1}`}
-                    className="w-full px-3 py-2 border border-gray-300 rounded mb-3 text-sm"
+                    onBlur={(e) => {
+                      // Additional validation on blur to catch edge cases
+                      validateOptionContent(option.id, e.target.value);
+                    }}
+                    placeholder={activeQuestion.type === 'full_name' ? `Field ${index + 1} Label` : `Option ${index + 1}`}
+                    className={`w-full px-3 py-2 border rounded mb-2 text-sm transition-all duration-200 ${optionErrors[option.id]
+                        ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:border-indigo-500'
+                      }`}
                   />
 
-                  {/* MCQ-specific fields */}
-                  {activeQuestion.type === 'multiple_choice' && (
-                    <>
-                      {/* Explanation field */}
-                      <textarea
-                        value={option.explanation || ''}
-                        onChange={(e) => handleOptionChange(option.id, "explanation", e.target.value)}
-                        placeholder="Explanation for this option (optional)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded mb-3 text-sm resize-none"
-                        rows={2}
-                      />
-                      
-                      {/* Scoring and correctness */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={`option-correct-${option.id}`}
-                            checked={option.isCorrect || false}
-                            onChange={(e) => handleOptionChange(option.id, "isCorrect", e.target.checked)}
-                            className="w-4 h-4"
-                          />
-                          <label htmlFor={`option-correct-${option.id}`} className="text-sm font-medium text-green-700">
-                            ✓ Correct Answer
-                          </label>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Points (+)</label>
-                          <input
-                            type="number"
-                            value={option.points || mcqSettings.defaultPoints || 1}
-                            onChange={(e) => handleOptionChange(option.id, "points", parseFloat(e.target.value) || 0)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                            min="0"
-                            step="0.1"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Negative (-)</label>
-                          <input
-                            type="number"
-                            value={option.negativePoints || mcqSettings.defaultNegativePoints || 0}
-                            onChange={(e) => handleOptionChange(option.id, "negativePoints", parseFloat(e.target.value) || 0)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                            min="0"
-                            step="0.1"
-                          />
-                        </div>
-                      </div>
-                    </>
+                  {/* Add error message display */}
+                  {optionErrors[option.id] && (
+                    <div className="text-xs text-red-600 mb-2 flex items-center gap-1">
+                      <span>⚠️</span>
+                      <span>{optionErrors[option.id]}</span>
+                    </div>
                   )}
 
-                  {/* Show correct/points only for checkbox (non-MCQ) */}
-                  {activeQuestion.type === 'checkbox' && (
+                  {/*  Show placeholder input only for full_name */}
+                  {/* {activeQuestion.type === 'full_name' && (
+                    <input
+                      key={`placeholder-${option.id}`}
+                      type="text"
+                      value={option.placeholder || ''}
+                      onChange={(e) =>
+                        handleLocalOptionChange(option.id, "placeholder", e.target.value)
+                      }
+                      placeholder="Placeholder text for this field"
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                    />
+                  )} */}
+
+                  {/* Show correct/points only for multiple_choice and checkbox */}
+                  {activeQuestion.type !== 'full_name' && (
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
                           id={`option-correct-${option.id}`}
                           checked={option.isCorrect || false}
-                          onChange={(e) => handleOptionChange(option.id, "isCorrect", e.target.checked)}
+                          onChange={(e) =>
+                            handleOptionChange(
+                              option.id,
+                              "isCorrect",
+                              e.target.checked
+                            )
+                          }
                           className="w-auto m-0"
                         />
                         <label htmlFor={`option-correct-${option.id}`} className="m-0 cursor-pointer select-none text-sm font-medium text-gray-700">
@@ -596,7 +518,13 @@ const QuestionDetailEditor: React.FC = () => {
                       <input
                         type="number"
                         value={option.points || ""}
-                        onChange={(e) => handleOptionChange(option.id, "points", parseInt(e.target.value) || undefined)}
+                        onChange={(e) =>
+                          handleOptionChange(
+                            option.id,
+                            "points",
+                            parseInt(e.target.value) || undefined
+                          )
+                        }
                         placeholder="Points"
                         className="w-20 px-2 py-1 border border-gray-300 rounded text-xs"
                         min="0"
@@ -605,14 +533,15 @@ const QuestionDetailEditor: React.FC = () => {
                   )}
                 </div>
               )) || (
-                <div className="text-sm text-slate-400 italic">
-                  {activeQuestion.type === 'full_name' ? 'No name fields configured' : 'No options configured'}
-                </div>
-              )}
+                  <div className="text-sm text-slate-400 italic">
+                    {activeQuestion.type === 'full_name' ? 'No name fields configured' : 'No options configured'}
+                  </div>
+                )}
             </div>
           </div>
         )}
-        {/* Text Input Settings */}
+
+        {/* Text Input Settings - KEEP EXACTLY AS ORIGINAL */}
         {activeQuestion.type === "text" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
@@ -760,9 +689,8 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
-
+        {/* Email Settings - KEEP EXACTLY AS ORIGINAL */}
         {activeQuestion.type === 'email' && (
-
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
@@ -775,29 +703,28 @@ const QuestionDetailEditor: React.FC = () => {
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
-
             </div>
-             {localQuestion.validationType &&
-                localQuestion.validationType !== 'none' &&
-                localQuestion.validationType !== '' && (
-                  <div>
-                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
-                    <input
-                      type="text"
-                      placeholder="Enter error message for validation failure"
-                      value={localQuestion.errorMessageForPattern || ""}
-                      onChange={(e) =>
-                        handleFieldChange("errorMessageForPattern", e.target.value)
-                      }
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-                    />
-                  </div>
-                )}
+            {localQuestion.validationType &&
+              localQuestion.validationType !== 'none' &&
+              localQuestion.validationType !== '' && (
+                <div>
+                  <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                  <input
+                    type="text"
+                    placeholder="Enter error message for validation failure"
+                    value={localQuestion.errorMessageForPattern || ""}
+                    onChange={(e) =>
+                      handleFieldChange("errorMessageForPattern", e.target.value)
+                    }
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  />
+                </div>
+              )}
           </div>
         )}
 
+        {/* Phone Settings - KEEP EXACTLY AS ORIGINAL */}
         {activeQuestion.type === 'phone' && (
-
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
@@ -810,28 +737,28 @@ const QuestionDetailEditor: React.FC = () => {
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
-
             </div>
-             {localQuestion.validationType &&
-                localQuestion.validationType !== 'none' &&
-                localQuestion.validationType !== '' && (
-                  <div>
-                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
-                    <input
-                      type="text"
-                      placeholder="Enter error message for validation failure"
-                      value={localQuestion.errorMessageForPattern || ""}
-                      onChange={(e) =>
-                        handleFieldChange("errorMessageForPattern", e.target.value)
-                      }
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-                    />
-                  </div>
-                )}
+            {localQuestion.validationType &&
+              localQuestion.validationType !== 'none' &&
+              localQuestion.validationType !== '' && (
+                <div>
+                  <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                  <input
+                    type="text"
+                    placeholder="Enter error message for validation failure"
+                    value={localQuestion.errorMessageForPattern || ""}
+                    onChange={(e) =>
+                      handleFieldChange("errorMessageForPattern", e.target.value)
+                    }
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  />
+                </div>
+              )}
           </div>
         )}
-        {/* Textarea Settings */}
-       {activeQuestion.type === "textarea" && (
+
+        {/* Textarea Settings - KEEP EXACTLY AS ORIGINAL */}
+        {activeQuestion.type === "textarea" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
@@ -978,7 +905,7 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
-        {/* Number Settings */}
+        {/* Number Settings - KEEP EXACTLY AS ORIGINAL */}
         {activeQuestion.type === "number" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Number Settings</label>
@@ -1002,7 +929,7 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
-        {/* File Upload Settings */}
+        {/* File Upload Settings - KEEP EXACTLY AS ORIGINAL */}
         {activeQuestion.type === "file" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">File Upload Settings</label>
@@ -1027,7 +954,3 @@ const QuestionDetailEditor: React.FC = () => {
 };
 
 export default QuestionDetailEditor;
-
-function setLocalOptions(arg0: QuestionOption[]) {
-  throw new Error("Function not implemented.");
-}
