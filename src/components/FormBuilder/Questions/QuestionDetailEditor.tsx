@@ -1,5 +1,5 @@
 // src/components/FormBuilder/Questions/QuestionDetailEditor.tsx
-
+const mode = 'ador branch version';
 import React, { useState, useEffect, useRef } from "react";
 import { useFormContext } from "../../../context/FormContext/FormProvider";
 import type { Question, QuestionOption } from "../../../types/form.types";
