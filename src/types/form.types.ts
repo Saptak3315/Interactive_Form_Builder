@@ -7,6 +7,7 @@ export interface Question {
   orderPosition: number;
   isRequired: boolean;
   points?: number;
+  negativePoints?: number; // Add negative marking at question level
   mediaUrl?: string;
   mediaType?: string;
   explanation?: string;
@@ -14,11 +15,21 @@ export interface Question {
   minLength?: number;
   maxLength?: number;
   errorMessageForMinLength?:string;
-  validationType?: string; // Add this line
+  validationType?: string;
   validationPattern?: string;
   options?: QuestionOption[];
   errorMessageForPattern?:string
   errorMessageForMaxLength?:string;
+  // MCQ-specific settings
+  mcqSettings?: {
+    shuffleOptions: boolean;
+    allowMultipleCorrect: boolean;
+    showCorrectAnswers: boolean;
+    partialCredit: boolean;
+    scoringMethod: 'standard' | 'negative_marking' | 'no_negative';
+    defaultPoints: number;
+    defaultNegativePoints: number;
+  };
 }
 
 export interface QuestionOption {
@@ -27,6 +38,8 @@ export interface QuestionOption {
   orderPosition: number;
   isCorrect: boolean;
   points?: number;
+  negativePoints?: number; // Add negative marking support
+  explanation?: string; // Add explanation for each option
   mediaUrl?: string;
   mediaType?: string;
 }

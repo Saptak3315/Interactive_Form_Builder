@@ -164,9 +164,54 @@ export const createDefaultQuestion = (
     return {
       ...baseQuestion,
       content: 'Multiple Choice Question',
+      points: 1,
+      negativePoints: 0,
+      mcqSettings: {
+        shuffleOptions: false,
+        allowMultipleCorrect: false,
+        showCorrectAnswers: true,
+        partialCredit: false,
+        scoringMethod: 'standard',
+        defaultPoints: 1,
+        defaultNegativePoints: 0,
+      },
       options: [
-        { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
-        { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
+        { 
+          id: generateId(), 
+          content: 'Option A', 
+          orderPosition: 0, 
+          isCorrect: false,
+          points: 1,
+          negativePoints: 0,
+          explanation: ''
+        },
+        { 
+          id: generateId(), 
+          content: 'Option B', 
+          orderPosition: 1, 
+          isCorrect: false,
+          points: 1,
+          negativePoints: 0,
+          explanation: ''
+        },
+        { 
+          id: generateId(), 
+          content: 'Option C', 
+          orderPosition: 2, 
+          isCorrect: false,
+          points: 1,
+          negativePoints: 0,
+          explanation: ''
+        },
+        { 
+          id: generateId(), 
+          content: 'Option D', 
+          orderPosition: 3, 
+          isCorrect: false,
+          points: 1,
+          negativePoints: 0,
+          explanation: ''
+        },
       ],
     };
 
