@@ -1,5 +1,5 @@
 // src/components/FormBuilder/Questions/QuestionDetailEditor.tsx
-const mode = "ador branch version";
+
 import React, { useState, useEffect, useRef } from "react";
 import { useFormContext } from "../../../context/FormContext/FormProvider";
 import type { Question, QuestionOption } from "../../../types/form.types";
@@ -19,10 +19,12 @@ const QuestionDetailEditor: React.FC = () => {
 
   // Local state for form fields
   const [localQuestion, setLocalQuestion] = useState<Partial<Question>>({});
+  const [localOptions, setLocalOptions] = useState<QuestionOption[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [optionErrors, setOptionErrors] = useState<{ [optionId: number]: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [localOptions, setLocalOptions] = useState<QuestionOption[]>([]);
+
   // Add MCQ-specific local state
   const [mcqSettings, setMcqSettings] = useState(activeQuestion?.mcqSettings || {
     shuffleOptions: false,
@@ -54,6 +56,7 @@ const QuestionDetailEditor: React.FC = () => {
       // Reset file states when switching questions
       setUploadedFile(null);
       setFilePreview(null);
+      setOptionErrors({}); // Reset option errors
 
       // If question has existing media URL, set it as preview
       if (activeQuestion.mediaUrl) {
@@ -61,6 +64,7 @@ const QuestionDetailEditor: React.FC = () => {
       }
     }
   }, [activeQuestion]);
+
   // Handle field updates
   const handleFieldChange = (field: keyof Question, value: any) => {
     setLocalQuestion((prev) => ({ ...prev, [field]: value }));
@@ -73,9 +77,50 @@ const QuestionDetailEditor: React.FC = () => {
     handleFieldChange('mcqSettings', newSettings);
   };
 
-  // if (activeQuestion?.type === 'email') {
-  //   handleFieldChange("validationType", "email");
-  // }
+  // Handle local options change for full_name
+  const handleLocalOptionChange = (
+    optionId: number,
+    field: keyof QuestionOption,
+    value: any
+  ) => {
+    setLocalOptions(prev =>
+      prev.map(option =>
+        option.id === optionId
+          ? { ...option, [field]: value }
+          : option
+      )
+    );
+  };
+
+  // Validate option content
+  const validateOptionContent = (optionId: number, content: string) => {
+    const trimmedContent = content.trim();
+
+    if (content.length > 0 && trimmedContent.length === 0) {
+      // Has content but only spaces
+      setOptionErrors(prev => ({
+        ...prev,
+        [optionId]: 'Option cannot contain only spaces'
+      }));
+      return false;
+    } else if (trimmedContent.length === 0) {
+      // Completely empty
+      setOptionErrors(prev => ({
+        ...prev,
+        [optionId]: 'Option content is required'
+      }));
+      return false;
+    } else {
+      // Valid content
+      setOptionErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[optionId];
+        return newErrors;
+      });
+      return true;
+    }
+  };
+
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -91,9 +136,6 @@ const QuestionDetailEditor: React.FC = () => {
       Swal.fire('File size must be less than 5 MB');
       return;
     }
-
-    // Validate file type
-
 
     setUploadedFile(file);
 
@@ -187,14 +229,24 @@ const QuestionDetailEditor: React.FC = () => {
     );
   };
 
-  // Save changes to the question
+  // Save changes to the question (including local options for full_name)
   const saveChanges = () => {
     if (activeQuestion && localQuestion) {
-      dispatch(updateQuestion(activeQuestion.id, localQuestion));
+      if (activeQuestion.type === 'full_name') {
+        // For full_name, include local options in the update
+        const updatedQuestion = {
+          ...localQuestion,
+          options: localOptions
+        };
+        dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+      } else {
+        // For other question types, save normally
+        dispatch(updateQuestion(activeQuestion.id, localQuestion));
+      }
     }
   };
 
-  // Handle option changes
+  // Handle option changes (for multiple_choice and checkbox - keep original behavior)
   const handleOptionChange = (
     optionId: number,
     field: keyof QuestionOption,
@@ -216,25 +268,35 @@ const QuestionDetailEditor: React.FC = () => {
 
   const handleDeleteOption = (optionId: number) => {
     if (!activeQuestion) return;
-    if (activeQuestion.options && activeQuestion.options.length <= 2) {
-      Swal.fire("A choice question must have at least 2 options");
-      return;
+
+    // Different minimum requirements for different question types
+    if (activeQuestion.type === 'full_name') {
+      if (activeQuestion.options && activeQuestion.options.length <= 1) {
+        Swal.fire("A full name field must have at least 1 name field");
+        return;
+      }
+    } else {
+      if (activeQuestion.options && activeQuestion.options.length <= 2) {
+        Swal.fire("A choice question must have at least 2 options");
+        return;
+      }
     }
+
     dispatch(deleteOption(activeQuestion.id, optionId));
   };
 
-  const handleLocalOptionChange = (
-    optionId: number,
-    field: keyof QuestionOption,
-    value: any
-  ) => {
-    setLocalOptions(prev => 
-      prev.map(option => 
-        option.id === optionId 
-          ? { ...option, [field]: value }
-          : option
-      )
-    );
+  // Check if there are unsaved changes (include options for full_name)
+  const hasUnsavedChanges = () => {
+    // Check if there are any option validation errors
+    const hasOptionErrors = Object.keys(optionErrors).length > 0;
+    if (hasOptionErrors) return false; // Disable save if there are errors
+
+    const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
+    if (activeQuestion?.type === 'full_name') {
+      const optionsChanged = JSON.stringify(localOptions) !== JSON.stringify(activeQuestion.options || []);
+      return questionChanged || optionsChanged;
+    }
+    return questionChanged;
   };
 
   if (!activeQuestion) {
@@ -249,9 +311,26 @@ const QuestionDetailEditor: React.FC = () => {
     );
   }
 
+  const questionTypeOptions = [
+    { value: "text", label: "Short Text" },
+    { value: 'email', label: "Email" },
+    { value: 'full_name', label: "Full Name" },
+    { value: 'address', label: "Address" },
+    { value: 'phone', label: "Phone" },
+    { value: "textarea", label: "Long Text" },
+    { value: "number", label: "Number" },
+    { value: "multiple_choice", label: "Multiple Choice" },
+    { value: "checkbox", label: "Checkboxes" },
+    { value: "file", label: "File Upload" },
+    { value: "audio", label: "Audio" },
+    { value: "calculated", label: "Calculated" },
+  ];
+
+  // Add full_name to hasOptions
   const hasOptions =
     activeQuestion.type === "multiple_choice" ||
-    activeQuestion.type === "checkbox";
+    activeQuestion.type === "checkbox" ||
+    activeQuestion.type === "full_name";
 
   return (
     <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg">
@@ -261,15 +340,13 @@ const QuestionDetailEditor: React.FC = () => {
           <button
             className={`
               px-4 py-2 border-none rounded-md font-medium cursor-pointer transition-all duration-200 flex items-center gap-1.5
-              ${JSON.stringify(localQuestion) === JSON.stringify(activeQuestion)
+              ${!hasUnsavedChanges()
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
                 : 'bg-emerald-500 text-white hover:bg-emerald-600'
               }
             `}
             onClick={saveChanges}
-            disabled={
-              JSON.stringify(localQuestion) === JSON.stringify(activeQuestion)
-            }
+            disabled={!hasUnsavedChanges()}
           >
             💾 Save Changes
           </button>
@@ -277,9 +354,6 @@ const QuestionDetailEditor: React.FC = () => {
       </div>
 
       <div className="flex-1 p-5 overflow-y-auto">
-        {/* Question Type */}
-
-
         {/* Question Content */}
         <div className="mb-5">
           <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
@@ -295,13 +369,12 @@ const QuestionDetailEditor: React.FC = () => {
           />
         </div>
 
-
         <div className="mb-5">
-          <label htmlFor="question-content" className="block mb-1.5 text-sm font-medium text-gray-700">
+          <label htmlFor="question-explanation" className="block mb-1.5 text-sm font-medium text-gray-700">
             Explanation
           </label>
           <textarea
-            id="question-content"
+            id="question-explanation"
             value={localQuestion.explanation || ""}
             onChange={(e) => handleFieldChange('explanation', e.target.value)}
             placeholder="Enter explanation..."
@@ -309,6 +382,7 @@ const QuestionDetailEditor: React.FC = () => {
             rows={3}
           />
         </div>
+
         {/* Required checkbox */}
         <div className="mb-5">
           <div className="flex items-center gap-2">
@@ -327,25 +401,7 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         </div>
 
-        {/* Points field */}
-        {/* <div className="mb-5">
-          <label htmlFor="question-points" className="block mb-1.5 text-sm font-medium text-gray-700">
-            Points (for scoring)
-          </label>
-          <input
-            type="number"
-            id="question-points"
-            value={localQuestion.points || ""}
-            onChange={(e) =>
-              handleFieldChange("points", parseInt(e.target.value) || undefined)
-            }
-            placeholder="0"
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-            min="-100"
-          />
-        </div> */}
-
-        {/* Media Upload field - REPLACED MEDIA URL */}
+        {/* Media Upload field */}
         <div className="mb-5">
           <label className="block mb-1.5 text-sm font-medium text-gray-700">
             Field Media
@@ -364,6 +420,8 @@ const QuestionDetailEditor: React.FC = () => {
             {renderMediaPreview()}
           </div>
         </div>
+
+        {/* Enhanced options section with MCQ and full_name support */}
         {hasOptions && (
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
@@ -473,6 +531,7 @@ const QuestionDetailEditor: React.FC = () => {
             )}
 
             <div className="flex flex-col gap-3">
+              {/* Use localOptions for full_name, activeQuestion.options for others */}
               {(activeQuestion.type === 'full_name' ? localOptions : activeQuestion.options)?.map((option: any, index: number) => (
                 <div key={option.id} className={`p-4 border rounded-lg ${
                   activeQuestion.type === 'multiple_choice' 
@@ -511,17 +570,36 @@ const QuestionDetailEditor: React.FC = () => {
                     type="text"
                     value={option.content}
                     onChange={(e) => {
+                      const newValue = e.target.value;
                       if (activeQuestion.type === 'full_name') {
-                        handleLocalOptionChange(option.id, "content", e.target.value);
+                        handleLocalOptionChange(option.id, "content", newValue);
                       } else {
-                        handleOptionChange(option.id, "content", e.target.value);
+                        handleOptionChange(option.id, "content", newValue);
                       }
+                      // Validate the content
+                      validateOptionContent(option.id, newValue);
+                    }}
+                    onBlur={(e) => {
+                      // Additional validation on blur to catch edge cases
+                      validateOptionContent(option.id, e.target.value);
                     }}
                     placeholder={activeQuestion.type === 'full_name' ? `Field ${index + 1} Label` : 
                               activeQuestion.type === 'multiple_choice' ? `Option ${String.fromCharCode(65 + index)}` : 
                               `Option ${index + 1}`}
-                    className="w-full px-3 py-2 border border-gray-300 rounded mb-3 text-sm"
+                    className={`w-full px-3 py-2 border rounded mb-3 text-sm transition-all duration-200 ${
+                      optionErrors[option.id]
+                        ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:border-indigo-500'
+                    }`}
                   />
+
+                  {/* Add error message display */}
+                  {optionErrors[option.id] && (
+                    <div className="text-xs text-red-600 mb-2 flex items-center gap-1">
+                      <span>⚠️</span>
+                      <span>{optionErrors[option.id]}</span>
+                    </div>
+                  )}
 
                   {/* MCQ-specific fields */}
                   {activeQuestion.type === 'multiple_choice' && (
@@ -612,6 +690,7 @@ const QuestionDetailEditor: React.FC = () => {
             </div>
           </div>
         )}
+
         {/* Text Input Settings */}
         {activeQuestion.type === "text" && (
           <div className="mb-5">
@@ -760,9 +839,8 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
-
+        {/* Email Settings */}
         {activeQuestion.type === 'email' && (
-
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
@@ -775,29 +853,28 @@ const QuestionDetailEditor: React.FC = () => {
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
-
             </div>
-             {localQuestion.validationType &&
-                localQuestion.validationType !== 'none' &&
-                localQuestion.validationType !== '' && (
-                  <div>
-                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
-                    <input
-                      type="text"
-                      placeholder="Enter error message for validation failure"
-                      value={localQuestion.errorMessageForPattern || ""}
-                      onChange={(e) =>
-                        handleFieldChange("errorMessageForPattern", e.target.value)
-                      }
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-                    />
-                  </div>
-                )}
+            {localQuestion.validationType &&
+              localQuestion.validationType !== 'none' &&
+              localQuestion.validationType !== '' && (
+                <div>
+                  <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                  <input
+                    type="text"
+                    placeholder="Enter error message for validation failure"
+                    value={localQuestion.errorMessageForPattern || ""}
+                    onChange={(e) =>
+                      handleFieldChange("errorMessageForPattern", e.target.value)
+                    }
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  />
+                </div>
+              )}
           </div>
         )}
 
+        {/* Phone Settings */}
         {activeQuestion.type === 'phone' && (
-
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
@@ -810,28 +887,28 @@ const QuestionDetailEditor: React.FC = () => {
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
-
             </div>
-             {localQuestion.validationType &&
-                localQuestion.validationType !== 'none' &&
-                localQuestion.validationType !== '' && (
-                  <div>
-                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
-                    <input
-                      type="text"
-                      placeholder="Enter error message for validation failure"
-                      value={localQuestion.errorMessageForPattern || ""}
-                      onChange={(e) =>
-                        handleFieldChange("errorMessageForPattern", e.target.value)
-                      }
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
-                    />
-                  </div>
-                )}
+            {localQuestion.validationType &&
+              localQuestion.validationType !== 'none' &&
+              localQuestion.validationType !== '' && (
+                <div>
+                  <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                  <input
+                    type="text"
+                    placeholder="Enter error message for validation failure"
+                    value={localQuestion.errorMessageForPattern || ""}
+                    onChange={(e) =>
+                      handleFieldChange("errorMessageForPattern", e.target.value)
+                    }
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  />
+                </div>
+              )}
           </div>
         )}
+
         {/* Textarea Settings */}
-       {activeQuestion.type === "textarea" && (
+        {activeQuestion.type === "textarea" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
             <div className="space-y-3">
@@ -1027,7 +1104,3 @@ const QuestionDetailEditor: React.FC = () => {
 };
 
 export default QuestionDetailEditor;
-
-function setLocalOptions(arg0: QuestionOption[]) {
-  throw new Error("Function not implemented.");
-}
