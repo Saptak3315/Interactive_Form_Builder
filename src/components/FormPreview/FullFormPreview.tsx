@@ -83,16 +83,36 @@ const FullFormPreview: React.FC = () => {
     );
   };
 
-  const validateInput = (question: any, value: string): { isValid: boolean; error?: string } => {
-    // Required field check
+  const validateInput = (question: any, value: any): { isValid: boolean; error?: string } => {
+    // Handle full_name validation separately (arrays)
+    if (question.type === 'full_name') {
+      if (question.isRequired) {
+        const values = Array.isArray(value) ? value : [];
+        const hasEmptyRequired = question.options?.some((_option: any, index: number) =>
+          !values[index] || !values[index].toString().trim()
+        );
+
+        if (hasEmptyRequired) {
+          return { isValid: false, error: 'All name fields are required' };
+        }
+      }
+      return { isValid: true };
+    }
+
+    // ✅ Single check for required fields (string values only)
     if (question.isRequired && (!value || !value.toString().trim())) {
       return { isValid: false, error: 'This field is required' };
     }
+
+    // ✅ Early return for empty optional fields
     if (!value || !value.toString().trim()) {
       return { isValid: true };
     }
 
+    // Continue with other validations for non-empty values
     const stringValue = value.toString();
+
+    // Length validations
     if (question.minLength && stringValue.length < question.minLength) {
       return {
         isValid: false,
@@ -107,9 +127,12 @@ const FullFormPreview: React.FC = () => {
       };
     }
 
+    // Auto-set email validation if not specified
     if (question.type === 'email' && (!question.validationType || question.validationType === 'none')) {
-      question = { ...question, validationType: 'email' }; // Create new object instead of mutating
+      question = { ...question, validationType: 'email' };
     }
+
+    // Pattern validation
     if (question.validationType && question.validationType !== 'none') {
       const pattern = getValidationPattern(question.validationType, question.validationPattern);
       if (pattern) {
@@ -135,13 +158,38 @@ const FullFormPreview: React.FC = () => {
   const validateMultipleChoice = (question: any, value: any): { isValid: boolean; error?: string } => {
     if (question.isRequired) {
       if (question.type === 'checkbox') {
-        const selectedOptions = Array.isArray(value.trim()) ? value.trim() : [];
+        const selectedOptions = Array.isArray(value) ? value : [];
         if (selectedOptions.length === 0) {
           return { isValid: false, error: 'Please select at least one option' };
         }
       } else if (question.type === 'multiple_choice') {
-        if (!value.trim() || value.trim() === '') {
+        if (!value || value === '') {
           return { isValid: false, error: 'Please select an option' };
+        }
+      } else if (question.type === 'full_name') {
+        const values = Array.isArray(value) ? value : [];
+
+        // Trim all values and check if any field has actual content (not just spaces)
+        const trimmedValues = values.map(val => val ? val.toString().trim() : '');
+        const hasAnyContent = trimmedValues.some(val => val.length > 0);
+
+        // If question is required OR if user started filling (has any content)
+        if (question.isRequired || hasAnyContent) {
+          const emptyFields: any[] = [];
+          question.options?.forEach((option: any, index: number) => {
+            const trimmedValue = values[index] ? values[index].toString().trim() : '';
+            if (!trimmedValue) {
+              emptyFields.push(option.content);
+            }
+          });
+
+          if (emptyFields.length > 0) {
+            if (question.isRequired) {
+              return { isValid: false, error: `${emptyFields.join(', ')} ${emptyFields.length === 1 ? 'is' : 'are'} required` };
+            } else if (hasAnyContent) {
+              return { isValid: false, error: `Please complete all name fields or leave all empty` };
+            }
+          }
         }
       }
     }
@@ -152,10 +200,10 @@ const FullFormPreview: React.FC = () => {
   const performValidation = (questionId: number, question: any, value: any) => {
     let validation: { isValid: boolean; error?: string };
 
-    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email'|| question.type==='phone') {
+    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone') {
       validation = validateInput(question, value.trim());
-    } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
-      validation = validateMultipleChoice(question, value.trim());
+    } else if (question.type === 'multiple_choice' || question.type === 'checkbox' || question.type === 'full_name') {
+      validation = validateMultipleChoice(question, value);
     } else if (question.type === 'file') {
       validation = question.isRequired && !value.trim()
         ? { isValid: false, error: 'Please upload a file' }
@@ -177,17 +225,17 @@ const FullFormPreview: React.FC = () => {
   };
 
   const handleInputChange = (questionId: number, question: any, value: any) => {
-    // Perform validation
-    const validation = performValidation(questionId, question, value.trim());
 
-    // Update the response
+    const processedValue = question.type === 'full_name' ? value : value.trim();
+    const validation = performValidation(questionId, question, processedValue);
+
     handleQuestionResponse(questionId, value, validation.isValid);
   };
 
   const renderQuestion = (question: any, index: number) => {
     const response = responses.find(r => r.questionId === question.id);
     const currentValue = response?.answer || '';
-    const hasError = showValidation && validationErrors[question.id];
+    const hasError = validationErrors[question.id] && validationErrors[question.id] !== '';
 
     switch (question.type) {
       case 'text':
@@ -331,29 +379,71 @@ const FullFormPreview: React.FC = () => {
       case 'full_name':
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            {/* Question Title */}
             <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
               {index + 1}. {question.content || 'Full Name'}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
+
+            {/* Question Explanation */}
             {question.explanation && (
               <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
                 💡 {question.explanation}
               </p>
             )}
 
+            {/* Media if attached */}
             {renderQuestionMedia(question)}
 
-            <input
-              type="text"
-              value={currentValue || ''}
-              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
-                }`}
-              placeholder="Enter your full name"
-            />
+            {/* Grid of input fields - responsive: 1 column on mobile, 2 on desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {question.options?.map((option: { id: React.Key | null | undefined; content: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; placeholder: any; }, optIndex: number) => {
+                // Get the current value for this specific field
+                const fieldValue = Array.isArray(currentValue) ? (currentValue[optIndex] || '') : '';
 
+                return (
+                  <div key={option.id}>
+                    {/* Individual field label */}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {option.content} {/* e.g., "First Name" */}
+                      {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+
+                    {/* Functional input field */}
+                    <input
+                      type="text"
+                      value={fieldValue} // ✅ Proper data binding
+                      onChange={(e) => {
+                        // Create a new array to avoid mutation
+                        const newValue = Array.isArray(currentValue) ? [...currentValue] : [];
+
+                        // Ensure array is long enough for this index
+                        while (newValue.length <= optIndex) {
+                          newValue.push('');
+                        }
+
+                        // Update the specific field
+                        newValue[optIndex] = e.target.value;
+
+                        // Send the entire array to the form handler
+                        handleInputChange(question.id, question, newValue);
+                      }}
+                      className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                        ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                        : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                        }`}
+                      placeholder={option.placeholder || `Enter Infromation`}
+                      disabled={false} // ✅ Functional, not disabled
+                    />
+                  </div>
+                );
+              }) || (
+                  // Fallback if no options configured
+                  <div className="col-span-2 text-base text-slate-400 italic">No name fields configured</div>
+                )}
+            </div>
+
+            {/* Error display */}
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
@@ -619,11 +709,14 @@ const FullFormPreview: React.FC = () => {
 
       let validation: { isValid: boolean; error?: string };
 
-      if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'full_name' || question.type === 'phone') {
+      if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'phone') {
         validation = validateInput(question, value.trim());
       } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
-        validation = validateMultipleChoice(question, value.trim());
-      } else if (question.type === 'file') {
+        validation = validateMultipleChoice(question, value);
+      } else if (question.type === 'full_name') {
+        validation = validateMultipleChoice(question, value);
+      }
+      else if (question.type === 'file') {
         validation = question.isRequired && !value
           ? { isValid: false, error: 'Please upload a file' }
           : { isValid: true };

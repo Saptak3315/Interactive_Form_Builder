@@ -29,6 +29,7 @@ export interface QuestionOption {
   points?: number;
   mediaUrl?: string;
   mediaType?: string;
+  placeholder?:string;
 }
 
 export interface FormState {

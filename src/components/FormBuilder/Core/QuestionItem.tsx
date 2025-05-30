@@ -18,7 +18,7 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
   onDelete
 }) => {
   return (
-    <div 
+    <div
       className={`
         mb-3 p-4 bg-white border-2 rounded-lg transition-all duration-200 cursor-pointer select-none block w-full
         hover:border-gray-300 hover:shadow-sm hover:-translate-y-0.5
@@ -46,36 +46,54 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
           </button>
         </div>
       </div>
-      
+
       <div className="mb-3 block w-full">
         <div className="text-base text-gray-800 font-medium leading-6 flex items-center gap-1.5">
           {question.content || `Question ${index + 1}`}
           {question.isRequired && <span className="text-red-600 font-semibold">*</span>}
         </div>
-        
+        {/* Full name preview */}
+        {question.type === 'full_name' && (
+          <div className="mt-2.5 w-full block bg-gray-50 bg-opacity-50 p-1.5 rounded-md">
+            <div className="grid grid-cols-2 gap-2">
+              {question.options?.slice(0, 2).map((option, optIndex) => (
+                <input
+                  key={option.id}
+                  type="text"
+                  className="w-full h-9 px-3 py-2 border border-gray-200 rounded-md bg-white text-gray-500 text-sm block shadow-sm"
+                  disabled
+                  placeholder={option.placeholder || option.content}
+                />
+              ))}
+              {(!question.options || question.options.length === 0) && (
+                <div className="col-span-2 text-xs text-gray-400 italic">No name fields configured</div>
+              )}
+            </div>
+          </div>
+        )}
         {/* Text input preview */}
         {question.type === 'text' && (
           <div className="mt-2.5 w-full block bg-gray-50 bg-opacity-50 p-1.5 rounded-md">
-            <input 
-              type="text" 
-              className="w-full h-9 px-3 py-2 border border-gray-200 rounded-md bg-white text-gray-500 text-sm block shadow-sm"
-              disabled 
-              placeholder={question.placeholder || "Text input"}
-            />
-          </div>
-        )}
-        
-        {/* Textarea preview */}
-        {question.type === 'textarea' && (
-          <div className="mt-2.5 w-full block bg-gray-50 bg-opacity-50 p-1.5 rounded-md">
-            <textarea 
+            <input
+              type="text"
               className="w-full h-9 px-3 py-2 border border-gray-200 rounded-md bg-white text-gray-500 text-sm block shadow-sm"
               disabled
               placeholder={question.placeholder || "Text input"}
             />
           </div>
         )}
-        
+
+        {/* Textarea preview */}
+        {question.type === 'textarea' && (
+          <div className="mt-2.5 w-full block bg-gray-50 bg-opacity-50 p-1.5 rounded-md">
+            <textarea
+              className="w-full h-9 px-3 py-2 border border-gray-200 rounded-md bg-white text-gray-500 text-sm block shadow-sm"
+              disabled
+              placeholder={question.placeholder || "Text input"}
+            />
+          </div>
+        )}
+
         {/* Question explanation */}
         {question.explanation && (
           <div className="text-sm text-gray-500 mt-1.5 italic">
@@ -99,7 +117,7 @@ const QuestionItem: React.FC<QuestionItemProps> = ({
           </div>
         )}
       </div>
-      
+
       {/* Question metadata */}
       <div className="flex justify-between items-center text-xs text-gray-400 border-t border-gray-100 pt-2">
         <span className="font-medium">
