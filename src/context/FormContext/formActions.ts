@@ -17,11 +17,11 @@ export const setForm = (form: Partial<FormState>): FormAction => ({
 // Question actions
 export const addQuestion = (question: Omit<Question, 'id'>): FormAction => ({
   type: 'ADD_QUESTION',
-  payload: { 
-    question: { 
-      ...question, 
+  payload: {
+    question: {
+      ...question,
       id: generateId(),
-    } 
+    }
   },
 });
 
@@ -48,18 +48,18 @@ export const setActiveQuestion = (questionId: number | null): FormAction => ({
 // Option actions
 export const addOption = (questionId: number, option: Omit<QuestionOption, 'id'>): FormAction => ({
   type: 'ADD_OPTION',
-  payload: { 
+  payload: {
     questionId,
-    option: { 
-      ...option, 
+    option: {
+      ...option,
       id: generateId(),
-    } 
+    }
   },
 });
 
 export const updateOption = (
-  questionId: number, 
-  optionId: number, 
+  questionId: number,
+  optionId: number,
   option: Partial<QuestionOption>
 ): FormAction => ({
   type: 'UPDATE_OPTION',
@@ -73,179 +73,179 @@ export const deleteOption = (questionId: number, optionId: number): FormAction =
 
 
 export const createDefaultQuestion = (
-  type: Question['type'], 
+  type: Question['type'],
   orderPosition: number
 ): Omit<Question, 'id'> => {
   // Base configuration for all question types
   const baseQuestion = {
-    content:'',
+    content: '',
     type,
     orderPosition,
-    isRequired:false,
-    explanation:""
+    isRequired: false,
+    explanation: ""
   };
 
   // Type-specific configurations
   switch (type) {
-  case 'full_name':
-    return {
-      ...baseQuestion,
-      content: 'Full Name',
-      placeholder: 'Enter your full name',
-      validationType: 'text',
-      validationPattern: '',
-      explanation: '',
-    };
+    case 'full_name':
+      return {
+        ...baseQuestion,
+        content: 'Full Name',
+        placeholder: 'Enter your full name',
+        validationType: 'text',
+        validationPattern: '',
+        explanation: '',
+      };
 
-  case 'address':
-    return {
-      ...baseQuestion,
-      content: 'Address',
-      placeholder: 'Enter your address',
-      validationType: 'text',
-      validationPattern: '',
-      maxLength:320,
-      explanation: '',
-    };
+    case 'address':
+      return {
+        ...baseQuestion,
+        content: 'Address',
+        placeholder: 'Enter your address',
+        validationType: 'text',
+        validationPattern: '',
+        maxLength: 320,
+        explanation: '',
+      };
 
-  case 'email':
-    return {
-      ...baseQuestion,
-      content: 'Email Address',
-      placeholder: 'example@email.com',
-      validationType: 'email',
-      validationPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
-      errorMessageForPattern:'Please Enter an email',
-      explanation: 'Must be a valid email address',
-    };
+    case 'email':
+      return {
+        ...baseQuestion,
+        content: 'Email Address',
+        placeholder: 'example@email.com',
+        validationType: 'email',
+        validationPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
+        errorMessageForPattern: 'Please Enter an email',
+        explanation: 'Must be a valid email address',
+      };
 
-  case 'phone':
-    return {
-      ...baseQuestion,
-      content: 'Phone Number',
-      placeholder: 'Enter your phone number',
-      validationType: 'phone',
-      validationPattern: '/^\+?[1-9]\d{7,14}$/',
-      errorMessageForPattern:'Please Enter an Phone Number',
-      explanation: 'Must be a valid phone number',
-    };
+    case 'phone':
+      return {
+        ...baseQuestion,
+        content: 'Phone Number',
+        placeholder: 'Enter your phone number',
+        validationType: 'phone',
+        validationPattern: '/^\+?[1-9]\d{7,14}$/',
+        errorMessageForPattern: 'Please Enter an Phone Number',
+        explanation: 'Must be a valid phone number',
+      };
 
-  case 'text': // short_text
-    return {
-      ...baseQuestion,
-      content: 'Short Text Question',
-      placeholder: 'Enter short text',
-      validationType: 'none',
-      validationPattern: '',
-      explanation: '',
-    };
+    case 'text': // short_text
+      return {
+        ...baseQuestion,
+        content: 'Short Text Question',
+        placeholder: 'Enter short text',
+        validationType: 'none',
+        validationPattern: '',
+        explanation: '',
+      };
 
-  case 'textarea': // long_text
-    return {
-      ...baseQuestion,
-      content: 'Long Text Question',
-      placeholder: 'Enter your detailed answer here',
-      validationType: 'none',
-      validationPattern: '',
-      explanation: '',
-    };
+    case 'textarea': // long_text
+      return {
+        ...baseQuestion,
+        content: 'Long Text Question',
+        placeholder: 'Enter your detailed answer here',
+        validationType: 'none',
+        validationPattern: '',
+        explanation: '',
+      };
 
-  case 'number':
-    return {
-      ...baseQuestion,
-      content: 'Number Question',
-      placeholder: 'Enter a number',
-      validationType: 'number',
-      validationPattern: '',
-      explanation: '',
-    };
+    case 'number':
+      return {
+        ...baseQuestion,
+        content: 'Number Question',
+        placeholder: 'Enter a number',
+        validationType: 'number',
+        validationPattern: '',
+        explanation: '',
+      };
 
-  case 'multiple_choice':
-    return {
-      ...baseQuestion,
-      content: 'Multiple Choice Question',
-      points: 1,
-      negativePoints: 0,
-      mcqSettings: {
-        shuffleOptions: false,
-        allowMultipleCorrect: false,
-        showCorrectAnswers: true,
-        partialCredit: false,
-        scoringMethod: 'standard',
-        defaultPoints: 1,
-        defaultNegativePoints: 0,
-      },
-      options: [
-        { 
-          id: generateId(), 
-          content: 'Option A', 
-          orderPosition: 0, 
-          isCorrect: false,
-          points: 1,
-          negativePoints: 0,
-          explanation: ''
+    case 'multiple_choice':
+      return {
+        ...baseQuestion,
+        content: 'Multiple Choice Question',
+        points: 1,
+        negativePoints: 0,
+        mcqSettings: {
+          shuffleOptions: false,
+          allowMultipleCorrect: false,
+          showCorrectAnswers: true,
+          partialCredit: false,
+          scoringMethod: 'standard',
+          defaultPoints: 1,
+          defaultNegativePoints: 0,
         },
-        { 
-          id: generateId(), 
-          content: 'Option B', 
-          orderPosition: 1, 
-          isCorrect: false,
-          points: 1,
-          negativePoints: 0,
-          explanation: ''
-        },
-        { 
-          id: generateId(), 
-          content: 'Option C', 
-          orderPosition: 2, 
-          isCorrect: false,
-          points: 1,
-          negativePoints: 0,
-          explanation: ''
-        },
-        { 
-          id: generateId(), 
-          content: 'Option D', 
-          orderPosition: 3, 
-          isCorrect: false,
-          points: 1,
-          negativePoints: 0,
-          explanation: ''
-        },
-      ],
-    };
+        options: [
+          {
+            id: generateId(),
+            content: 'Option A',
+            orderPosition: 0,
+            isCorrect: false,
+            points: 1,
+            negativePoints: 0,
+            explanation: ''
+          },
+          {
+            id: generateId(),
+            content: 'Option B',
+            orderPosition: 1,
+            isCorrect: false,
+            points: 1,
+            negativePoints: 0,
+            explanation: ''
+          },
+          {
+            id: generateId(),
+            content: 'Option C',
+            orderPosition: 2,
+            isCorrect: false,
+            points: 1,
+            negativePoints: 0,
+            explanation: ''
+          },
+          {
+            id: generateId(),
+            content: 'Option D',
+            orderPosition: 3,
+            isCorrect: false,
+            points: 1,
+            negativePoints: 0,
+            explanation: ''
+          },
+        ],
+      };
 
-  case 'checkbox':
-    return {
-      ...baseQuestion,
-      content: 'Checkbox Question',
-      options: [
-        { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
-        { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
-      ],
-    };
+    case 'checkbox':
+      return {
+        ...baseQuestion,
+        content: 'Checkbox Question',
+        options: [
+          { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
+          { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
+        ],
+      };
 
-  case 'file':
-    return {
-      ...baseQuestion,
-      content: 'File Upload Question',
-    };
+    case 'file':
+      return {
+        ...baseQuestion,
+        content: 'File Upload Question',
+      };
 
-  case 'audio':
-    return {
-      ...baseQuestion,
-      content: 'Audio Upload Question',
-    };
+    case 'audio':
+      return {
+        ...baseQuestion,
+        content: 'Audio Upload Question',
+      };
 
-  case 'calculated':
-    return {
-      ...baseQuestion,
-      content: 'Calculated Field',
-    };
+    case 'calculated':
+      return {
+        ...baseQuestion,
+        content: 'Calculated Field',
+      };
 
-  default:
-    return baseQuestion;
-}
+    default:
+      return baseQuestion;
+  }
 
 };
 
@@ -256,11 +256,11 @@ export const duplicateQuestion = (question: Question, orderPosition: number): Fo
     id: generateId(),
     content: `${question.content} (Copy)`,
     orderPosition,
-    options: question.options ? 
+    options: question.options ?
       question.options.map(option => ({
         ...option,
         id: generateId(),
-      })) : 
+      })) :
       undefined,
   };
 

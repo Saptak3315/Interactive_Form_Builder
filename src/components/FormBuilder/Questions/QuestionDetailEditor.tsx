@@ -24,6 +24,7 @@ const QuestionDetailEditor: React.FC = () => {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [optionErrors, setOptionErrors] = useState<{ [optionId: number]: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [localMcqOptions, setLocalMcqOptions] = useState<QuestionOption[]>([]);
 
   // Add MCQ-specific local state
   const [mcqSettings, setMcqSettings] = useState(activeQuestion?.mcqSettings || {
@@ -42,7 +43,14 @@ const QuestionDetailEditor: React.FC = () => {
       let questionData = { ...activeQuestion };
 
       setLocalQuestion(questionData);
-      setLocalOptions(activeQuestion.options || []);
+
+      // Handle different question types for options
+      if (activeQuestion.type === 'full_name') {
+        setLocalOptions(activeQuestion.options || []);
+      } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
+        setLocalMcqOptions(activeQuestion.options || []);
+      }
+
       setMcqSettings(activeQuestion.mcqSettings || {
         shuffleOptions: false,
         allowMultipleCorrect: false,
@@ -75,6 +83,21 @@ const QuestionDetailEditor: React.FC = () => {
     const newSettings = { ...mcqSettings, [field]: value };
     setMcqSettings(newSettings);
     handleFieldChange('mcqSettings', newSettings);
+
+    // If default points changed, update all existing options that don't have custom points
+    if (field === 'defaultPoints') {
+      setLocalMcqOptions(prev => prev.map(option => ({
+        ...option,
+        points: value // Apply new default points to all options
+      })));
+    }
+
+    if (field === 'defaultNegativePoints') {
+      setLocalMcqOptions(prev => prev.map(option => ({
+        ...option,
+        negativePoints: value // Apply new default negative points to all options
+      })));
+    }
   };
 
   // Handle local options change for full_name
@@ -84,6 +107,20 @@ const QuestionDetailEditor: React.FC = () => {
     value: any
   ) => {
     setLocalOptions(prev =>
+      prev.map(option =>
+        option.id === optionId
+          ? { ...option, [field]: value }
+          : option
+      )
+    );
+  };
+
+  const handleLocalMcqOptionChange = (
+    optionId: number,
+    field: keyof QuestionOption,
+    value: any
+  ) => {
+    setLocalMcqOptions(prev =>
       prev.map(option =>
         option.id === optionId
           ? { ...option, [field]: value }
@@ -239,6 +276,14 @@ const QuestionDetailEditor: React.FC = () => {
           options: localOptions
         };
         dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+      } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
+        // For MCQ and checkbox, include local MCQ options and mcq settings in the update
+        const updatedQuestion = {
+          ...localQuestion,
+          options: localMcqOptions,
+          mcqSettings: mcqSettings
+        };
+        dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
       } else {
         // For other question types, save normally
         dispatch(updateQuestion(activeQuestion.id, localQuestion));
@@ -258,31 +303,62 @@ const QuestionDetailEditor: React.FC = () => {
 
   const handleAddOption = () => {
     if (!activeQuestion) return;
-    const newOption = {
-      content: "",
-      orderPosition: activeQuestion.options?.length || 0,
-      isCorrect: false,
-    };
-    dispatch(addOption(activeQuestion.id, newOption));
+
+    if (activeQuestion.type === 'full_name') {
+      // Add to local options for full_name
+      const newOption = {
+        id: Date.now(), // Generate unique ID
+        content: "",
+        orderPosition: localOptions.length,
+        isCorrect: false,
+      };
+      setLocalOptions(prev => [...prev, newOption]);
+    } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
+      // Add to local MCQ options with current default points from settings
+      const newOption = {
+        id: Date.now(), // Generate unique ID
+        content: "",
+        orderPosition: localMcqOptions.length,
+        isCorrect: false,
+        points: mcqSettings.defaultPoints || 1,
+        negativePoints: mcqSettings.defaultNegativePoints || 0,
+        explanation: ''
+      };
+      setLocalMcqOptions(prev => [...prev, newOption]);
+    } else {
+      // Original behavior for other types
+      const newOption = {
+        content: "",
+        orderPosition: activeQuestion.options?.length || 0,
+        isCorrect: false,
+      };
+      dispatch(addOption(activeQuestion.id, newOption));
+    }
   };
 
   const handleDeleteOption = (optionId: number) => {
     if (!activeQuestion) return;
 
-    // Different minimum requirements for different question types
     if (activeQuestion.type === 'full_name') {
-      if (activeQuestion.options && activeQuestion.options.length <= 1) {
+      if (localOptions.length <= 1) {
         Swal.fire("A full name field must have at least 1 name field");
         return;
       }
+      setLocalOptions(prev => prev.filter(option => option.id !== optionId));
+    } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
+      if (localMcqOptions.length <= 2) {
+        Swal.fire("A choice question must have at least 2 options");
+        return;
+      }
+      setLocalMcqOptions(prev => prev.filter(option => option.id !== optionId));
     } else {
+      // Original behavior
       if (activeQuestion.options && activeQuestion.options.length <= 2) {
         Swal.fire("A choice question must have at least 2 options");
         return;
       }
+      dispatch(deleteOption(activeQuestion.id, optionId));
     }
-
-    dispatch(deleteOption(activeQuestion.id, optionId));
   };
 
   // Check if there are unsaved changes (include options for full_name)
@@ -292,10 +368,15 @@ const QuestionDetailEditor: React.FC = () => {
     if (hasOptionErrors) return false; // Disable save if there are errors
 
     const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
+
     if (activeQuestion?.type === 'full_name') {
       const optionsChanged = JSON.stringify(localOptions) !== JSON.stringify(activeQuestion.options || []);
       return questionChanged || optionsChanged;
+    } else if (activeQuestion?.type === 'multiple_choice' || activeQuestion?.type === 'checkbox') {
+      const mcqOptionsChanged = JSON.stringify(localMcqOptions) !== JSON.stringify(activeQuestion.options || []);
+      return questionChanged || mcqOptionsChanged;
     }
+
     return questionChanged;
   };
 
@@ -426,21 +507,20 @@ const QuestionDetailEditor: React.FC = () => {
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">
-                {activeQuestion.type === 'full_name' ? 'Name Fields' : 
-                 activeQuestion.type === 'multiple_choice' ? 'Answer Options' : 'Answer Options'}
+                {activeQuestion.type === 'full_name' ? 'Name Fields' :
+                  activeQuestion.type === 'multiple_choice' ? 'Answer Options' : 'Answer Options'}
               </label>
-              
+
               {/* MCQ Settings for multiple_choice */}
               {activeQuestion.type === 'multiple_choice' && (
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => handleMcqSettingsChange('allowMultipleCorrect', !mcqSettings.allowMultipleCorrect)}
-                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                      mcqSettings.allowMultipleCorrect
-                        ? 'bg-blue-100 border-blue-300 text-blue-700'
-                        : 'bg-gray-100 border-gray-300 text-gray-600'
-                    }`}
+                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${mcqSettings.allowMultipleCorrect
+                      ? 'bg-blue-100 border-blue-300 text-blue-700'
+                      : 'bg-gray-100 border-gray-300 text-gray-600'
+                      }`}
                   >
                     {mcqSettings.allowMultipleCorrect ? '☑️ Multi-Select' : '🔘 Single Select'}
                   </button>
@@ -452,7 +532,7 @@ const QuestionDetailEditor: React.FC = () => {
                   </button>
                 </div>
               )}
-              
+
               {/* Other question types */}
               {activeQuestion.type !== 'multiple_choice' && (
                 activeQuestion.type === 'full_name' ? (
@@ -485,10 +565,13 @@ const QuestionDetailEditor: React.FC = () => {
                     <input
                       type="number"
                       value={mcqSettings.defaultPoints || 1}
-                      onChange={(e) => handleMcqSettingsChange('defaultPoints', parseInt(e.target.value) || 1)}
+                      onChange={(e) => {
+                        const value = e.target.valueAsNumber || 1;
+                        handleMcqSettingsChange('defaultPoints', value);
+                      }}
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                       min="0"
-                      step="0.1"
+                      step="1"
                     />
                   </div>
                   <div>
@@ -517,13 +600,13 @@ const QuestionDetailEditor: React.FC = () => {
                   <div className="flex items-center">
                     <input
                       type="checkbox"
-                      id="shuffle-options"
-                      checked={mcqSettings.shuffleOptions || false}
-                      onChange={(e) => handleMcqSettingsChange('shuffleOptions', e.target.checked)}
+                      id="partial-credit"
+                      checked={mcqSettings.partialCredit || false}
+                      onChange={(e) => handleMcqSettingsChange('partialCredit', e.target.checked)}
                       className="w-4 h-4 mr-2"
                     />
-                    <label htmlFor="shuffle-options" className="text-xs font-medium text-gray-700">
-                      Shuffle Options
+                    <label htmlFor="partial-credit" className="text-xs font-medium text-gray-700">
+                      Allow Partial Credit
                     </label>
                   </div>
                 </div>
@@ -532,161 +615,178 @@ const QuestionDetailEditor: React.FC = () => {
 
             <div className="flex flex-col gap-3">
               {/* Use localOptions for full_name, activeQuestion.options for others */}
-              {(activeQuestion.type === 'full_name' ? localOptions : activeQuestion.options)?.map((option: any, index: number) => (
-                <div key={option.id} className={`p-4 border rounded-lg ${
-                  activeQuestion.type === 'multiple_choice' 
-                    ? 'border-blue-200 bg-blue-50' 
-                    : 'border-gray-200 bg-gray-50'
-                }`}>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                      activeQuestion.type === 'multiple_choice'
-                        ? 'bg-blue-200 text-blue-800'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {activeQuestion.type === 'full_name' ? `Field ${index + 1}` : 
-                       activeQuestion.type === 'multiple_choice' ? String.fromCharCode(65 + index) : `${index + 1}`}
-                    </span>
-                    <button
-                      className={`px-2 py-1 border-none rounded cursor-pointer text-xs transition-all duration-200 ${
-                        (activeQuestion.type === 'full_name' && localOptions.length <= 1) || 
-                        (activeQuestion.type !== 'full_name' && (activeQuestion.options?.length || 0) <= 2)
-                          ? 'opacity-50 cursor-not-allowed bg-red-50 text-red-600'
-                          : 'bg-red-50 text-red-600 hover:bg-red-100'
-                      }`}
-                      onClick={() => handleDeleteOption(option.id)}
-                      disabled={
-                        (activeQuestion.type === 'full_name' && localOptions.length <= 1) ||
-                        (activeQuestion.type !== 'full_name' && (activeQuestion.options?.length || 0) <= 2)
-                      }
-                      title={activeQuestion.type === 'full_name' ? 'Delete field' : 'Delete option'}
-                    >
-                      🗑️
-                    </button>
-                  </div>
-
-                  {/* Option Content */}
-                  <input
-                    type="text"
-                    value={option.content}
-                    onChange={(e) => {
-                      const newValue = e.target.value;
-                      if (activeQuestion.type === 'full_name') {
-                        handleLocalOptionChange(option.id, "content", newValue);
-                      } else {
-                        handleOptionChange(option.id, "content", newValue);
-                      }
-                      // Validate the content
-                      validateOptionContent(option.id, newValue);
-                    }}
-                    onBlur={(e) => {
-                      // Additional validation on blur to catch edge cases
-                      validateOptionContent(option.id, e.target.value);
-                    }}
-                    placeholder={activeQuestion.type === 'full_name' ? `Field ${index + 1} Label` : 
-                              activeQuestion.type === 'multiple_choice' ? `Option ${String.fromCharCode(65 + index)}` : 
-                              `Option ${index + 1}`}
-                    className={`w-full px-3 py-2 border rounded mb-3 text-sm transition-all duration-200 ${
-                      optionErrors[option.id]
-                        ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:border-indigo-500'
-                    }`}
-                  />
-
-                  {/* Add error message display */}
-                  {optionErrors[option.id] && (
-                    <div className="text-xs text-red-600 mb-2 flex items-center gap-1">
-                      <span>⚠️</span>
-                      <span>{optionErrors[option.id]}</span>
-                    </div>
-                  )}
-
-                  {/* MCQ-specific fields */}
-                  {activeQuestion.type === 'multiple_choice' && (
-                    <>
-                      {/* Explanation field */}
-                      <textarea
-                        value={option.explanation || ''}
-                        onChange={(e) => handleOptionChange(option.id, "explanation", e.target.value)}
-                        placeholder="Explanation for this option (optional)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded mb-3 text-sm resize-none"
-                        rows={2}
-                      />
-                      
-                      {/* Scoring and correctness */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={`option-correct-${option.id}`}
-                            checked={option.isCorrect || false}
-                            onChange={(e) => handleOptionChange(option.id, "isCorrect", e.target.checked)}
-                            className="w-4 h-4"
-                          />
-                          <label htmlFor={`option-correct-${option.id}`} className="text-sm font-medium text-green-700">
-                            ✓ Correct Answer
-                          </label>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Points (+)</label>
-                          <input
-                            type="number"
-                            value={option.points || mcqSettings.defaultPoints || 1}
-                            onChange={(e) => handleOptionChange(option.id, "points", parseFloat(e.target.value) || 0)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                            min="0"
-                            step="0.1"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Negative (-)</label>
-                          <input
-                            type="number"
-                            value={option.negativePoints || mcqSettings.defaultNegativePoints || 0}
-                            onChange={(e) => handleOptionChange(option.id, "negativePoints", parseFloat(e.target.value) || 0)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                            min="0"
-                            step="0.1"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Show correct/points only for checkbox (non-MCQ) */}
-                  {activeQuestion.type === 'checkbox' && (
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id={`option-correct-${option.id}`}
-                          checked={option.isCorrect || false}
-                          onChange={(e) => handleOptionChange(option.id, "isCorrect", e.target.checked)}
-                          className="w-auto m-0"
-                        />
-                        <label htmlFor={`option-correct-${option.id}`} className="m-0 cursor-pointer select-none text-sm font-medium text-gray-700">
-                          Correct answer
-                        </label>
+              {/* Use appropriate local state for different question types */}
+              {(activeQuestion.type === 'full_name' ? localOptions :
+                activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox' ? localMcqOptions :
+                  activeQuestion.options)?.map((option: any, index: number) => (
+                    <div key={option.id} className={`p-4 border rounded-lg ${activeQuestion.type === 'multiple_choice'
+                      ? 'border-blue-200 bg-blue-50'
+                      : 'border-gray-200 bg-gray-50'
+                      }`}>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className={`text-xs font-semibold px-2 py-1 rounded ${activeQuestion.type === 'multiple_choice'
+                          ? 'bg-blue-200 text-blue-800'
+                          : 'bg-gray-200 text-gray-600'
+                          }`}>
+                          {activeQuestion.type === 'full_name' ? `Field ${index + 1}` :
+                            activeQuestion.type === 'multiple_choice' ? String.fromCharCode(65 + index) : `${index + 1}`}
+                        </span>
+                        <button
+                          className={`px-2 py-1 border-none rounded cursor-pointer text-xs transition-all duration-200 ${(activeQuestion.type === 'full_name' && localOptions.length <= 1) ||
+                            (activeQuestion.type !== 'full_name' && (activeQuestion.options?.length || 0) <= 2)
+                            ? 'opacity-50 cursor-not-allowed bg-red-50 text-red-600'
+                            : 'bg-red-50 text-red-600 hover:bg-red-100'
+                            }`}
+                          onClick={() => handleDeleteOption(option.id)}
+                          disabled={
+                            (activeQuestion.type === 'full_name' && localOptions.length <= 1) ||
+                            (activeQuestion.type !== 'full_name' && (activeQuestion.options?.length || 0) <= 2)
+                          }
+                          title={activeQuestion.type === 'full_name' ? 'Delete field' : 'Delete option'}
+                        >
+                          🗑️
+                        </button>
                       </div>
 
+                      {/* Option Content */}
                       <input
-                        type="number"
-                        value={option.points || ""}
-                        onChange={(e) => handleOptionChange(option.id, "points", parseInt(e.target.value) || undefined)}
-                        placeholder="Points"
-                        className="w-20 px-2 py-1 border border-gray-300 rounded text-xs"
-                        min="0"
+                        type="text"
+                        value={option.content}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          if (activeQuestion.type === 'full_name') {
+                            handleLocalOptionChange(option.id, "content", newValue);
+                          } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
+                            handleLocalMcqOptionChange(option.id, "content", newValue);
+                          } else {
+                            handleOptionChange(option.id, "content", newValue);
+                          }
+                          // Validate the content
+                          validateOptionContent(option.id, newValue);
+                        }}
+                        onBlur={(e) => {
+                          // Additional validation on blur to catch edge cases
+                          validateOptionContent(option.id, e.target.value);
+                        }}
+                        placeholder={activeQuestion.type === 'full_name' ? `Field ${index + 1} Label` :
+                          activeQuestion.type === 'multiple_choice' ? `Option ${String.fromCharCode(65 + index)}` :
+                            `Option ${index + 1}`}
+                        className={`w-full px-3 py-2 border rounded mb-3 text-sm transition-all duration-200 ${optionErrors[option.id]
+                          ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                          : 'border-gray-300 focus:border-indigo-500'
+                          }`}
                       />
+
+                      {/* Add error message display */}
+                      {optionErrors[option.id] && (
+                        <div className="text-xs text-red-600 mb-2 flex items-center gap-1">
+                          <span>⚠️</span>
+                          <span>{optionErrors[option.id]}</span>
+                        </div>
+                      )}
+
+                      {/* MCQ-specific fields */}
+                      {/* MCQ-specific fields */}
+                      {activeQuestion.type === 'multiple_choice' && (
+                        <>
+                          {/* Explanation field */}
+                          <textarea
+                            value={option.explanation || ''}
+                            onChange={(e) => {
+                              if (activeQuestion.type === 'multiple_choice') {
+                                handleLocalMcqOptionChange(option.id, "explanation", e.target.value);
+                              }
+                            }}
+                            placeholder="Explanation for this option (optional)"
+                            className="w-full px-3 py-2 border border-gray-300 rounded mb-3 text-sm resize-none"
+                            rows={2}
+                          />
+
+                          {/* Scoring and correctness */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id={`option-correct-${option.id}`}
+                                checked={option.isCorrect || false}
+                                onChange={(e) => {
+                                  if (activeQuestion.type === 'multiple_choice') {
+                                    handleLocalMcqOptionChange(option.id, "isCorrect", e.target.checked);
+                                  }
+                                }}
+                                className="w-4 h-4"
+                              />
+                              <label htmlFor={`option-correct-${option.id}`} className="text-sm font-medium text-green-700">
+                                ✓ Correct Answer
+                              </label>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Points (+)</label>
+                              <input
+                                type="number"
+                                value={option.points !== undefined ? option.points : (mcqSettings.defaultPoints || 1)}
+                                onChange={(e) => {
+                                  const newValue = parseFloat(e.target.value) || 0;
+                                  if (activeQuestion.type === 'multiple_choice') {
+                                    handleLocalMcqOptionChange(option.id, "points", newValue);
+                                  }
+                                }}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                min="0"
+                                step="0.1"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Negative (-)</label>
+                              <input
+                                type="number"
+                                value={option.negativePoints || mcqSettings.defaultNegativePoints || 0}
+                                onChange={(e) => {
+                                  if (activeQuestion.type === 'multiple_choice') {
+                                    handleLocalMcqOptionChange(option.id, "negativePoints", parseFloat(e.target.value) || 0);
+                                  }
+                                }}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                min="0"
+                                step="0.1"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Show correct/points only for checkbox (non-MCQ) */}
+                      {activeQuestion.type === 'checkbox' && (
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`option-correct-${option.id}`}
+                              checked={option.isCorrect || false}
+                              onChange={(e) => handleLocalMcqOptionChange(option.id, "isCorrect", e.target.checked)} className="w-auto m-0"
+                            />
+                            <label htmlFor={`option-correct-${option.id}`} className="m-0 cursor-pointer select-none text-sm font-medium text-gray-700">
+                              Correct answer
+                            </label>
+                          </div>
+
+                          <input
+                            type="number"
+                            value={option.points || ""}
+                            onChange={(e) => handleLocalMcqOptionChange(option.id, "points", parseInt(e.target.value) || undefined)} placeholder="Points"
+                            className="w-20 px-2 py-1 border border-gray-300 rounded text-xs"
+                            min="0"
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              )) || (
-                <div className="text-sm text-slate-400 italic">
-                  {activeQuestion.type === 'full_name' ? 'No name fields configured' : 'No options configured'}
-                </div>
-              )}
+                  )) || (
+                  <div className="text-sm text-slate-400 italic">
+                    {activeQuestion.type === 'full_name' ? 'No name fields configured' : 'No options configured'}
+                  </div>
+                )}
             </div>
           </div>
         )}
