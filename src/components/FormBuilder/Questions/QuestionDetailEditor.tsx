@@ -35,6 +35,8 @@ const QuestionDetailEditor: React.FC = () => {
     scoringMethod: 'standard' as const,
     defaultPoints: 1,
     defaultNegativePoints: 0,
+    minSelections: undefined,
+    maxSelections: undefined,
   });
 
   // Update local state when active question changes
@@ -51,15 +53,18 @@ const QuestionDetailEditor: React.FC = () => {
         setLocalMcqOptions(activeQuestion.options || []);
       }
 
-      setMcqSettings(activeQuestion.mcqSettings || {
+      const defaultMcqSettings = {
         shuffleOptions: false,
         allowMultipleCorrect: false,
         showCorrectAnswers: true,
         partialCredit: false,
-        scoringMethod: 'standard',
+        scoringMethod: 'standard' as const,
         defaultPoints: 1,
         defaultNegativePoints: 0,
-      });
+        minSelections: undefined,
+        maxSelections: undefined,
+      };
+      setMcqSettings(activeQuestion.mcqSettings || defaultMcqSettings);
 
       // Reset file states when switching questions
       setUploadedFile(null);
@@ -80,22 +85,35 @@ const QuestionDetailEditor: React.FC = () => {
 
   // Handle MCQ settings updates
   const handleMcqSettingsChange = (field: string, value: any) => {
+    // Validate min/max selections
+    if (field === 'minSelections' && mcqSettings.maxSelections && value > mcqSettings.maxSelections) {
+      return; // Don't allow min to be greater than max
+    }
+    if (field === 'maxSelections' && mcqSettings.minSelections && value < mcqSettings.minSelections) {
+      return; // Don't allow max to be less than min
+    }
+
     const newSettings = { ...mcqSettings, [field]: value };
     setMcqSettings(newSettings);
-    handleFieldChange('mcqSettings', newSettings);
 
-    // If default points changed, update all existing options that don't have custom points
+    // Immediately update the local question with new MCQ settings
+    setLocalQuestion(prev => ({
+      ...prev,
+      mcqSettings: newSettings
+    }));
+
+    // If default points changed, update all existing options
     if (field === 'defaultPoints') {
       setLocalMcqOptions(prev => prev.map(option => ({
         ...option,
-        points: value // Apply new default points to all options
+        points: value
       })));
     }
 
     if (field === 'defaultNegativePoints') {
       setLocalMcqOptions(prev => prev.map(option => ({
         ...option,
-        negativePoints: value // Apply new default negative points to all options
+        negativePoints: value
       })));
     }
   };
@@ -281,7 +299,7 @@ const QuestionDetailEditor: React.FC = () => {
         const updatedQuestion = {
           ...localQuestion,
           options: localMcqOptions,
-          mcqSettings: mcqSettings
+          mcqSettings: activeQuestion.type === 'multiple_choice' ? mcqSettings : undefined
         };
         dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
       } else {
@@ -367,14 +385,21 @@ const QuestionDetailEditor: React.FC = () => {
     const hasOptionErrors = Object.keys(optionErrors).length > 0;
     if (hasOptionErrors) return false; // Disable save if there are errors
 
-    const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
+    if (!activeQuestion) return false;
 
-    if (activeQuestion?.type === 'full_name') {
+    // Compare local question with active question
+    const questionChanged = JSON.stringify({
+      ...localQuestion,
+      mcqSettings: activeQuestion.type === 'multiple_choice' ? mcqSettings : undefined
+    }) !== JSON.stringify(activeQuestion);
+
+    if (activeQuestion.type === 'full_name') {
       const optionsChanged = JSON.stringify(localOptions) !== JSON.stringify(activeQuestion.options || []);
       return questionChanged || optionsChanged;
-    } else if (activeQuestion?.type === 'multiple_choice' || activeQuestion?.type === 'checkbox') {
+    } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
       const mcqOptionsChanged = JSON.stringify(localMcqOptions) !== JSON.stringify(activeQuestion.options || []);
-      return questionChanged || mcqOptionsChanged;
+      const mcqSettingsChanged = JSON.stringify(mcqSettings) !== JSON.stringify(activeQuestion.mcqSettings || {});
+      return questionChanged || mcqOptionsChanged || mcqSettingsChanged;
     }
 
     return questionChanged;
@@ -585,6 +610,37 @@ const QuestionDetailEditor: React.FC = () => {
                       step="0.1"
                     />
                   </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Selection Limits (for multi-select)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <input
+                          type="number"
+                          placeholder="Min selections"
+                          value={mcqSettings.minSelections || ''}
+                          onChange={(e) => handleMcqSettingsChange('minSelections', e.target.value ? parseInt(e.target.value) : undefined)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                          min="0"
+                          disabled={!mcqSettings.allowMultipleCorrect}
+                        />
+                        <label className="text-xs text-gray-500">Min</label>
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder="Max selections"
+                          value={mcqSettings.maxSelections || ''}
+                          onChange={(e) => handleMcqSettingsChange('maxSelections', e.target.value ? parseInt(e.target.value) : undefined)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                          min="1"
+                          disabled={!mcqSettings.allowMultipleCorrect}
+                        />
+                        <label className="text-xs text-gray-500">Max</label>
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Scoring Method</label>
                     <select
@@ -685,7 +741,6 @@ const QuestionDetailEditor: React.FC = () => {
                         </div>
                       )}
 
-                      {/* MCQ-specific fields */}
                       {/* MCQ-specific fields */}
                       {activeQuestion.type === 'multiple_choice' && (
                         <>

@@ -174,6 +174,8 @@ export const createDefaultQuestion = (
           scoringMethod: 'standard',
           defaultPoints: 1,
           defaultNegativePoints: 0,
+          minSelections: undefined,
+          maxSelections: undefined,
         },
         options: [
           {

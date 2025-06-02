@@ -133,14 +133,36 @@ const FullFormPreview: React.FC = () => {
 
   // Validate checkbox/multiple choice required fields
   const validateMultipleChoice = (question: any, value: any): { isValid: boolean; error?: string } => {
-    if (question.isRequired) {
-      if (question.type === 'checkbox') {
-        const selectedOptions = Array.isArray(value.trim()) ? value.trim() : [];
-        if (selectedOptions.length === 0) {
+    if (question.type === 'checkbox') {
+      const selectedOptions = Array.isArray(value) ? value : [];
+      if (question.isRequired && selectedOptions.length === 0) {
+        return { isValid: false, error: 'Please select at least one option' };
+      }
+    } else if (question.type === 'multiple_choice') {
+      const isMultiSelect = question.mcqSettings?.allowMultipleCorrect || false;
+
+      if (isMultiSelect) {
+        const selectedOptions = Array.isArray(value) ? value : [];
+
+        // Check required
+        if (question.isRequired && selectedOptions.length === 0) {
           return { isValid: false, error: 'Please select at least one option' };
         }
-      } else if (question.type === 'multiple_choice') {
-        if (!value.trim() || value.trim() === '') {
+
+        // Check min selections
+        const minSelections = question.mcqSettings?.minSelections;
+        if (minSelections && selectedOptions.length < minSelections) {
+          return { isValid: false, error: `Please select at least ${minSelections} option(s)` };
+        }
+
+        // Check max selections (should not happen due to UI prevention, but good to have)
+        const maxSelections = question.mcqSettings?.maxSelections;
+        if (maxSelections && selectedOptions.length > maxSelections) {
+          return { isValid: false, error: `Please select no more than ${maxSelections} option(s)` };
+        }
+      } else {
+        // Single selection
+        if (question.isRequired && (!value || value === '' || value === null || value === undefined)) {
           return { isValid: false, error: 'Please select an option' };
         }
       }
@@ -152,17 +174,17 @@ const FullFormPreview: React.FC = () => {
   const performValidation = (questionId: number, question: any, value: any) => {
     let validation: { isValid: boolean; error?: string };
 
-    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone') {
-      validation = validateInput(question, value.trim());
+    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'full_name' || question.type === 'phone') {
+      validation = validateInput(question, typeof value === 'string' ? value.trim() : value);
     } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
-      validation = validateMultipleChoice(question, value.trim());
+      validation = validateMultipleChoice(question, value);
     } else if (question.type === 'file') {
-      validation = question.isRequired && !value.trim()
+      validation = question.isRequired && !value
         ? { isValid: false, error: 'Please upload a file' }
         : { isValid: true };
-    }
-    else {
-      validation = question.isRequired && (!value.trim() || value === '')
+    } else {
+      const stringValue = typeof value === 'string' ? value.trim() : value;
+      validation = question.isRequired && (!stringValue || stringValue === '')
         ? { isValid: false, error: 'This field is required' }
         : { isValid: true };
     }
@@ -178,7 +200,7 @@ const FullFormPreview: React.FC = () => {
 
   const handleInputChange = (questionId: number, question: any, value: any) => {
     // Perform validation
-    const validation = performValidation(questionId, question, value.trim());
+    const validation = performValidation(questionId, question, value);
 
     // Update the response
     handleQuestionResponse(questionId, value, validation.isValid);
@@ -434,11 +456,31 @@ const FullFormPreview: React.FC = () => {
         );
 
       case 'multiple_choice':
+        const isMultiSelect = question.mcqSettings?.allowMultipleCorrect || false;
+
+        // Proper value initialization based on selection type
+        let displayValue, currentMultiValue;
+        if (isMultiSelect) {
+          currentMultiValue = Array.isArray(currentValue) ? currentValue : [];
+          displayValue = currentMultiValue;
+        } else {
+          displayValue = currentValue || '';
+          currentMultiValue = [];
+        }
+
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
             <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
               {index + 1}. {question.content || 'Multiple Choice Question'}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+              {isMultiSelect && (
+                <span className="ml-2 text-blue-600 text-sm">
+                  (Select multiple
+                  {question.mcqSettings?.minSelections && ` - min: ${question.mcqSettings.minSelections}`}
+                  {question.mcqSettings?.maxSelections && ` - max: ${question.mcqSettings.maxSelections}`}
+                  )
+                </span>
+              )}
             </label>
             {question.explanation && (
               <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
@@ -454,14 +496,37 @@ const FullFormPreview: React.FC = () => {
                   key={option.id}
                   className="flex items-start gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                 >
-                  <input
-                    type="radio"
-                    name={`question-${question.id}`}
-                    value={option.id}
-                    checked={currentValue == option.id}
-                    onChange={(e) => handleInputChange(question.id, question, e.target.value)}
-                    className="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 mt-1"
-                  />
+                  {isMultiSelect ? (
+                    <input
+                      type="checkbox"
+                      checked={currentMultiValue.includes(option.id)}
+                      onChange={(e) => {
+                        let newValue;
+                        if (e.target.checked) {
+                          // Check max selections before adding
+                          const maxSelections = question.mcqSettings?.maxSelections;
+                          if (maxSelections && currentMultiValue.length >= maxSelections) {
+                            e.preventDefault();
+                            return;
+                          }
+                          newValue = [...currentMultiValue, option.id];
+                        } else {
+                          newValue = currentMultiValue.filter(id => id !== option.id);
+                        }
+                        handleInputChange(question.id, question, newValue);
+                      }}
+                      className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mt-1"
+                    />
+                  ) : (
+                    <input
+                      type="radio"
+                      name={`question-${question.id}`}
+                      value={option.id}
+                      checked={parseInt(displayValue) === option.id}
+                      onChange={(e) => handleInputChange(question.id, question, parseInt(e.target.value))}
+                      className="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 mt-1"
+                    />
+                  )}
                   <div className="flex-1">
                     <span className="text-base text-slate-700 block mb-1">
                       {String.fromCharCode(65 + optIndex)}. {option.content || `Option ${optIndex + 1}`}
@@ -491,6 +556,14 @@ const FullFormPreview: React.FC = () => {
                   <div className="text-base text-slate-400 italic">No options configured</div>
                 )}
             </div>
+
+            {/* Selection limit feedback */}
+            {isMultiSelect && question.mcqSettings?.maxSelections &&
+              currentMultiValue.length >= question.mcqSettings.maxSelections && (
+                <div className="mt-3 text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+                  ⚠️ Maximum selections reached ({question.mcqSettings.maxSelections})
+                </div>
+              )}
 
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
@@ -646,15 +719,16 @@ const FullFormPreview: React.FC = () => {
       let validation: { isValid: boolean; error?: string };
 
       if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'full_name' || question.type === 'phone') {
-        validation = validateInput(question, value.trim());
+        validation = validateInput(question, typeof value === 'string' ? value.trim() : value);
       } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
-        validation = validateMultipleChoice(question, value.trim());
+        validation = validateMultipleChoice(question, value);
       } else if (question.type === 'file') {
         validation = question.isRequired && !value
           ? { isValid: false, error: 'Please upload a file' }
           : { isValid: true };
       } else {
-        validation = question.isRequired && (!value || value === '')
+        const stringValue = typeof value === 'string' ? value.trim() : value;
+        validation = question.isRequired && (!stringValue || stringValue === '')
           ? { isValid: false, error: 'This field is required' }
           : { isValid: true };
       }
