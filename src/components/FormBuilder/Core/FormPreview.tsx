@@ -145,11 +145,13 @@ const FormPreview = () => {
         );
 
       case 'multiple_choice':
+        const isMultiSelect = question.mcqSettings?.allowMultipleCorrect || false;
         return (
           <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
             <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
               {index + 1}. {question.content || 'Multiple Choice Question'}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+              {isMultiSelect && <span className="ml-2 text-blue-600 text-xs">(Multi-select)</span>}
             </label>
             {question.explanation && (
               <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
@@ -161,8 +163,8 @@ const FormPreview = () => {
               {question.options?.map((option: any, optIndex: number) => (
                 <div key={option.id} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md">
                   <input
-                    type="radio"
-                    name={`question-${question.id}`}
+                    type={isMultiSelect ? "checkbox" : "radio"}
+                    name={isMultiSelect ? undefined : `question-${question.id}`}
                     className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                     disabled={true}
                   />

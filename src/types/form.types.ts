@@ -3,7 +3,7 @@
 export interface Question {
   id: number;
   content: string;
-  type: 'text' | 'textarea' | 'multiple_choice' | 'checkbox' | 'file' | 'audio' | 'number' | 'calculated'|'full_name'|'email'|'address'|'phone';
+  type: 'text' | 'textarea' | 'multiple_choice' | 'checkbox' | 'file' | 'audio' | 'number' | 'calculated' | 'full_name' | 'email' | 'address' | 'phone';
   orderPosition: number;
   isRequired: boolean;
   points?: number;
@@ -14,12 +14,12 @@ export interface Question {
   placeholder?: string;
   minLength?: number;
   maxLength?: number;
-  errorMessageForMinLength?:string;
+  errorMessageForMinLength?: string;
   validationType?: string;
   validationPattern?: string;
   options?: QuestionOption[];
-  errorMessageForPattern?:string
-  errorMessageForMaxLength?:string;
+  errorMessageForPattern?: string
+  errorMessageForMaxLength?: string;
   // MCQ-specific settings
   mcqSettings?: {
     shuffleOptions: boolean;
@@ -29,6 +29,8 @@ export interface Question {
     scoringMethod: 'standard' | 'negative_marking' | 'no_negative';
     defaultPoints: number;
     defaultNegativePoints: number;
+    minSelections?: number;
+    maxSelections?: number;
   };
 }
 
@@ -53,7 +55,7 @@ export interface FormState {
   isFormSaved: boolean;
 }
 
-export type FormAction = 
+export type FormAction =
   | { type: 'SET_FORM'; payload: { form: Partial<FormState> } }
   | { type: 'ADD_QUESTION'; payload: { question: Question } }
   | { type: 'UPDATE_QUESTION'; payload: { questionId: number; question: Partial<Question> } }
