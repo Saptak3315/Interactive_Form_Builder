@@ -152,7 +152,7 @@ const FullFormPreview: React.FC = () => {
   const performValidation = (questionId: number, question: any, value: any) => {
     let validation: { isValid: boolean; error?: string };
 
-    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email'|| question.type==='phone') {
+    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone') {
       validation = validateInput(question, value.trim());
     } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
       validation = validateMultipleChoice(question, value.trim());
@@ -450,17 +450,43 @@ const FullFormPreview: React.FC = () => {
 
             <div className="flex flex-col gap-3">
               {question.options?.map((option: any, optIndex: number) => (
-                <div key={option.id} className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+                <label
+                  key={option.id}
+                  className="flex items-start gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                >
                   <input
                     type="radio"
                     name={`question-${question.id}`}
                     value={option.id}
-                    checked={currentValue === option.id}
-                    onChange={(e) => handleInputChange(question.id, question, parseInt(e.target.value))}
-                    className="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    checked={currentValue == option.id}
+                    onChange={(e) => handleInputChange(question.id, question, e.target.value)}
+                    className="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 mt-1"
                   />
-                  <span className="flex-1 text-base text-slate-700">{option.content || `Option ${optIndex + 1}`}</span>
-                </div>
+                  <div className="flex-1">
+                    <span className="text-base text-slate-700 block mb-1">
+                      {String.fromCharCode(65 + optIndex)}. {option.content || `Option ${optIndex + 1}`}
+                    </span>
+                    {option.explanation && (
+                      <p className="text-sm text-slate-500 italic mb-2">
+                        📝 {option.explanation}
+                      </p>
+                    )}
+                    {(option.points || option.negativePoints) && (
+                      <div className="flex items-center gap-2 mt-2">
+                        {option.points && (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">
+                            +{option.points} pts
+                          </span>
+                        )}
+                        {option.negativePoints > 0 && (
+                          <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded font-medium">
+                            -{option.negativePoints} pts (if wrong)
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </label>
               )) || (
                   <div className="text-base text-slate-400 italic">No options configured</div>
                 )}
