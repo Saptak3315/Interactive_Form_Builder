@@ -201,7 +201,7 @@ const QuestionDetailEditor: React.FC = () => {
   //  Save changes to the question (including local options for full_name)
   const saveChanges = () => {
     if (activeQuestion && localQuestion) {
-      if (activeQuestion.type === 'full_name') {
+      if (activeQuestion.type === 'full_name'||activeQuestion.type==='address') {
         // For full_name, include local options in the update
         const updatedQuestion = {
           ...localQuestion,
@@ -240,7 +240,7 @@ const QuestionDetailEditor: React.FC = () => {
     if (!activeQuestion) return;
 
     //  Different minimum requirements for different question types
-    if (activeQuestion.type === 'full_name') {
+    if (activeQuestion.type === 'full_name'||activeQuestion.type==='address') {
       if (activeQuestion.options && activeQuestion.options.length <= 1) {
         Swal.fire("A full name field must have at least 1 name field");
         return;
@@ -286,7 +286,8 @@ const QuestionDetailEditor: React.FC = () => {
   const hasOptions =
     activeQuestion.type === "multiple_choice" ||
     activeQuestion.type === "checkbox" ||
-    activeQuestion.type === "full_name";
+    activeQuestion.type === "full_name"||
+    activeQuestion.type==='address';
 
   //  Check if there are unsaved changes (include options for full_name)
   const hasUnsavedChanges = () => {
@@ -295,7 +296,7 @@ const QuestionDetailEditor: React.FC = () => {
     if (hasOptionErrors) return false; // Disable save if there are errors
 
     const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
-    if (activeQuestion.type === 'full_name') {
+    if (activeQuestion.type === 'full_name'||activeQuestion.type==='address') {
       const optionsChanged = JSON.stringify(localOptions) !== JSON.stringify(activeQuestion.options || []);
       return questionChanged || optionsChanged;
     }
@@ -341,7 +342,7 @@ const QuestionDetailEditor: React.FC = () => {
 
         <div className="mb-5">
           <label htmlFor="question-explanation" className="block mb-1.5 text-sm font-medium text-gray-700">
-            Explanation
+            Explanation/ Help Text
           </label>
           <textarea
             id="question-explanation"
@@ -396,10 +397,10 @@ const QuestionDetailEditor: React.FC = () => {
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">
-                {activeQuestion.type === 'full_name' ? 'Name Fields' : 'Answer Options'}
+                {activeQuestion.type === 'full_name'||activeQuestion.type==='address' ? 'Name Fields' : 'Answer Options'}
               </label>
-              {activeQuestion.type === 'full_name' ? (
-                localOptions.length < 5 && (
+              {activeQuestion.type === 'full_name'||activeQuestion.type==='address' ? (
+                localOptions.length < 7 && (
                   <button
                     className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
                     onClick={handleAddOption}
@@ -419,7 +420,7 @@ const QuestionDetailEditor: React.FC = () => {
 
             <div className="flex flex-col gap-3">
               {/*  Use localOptions for full_name, activeQuestion.options for others */}
-              {(activeQuestion.type === 'full_name' ? localOptions : activeQuestion.options)?.map((option, index) => (
+              {(activeQuestion.type === 'full_name'||activeQuestion.type==='address' ? localOptions : activeQuestion.options)?.map((option, index) => (
                 <div key={option.id} className="p-3 border border-gray-200 rounded-md bg-gray-50">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-semibold text-gray-500 bg-gray-200 px-2 py-1 rounded">
@@ -428,15 +429,15 @@ const QuestionDetailEditor: React.FC = () => {
                     <button
                       className={`
                         px-2 py-1 border-none rounded cursor-pointer text-xs transition-all duration-200
-                        ${(activeQuestion.type === 'full_name' && localOptions.length <= 1) ||
-                          (activeQuestion.type !== 'full_name' && (activeQuestion.options?.length || 0) <= 2)
+                        ${((activeQuestion.type === 'full_name'||activeQuestion.type==='address') && localOptions.length <= 1) ||
+                          (activeQuestion.type !== 'full_name'&&activeQuestion.type!=='address' && (activeQuestion.options?.length || 0) <= 2)
                           ? 'opacity-50 cursor-not-allowed bg-red-50 text-red-600'
                           : 'bg-red-50 text-red-600 hover:bg-red-100'
                         }
                       `}
                       onClick={() => handleDeleteOption(option.id)}
                       disabled={
-                        (activeQuestion.type === 'full_name' && localOptions.length <= 1) ||
+                        (activeQuestion.type === 'full_name'||activeQuestion.type==='address' && localOptions.length <= 1) ||
                         (activeQuestion.type !== 'full_name' && (activeQuestion.options?.length || 0) <= 2)
                       }
                       title={activeQuestion.type === 'full_name' ? 'Delete field' : 'Delete option'}
@@ -452,7 +453,7 @@ const QuestionDetailEditor: React.FC = () => {
                     value={option.content}
                     onChange={(e) => {
                       const newValue = e.target.value;
-                      if (activeQuestion.type === 'full_name') {
+                      if (activeQuestion.type === 'full_name'||activeQuestion.type==='address') {
                         handleLocalOptionChange(option.id, "content", newValue);
                       } else {
                         handleOptionChange(option.id, "content", newValue);
@@ -464,10 +465,10 @@ const QuestionDetailEditor: React.FC = () => {
                       // Additional validation on blur to catch edge cases
                       validateOptionContent(option.id, e.target.value);
                     }}
-                    placeholder={activeQuestion.type === 'full_name' ? `Field ${index + 1} Label` : `Option ${index + 1}`}
+                    placeholder={activeQuestion.type === 'full_name' ||activeQuestion.type==='address'? `Field ${index + 1} Label` : `Option ${index + 1}`}
                     className={`w-full px-3 py-2 border rounded mb-2 text-sm transition-all duration-200 ${optionErrors[option.id]
-                        ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:border-indigo-500'
+                      ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                      : 'border-gray-300 focus:border-indigo-500'
                       }`}
                   />
 
@@ -494,7 +495,7 @@ const QuestionDetailEditor: React.FC = () => {
                   )} */}
 
                   {/* Show correct/points only for multiple_choice and checkbox */}
-                  {activeQuestion.type !== 'full_name' && (
+                  {activeQuestion.type !== 'full_name' &&activeQuestion.type!=='address' && (
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <input
@@ -534,7 +535,7 @@ const QuestionDetailEditor: React.FC = () => {
                 </div>
               )) || (
                   <div className="text-sm text-slate-400 italic">
-                    {activeQuestion.type === 'full_name' ? 'No name fields configured' : 'No options configured'}
+                    {activeQuestion.type === 'full_name'||activeQuestion.type==='address' ? 'No name fields configured' : 'No options configured'}
                   </div>
                 )}
             </div>

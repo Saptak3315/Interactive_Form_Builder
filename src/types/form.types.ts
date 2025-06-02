@@ -1,6 +1,7 @@
 // src/types/form.types.ts
 
 export interface Question {
+  mcqSettings: { shuffleOptions: boolean; allowMultipleCorrect: boolean; showCorrectAnswers: boolean; partialCredit: boolean; scoringMethod: string; defaultPoints: number; defaultNegativePoints: number; };
   id: number;
   content: string;
   type: 'text' | 'textarea' | 'multiple_choice' | 'checkbox' | 'file' | 'audio' | 'number' | 'calculated'|'full_name'|'email'|'address'|'phone';
