@@ -11,7 +11,6 @@ import { preserveOffsetOnSource } from '@atlaskit/pragmatic-drag-and-drop/elemen
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview';
 import { getNewQuestionTypeData } from './QuestionCard';
 import { createPortal } from 'react-dom';
-import invariant from 'tiny-invariant';
 
 interface QuestionTypeOption {
   type: string;

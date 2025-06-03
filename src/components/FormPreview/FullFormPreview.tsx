@@ -578,7 +578,7 @@ const FullFormPreview: React.FC = () => {
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
             <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
-              {index + 1}. {question.content || 'Checkbox Question'}
+              {index + 1}. {question.content || 'Select all that apply'}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
             {question.explanation && (
@@ -593,7 +593,10 @@ const FullFormPreview: React.FC = () => {
               {question.options?.map((option: any, optIndex: number) => {
                 const selectedOptions = Array.isArray(currentValue) ? currentValue : [];
                 return (
-                  <div key={option.id} className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+                  <label
+                    key={option.id}
+                    className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedOptions.includes(option.id)}
@@ -607,7 +610,7 @@ const FullFormPreview: React.FC = () => {
                       className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                     />
                     <span className="flex-1 text-base text-slate-700">{option.content || `Option ${optIndex + 1}`}</span>
-                  </div>
+                  </label>
                 );
               }) || (
                   <div className="text-base text-slate-400 italic">No options configured</div>

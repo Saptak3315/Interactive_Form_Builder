@@ -812,28 +812,30 @@ const QuestionDetailEditor: React.FC = () => {
                         </>
                       )}
 
-                      {/* Show correct/points only for checkbox (non-MCQ) */}
+                      {/* Show correct/points only for checkbox (non-MCQ) - Simplified for basic forms */}
                       {activeQuestion.type === 'checkbox' && (
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id={`option-correct-${option.id}`}
-                              checked={option.isCorrect || false}
-                              onChange={(e) => handleLocalMcqOptionChange(option.id, "isCorrect", e.target.checked)} className="w-auto m-0"
-                            />
-                            <label htmlFor={`option-correct-${option.id}`} className="m-0 cursor-pointer select-none text-sm font-medium text-gray-700">
-                              Correct answer
-                            </label>
-                          </div>
+                        <div className="p-3 bg-gray-50 rounded-md border border-gray-100">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id={`option-checkbox-${option.id}`}
+                                checked={option.isCorrect || false}
+                                onChange={(e) => handleLocalMcqOptionChange(option.id, "isCorrect", e.target.checked)}
+                                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                              />
+                              <label htmlFor={`option-checkbox-${option.id}`} className="text-sm font-medium text-gray-700">
+                                Mark as important option
+                              </label>
+                            </div>
 
-                          <input
-                            type="number"
-                            value={option.points || ""}
-                            onChange={(e) => handleLocalMcqOptionChange(option.id, "points", parseInt(e.target.value) || undefined)} placeholder="Points"
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-xs"
-                            min="0"
-                          />
+                            <div className="text-xs text-gray-500">
+                              For form analytics only
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Use this to track which options are most important for your form analysis.
+                          </p>
                         </div>
                       )}
                     </div>

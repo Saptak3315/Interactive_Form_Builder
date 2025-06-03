@@ -220,13 +220,15 @@ export const createDefaultQuestion = (
     case 'checkbox':
       return {
         ...baseQuestion,
-        content: 'Checkbox Question',
+        content: 'Select all that apply',
+        explanation: 'You may choose multiple options',
         options: [
           { id: generateId(), content: 'Option 1', orderPosition: 0, isCorrect: false },
           { id: generateId(), content: 'Option 2', orderPosition: 1, isCorrect: false },
+          { id: generateId(), content: 'Option 3', orderPosition: 2, isCorrect: false },
         ],
       };
-
+      
     case 'file':
       return {
         ...baseQuestion,

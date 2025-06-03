@@ -20,16 +20,16 @@ const FormSidebar = () => {
   const [isOperationInProgress, setIsOperationInProgress] = useState(false);
 
   const questionTypes: QuestionTypeOption[] = [
-    { type: 'full_name', label: 'Full Name', icon: '👤', description: 'Person\'s full name', category: 'Basic' },
+    { type: 'full_name', label: 'Full Name', icon: '👤', description: 'Complete name input field', category: 'Basic' },
     { type: 'address', label: 'Address', icon: '🏠', description: 'Street address or location', category: 'Basic' },
-    { type: 'email', label: 'Email', icon: '📧', description: 'Email address', category: 'Basic' },
-    { type: 'phone', label: 'Phone', icon: '📞', description: 'Phone number', category: 'Basic' },
+    { type: 'email', label: 'Email', icon: '📧', description: 'Email address with validation', category: 'Basic' },
+    { type: 'phone', label: 'Phone', icon: '📞', description: 'Phone number with validation', category: 'Basic' },
     { type: 'text', label: 'Short Text', icon: '📝', description: 'Single line text input', category: 'Basic' },
     { type: 'textarea', label: 'Long Text', icon: '📄', description: 'Multi-line text input', category: 'Basic' },
-    { type: 'number', label: 'Number', icon: '🔢', description: 'Numeric input', category: 'Basic' },
-    { type: 'multiple_choice', label: 'Multiple Choice', icon: '🔘', description: 'Single selection from options', category: 'Choice' },
-    { type: 'checkbox', label: 'Checkboxes', icon: '☑️', description: 'Multiple selections from options', category: 'Choice' },
-    { type: 'file', label: 'File Upload', icon: '📎', description: 'File attachment', category: 'Media' },
+    { type: 'number', label: 'Number', icon: '🔢', description: 'Numeric input with validation', category: 'Basic' },
+    { type: 'multiple_choice', label: 'Multiple Choice', icon: '🔘', description: 'Single or multiple selections with scoring', category: 'Choice' },
+    { type: 'checkbox', label: 'Checkboxes', icon: '☑️', description: 'Simple multiple selections for forms', category: 'Choice' },
+    { type: 'file', label: 'File Upload', icon: '📎', description: 'File attachment field', category: 'Media' },
     { type: 'audio', label: 'Audio', icon: '🎵', description: 'Audio recording or upload', category: 'Media' },
     { type: 'calculated', label: 'Calculated', icon: '🧮', description: 'Formula-based calculation', category: 'Advanced' },
   ];
@@ -44,7 +44,7 @@ const FormSidebar = () => {
 
   const handleSaveForm = useCallback(async () => {
     if (isFormLoading || isOperationInProgress) return;
-    
+
     setIsOperationInProgress(true);
     try {
       await saveCurrentForm();
@@ -88,12 +88,12 @@ const FormSidebar = () => {
         }
       }
     }
-    
+
     setIsOperationInProgress(true);
     try {
       console.log('Creating new form...');
       await clearCurrentForm();
-      
+
       // Show success message
       Swal.fire({
         title: 'New form created!',
@@ -102,7 +102,7 @@ const FormSidebar = () => {
         timer: 2000,
         showConfirmButton: false
       });
-      
+
       console.log('New form created successfully');
     } catch (error) {
       console.error('Error creating new form:', error);
@@ -120,7 +120,7 @@ const FormSidebar = () => {
       Swal.fire('Please add at least one question before publishing.');
       return;
     }
-    
+
     if (!state.title.trim()) {
       Swal.fire('Please add a title to your form before publishing.');
       return;
@@ -139,7 +139,7 @@ const FormSidebar = () => {
       }
       setIsOperationInProgress(false);
     }
-    
+
     // Navigate to publish page
     navigate('/publish-form');
   }, [state.questions.length, state.title, state.isFormSaved, saveCurrentForm, navigate, isFormLoading, isOperationInProgress]);
@@ -151,7 +151,7 @@ const FormSidebar = () => {
       Swal.fire('Please add some questions to preview the form.');
       return;
     }
-    
+
     // Save current form state before navigating to preview
     if (!state.isFormSaved) {
       setIsOperationInProgress(true);
@@ -163,7 +163,7 @@ const FormSidebar = () => {
       }
       setIsOperationInProgress(false);
     }
-    
+
     // Navigate to full preview page
     navigate('/form-preview');
   }, [state.questions.length, state.isFormSaved, saveCurrentForm, navigate, isFormLoading, isOperationInProgress]);
@@ -200,7 +200,7 @@ const FormSidebar = () => {
         setIsOperationInProgress(false);
       }
     }
-    
+
     navigate('/');
   }, [state.isFormSaved, state.questions.length, saveCurrentForm, navigate, isFormLoading, isOperationInProgress]);
 
@@ -248,64 +248,59 @@ const FormSidebar = () => {
           Form Actions
         </h3>
         <div className="flex flex-col gap-3">
-          <button 
-            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
-              isDisabled
+          <button
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${isDisabled
                 ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'border-slate-300 bg-white hover:bg-green-500 hover:text-white hover:border-green-500 cursor-pointer'
-            }`}
+              }`}
             onClick={handleSaveForm}
             disabled={isDisabled}
           >
             <span className="text-base">{isOperationInProgress ? '⏳' : '💾'}</span>
             {isOperationInProgress ? 'Saving...' : 'Save Form'}
           </button>
-          
-          <button 
-            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
-              isDisabled
+
+          <button
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${isDisabled
                 ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'border-slate-300 bg-white hover:bg-indigo-500 hover:text-white hover:border-indigo-500 cursor-pointer'
-            }`}
+              }`}
             onClick={handleNewForm}
             disabled={isDisabled}
           >
             <span className="text-base">{isOperationInProgress ? '⏳' : '📝'}</span>
             {isOperationInProgress ? 'Creating...' : 'New Form'}
           </button>
-          
-          <button 
-            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
-              isDisabled
+
+          <button
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${isDisabled
                 ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'border-slate-300 bg-white hover:bg-blue-500 hover:text-white hover:border-blue-500 cursor-pointer'
-            }`}
+              }`}
             onClick={handlePreviewForm}
             disabled={isDisabled}
           >
             <span className="text-base">👁️</span>
             Full Preview
           </button>
-          
-          <button 
-            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
-              (state.questions.length === 0 || !state.title.trim() || isDisabled)
+
+          <button
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${(state.questions.length === 0 || !state.title.trim() || isDisabled)
                 ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'border-slate-300 bg-white hover:bg-purple-500 hover:text-white hover:border-purple-500 cursor-pointer'
-            }`}
+              }`}
             onClick={handlePublishForm}
             disabled={state.questions.length === 0 || !state.title.trim() || isDisabled}
           >
             <span className="text-base">🚀</span>
             Publish Form
           </button>
-          
-          <button 
-            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${
-              isDisabled
+
+          <button
+            className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${isDisabled
                 ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'border-slate-300 bg-white hover:bg-gray-500 hover:text-white hover:border-gray-500 cursor-pointer'
-            }`}
+              }`}
             onClick={handleBackToDashboard}
             disabled={isDisabled}
           >
@@ -334,7 +329,7 @@ const FormSidebar = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
             <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
               📊
@@ -348,17 +343,17 @@ const FormSidebar = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-slate-200">
             <div className="flex items-center justify-center w-10 h-10 text-2xl bg-slate-100 rounded-lg">
               {isDisabled ? '⏳' : state.isFormSaved ? '✅' : '⏳'}
             </div>
             <div className="flex-1">
               <div className="text-sm font-bold text-slate-800 leading-none">
-                {isDisabled 
-                  ? 'Processing...' 
-                  : state.isFormSaved 
-                    ? 'Saved' 
+                {isDisabled
+                  ? 'Processing...'
+                  : state.isFormSaved
+                    ? 'Saved'
                     : 'Auto-saving...'
                 }
               </div>
