@@ -189,7 +189,7 @@ const FormPreview = () => {
         return (
           <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
             <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
-              {index + 1}. {question.content || 'Checkbox Question'}
+              {index + 1}. {question.content || 'Select all that apply'}
               {question.isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
             {question.explanation && (
@@ -200,7 +200,7 @@ const FormPreview = () => {
 
             <div className="flex flex-col gap-2">
               {question.options?.map((option: any, optIndex: number) => (
-                <div key={option.id} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md">
+                <div key={option.id} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors">
                   <input
                     type="checkbox"
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
