@@ -34,22 +34,17 @@ const FormHeader = () => {
     const newTitle = titleInput.trim();
     if (newTitle !== "") {
       dispatch(setForm({ title: newTitle }));
-      
-      // Keep the localStorage sync for backward compatibility
       localStorage.setItem("form_name", newTitle);
     } else {
       Swal.fire("Form name cannot be empty");
-      setTitleInput(state.title || ""); // Reset to current state
+      setTitleInput(state.title || "");
     }
     setIsEditingTitle(false);
   };
 
   const handleDescriptionSave = () => {
     const newDescription = tempDescription.trim();
-    // Allow empty descriptions
     dispatch(setForm({ description: newDescription }));
-    
-    // Keep the localStorage sync for backward compatibility
     localStorage.setItem("form_description", newDescription);
     setIsEditingDescription(false);
   };
@@ -99,102 +94,73 @@ const FormHeader = () => {
   }, [isEditingDescription]);
 
   return (
-    <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-lg shadow-sm p-6 mb-5 border-l-4 border-blue-500 transition-all duration-300 hover:shadow-md">
-      <div className="max-w-4xl mx-auto">
-        {/* Title Section */}
-        <div className="mb-4">
-          {isEditingTitle ? (
-            <div className="flex items-center gap-3">
-              <input
-                ref={titleInputRef}
-                type="text"
-                value={titleInput}
-                onChange={(e) => setTitleInput(e.target.value)}
-                onBlur={handleTitleSave}
-                onKeyDown={handleTitleKeyPress}
-                className="flex-1 text-2xl font-semibold px-3 py-2 border-2 border-blue-500 rounded-md outline-none bg-white transition-shadow duration-200 focus:shadow-lg focus:shadow-blue-500/30"
-                placeholder="Enter form title..."
-              />
-              <div className="flex flex-col gap-1">
-                <button 
-                  type="button" 
-                  onClick={handleTitleSave} 
-                  className="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded border-0 cursor-pointer text-sm font-medium transition-colors duration-200 flex items-center justify-center"
-                >
-                  ✓
-                </button>
-              </div>
-            </div>
-          ) : (
-            <h1
-              className="text-3xl font-semibold text-gray-800 m-0 cursor-pointer flex items-center transition-colors duration-200 hover:text-blue-500 border-b-2 border-dashed border-transparent hover:border-blue-500 pb-1 group"
-              onClick={handleTitleEdit}
-              title="Click to edit title"
+    <div className="max-w-4xl mx-auto px-6 py-4">
+      {/* Title Section */}
+      <div className="mb-3">
+        {isEditingTitle ? (
+          <div className="flex items-center gap-3">
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={handleTitleKeyPress}
+              className="flex-1 text-xl font-semibold px-3 py-2 border-2 border-indigo-500 rounded-md outline-none bg-white transition-shadow duration-200 focus:shadow-lg focus:shadow-indigo-500/30"
+              placeholder="Enter form title..."
+            />
+            <button 
+              type="button" 
+              onClick={handleTitleSave} 
+              className="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded border-0 cursor-pointer text-sm font-medium transition-colors duration-200 flex items-center justify-center"
             >
-              {state.title || 'Untitled Form'}
-              <span className="ml-2 text-base opacity-0 group-hover:opacity-100 transition-opacity duration-200">✏️</span>
-            </h1>
-          )}
-        </div>
+              ✓
+            </button>
+          </div>
+        ) : (
+          <h1
+            className="text-2xl font-semibold text-gray-800 m-0 cursor-pointer flex items-center transition-colors duration-200 hover:text-indigo-500 border-b-2 border-dashed border-transparent hover:border-indigo-500 pb-1 group"
+            onClick={handleTitleEdit}
+            title="Click to edit title"
+          >
+            {state.title || 'Untitled Form'}
+            <span className="ml-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">✏️</span>
+          </h1>
+        )}
+      </div>
 
-        {/* Description Section */}
-        <div className="mb-5">
-          {isEditingDescription ? (
-            <div className="flex items-start gap-3">
-              <textarea
-                ref={descriptionInputRef}
-                value={tempDescription}
-                onChange={(e) => setTempDescription(e.target.value)}
-                onBlur={handleDescriptionSave}
-                onKeyDown={handleDescriptionKeyPress}
-                className="flex-1 text-base leading-relaxed px-3 py-3 border-2 border-blue-500 rounded-md outline-none resize-y bg-white min-h-20 transition-shadow duration-200 focus:shadow-lg focus:shadow-blue-500/30"
-                placeholder="Enter form description..."
-                rows={3}
-              />
-              <div className="flex flex-col gap-1">
-                <button 
-                  type="button" 
-                  onClick={handleDescriptionSave} 
-                  className="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded border-0 cursor-pointer text-sm font-medium transition-colors duration-200 flex items-center justify-center"
-                >
-                  ✓
-                </button>
-              </div>
-            </div>
-          ) : (
-            <p
-              className="text-base leading-relaxed text-gray-600 m-0 py-1 cursor-pointer flex items-center transition-colors duration-200 hover:text-blue-500 border-b border-dashed border-transparent hover:border-blue-500 group"
-              onClick={handleDescriptionEdit}
-              title="Click to edit description"
+      {/* Description Section */}
+      <div>
+        {isEditingDescription ? (
+          <div className="flex items-start gap-3">
+            <textarea
+              ref={descriptionInputRef}
+              value={tempDescription}
+              onChange={(e) => setTempDescription(e.target.value)}
+              onBlur={handleDescriptionSave}
+              onKeyDown={handleDescriptionKeyPress}
+              className="flex-1 text-sm leading-relaxed px-3 py-2 border-2 border-indigo-500 rounded-md outline-none resize-y bg-white min-h-16 transition-shadow duration-200 focus:shadow-lg focus:shadow-indigo-500/30"
+              placeholder="Enter form description..."
+              rows={2}
+            />
+            <button 
+              type="button" 
+              onClick={handleDescriptionSave} 
+              className="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded border-0 cursor-pointer text-sm font-medium transition-colors duration-200 flex items-center justify-center"
             >
-              {state.description || 'Click to add a description...'}
-              <span className="ml-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">✏️</span>
-            </p>
-          )}
-        </div>
-
-        {/* Form Meta Information */}.
-        <div className="flex justify-between items-center">
-          {/* <div className="text-sm text-gray-500">
-            {state.formId && (
-              <span className="mr-4">Form ID: {state.formId}</span>
-            )}
-            <span>Last saved: {new Date().toLocaleTimeString()}</span>
-          </div> */}
-          <span className="text-sm text-gray-500">
-            {state.isFormSaved ? (
-              <span className="text-green-600 flex items-center gap-1">
-                <span>✓</span>
-                <span>All changes saved</span>
-              </span>
-            ) : (
-              <span className="text-orange-500 flex items-center gap-1">
-                <span>○</span>
-                <span>Auto-saving...</span>
-              </span>
-            )}
-          </span>
-        </div>
+              ✓
+            </button>
+          </div>
+        ) : (
+          <p
+            className="text-sm leading-relaxed text-gray-600 m-0 py-1 cursor-pointer flex items-center transition-colors duration-200 hover:text-indigo-500 border-b border-dashed border-transparent hover:border-indigo-500 group"
+            onClick={handleDescriptionEdit}
+            title="Click to edit description"
+          >
+            {state.description || 'Click to add a description...'}
+            <span className="ml-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200">✏️</span>
+          </p>
+        )}
       </div>
     </div>
   );
