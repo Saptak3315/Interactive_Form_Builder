@@ -10,7 +10,6 @@ import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/el
 import { type MutableRefObject, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import invariant from 'tiny-invariant';
-import Swal from 'sweetalert2';
 
 import {
   type Edge,
@@ -247,14 +246,14 @@ export function QuestionDisplay({
 
       <div
         className={`
-          group mb-3 p-4 bg-white border rounded-xl select-none relative block w-full transition-all duration-200 shadow-sm hover:shadow-md
-          ${isActive
-            ? 'border-indigo-500 bg-indigo-50 shadow-md ring-2 ring-indigo-200'
+    group mb-2 p-3 bg-white border rounded-lg select-none relative block w-full transition-all duration-200 shadow-sm hover:shadow-md
+    ${isActive
+            ? 'border-indigo-500 bg-indigo-50 shadow-md ring-1 ring-indigo-200'
             : 'border-slate-200 hover:border-indigo-300'
           }
-          ${state.type === 'is-over' ? 'ring-2 ring-blue-300 border-blue-300' : ''}
-          ${innerStyles[state.type] || ''}
-        `}
+    ${state.type === 'is-over' ? 'ring-2 ring-blue-300 border-blue-300' : ''}
+    ${innerStyles[state.type] || ''}
+  `}
         ref={innerRef}
         onClick={handleCardClick}
         style={
@@ -270,7 +269,7 @@ export function QuestionDisplay({
       >
         <div className="pointer-events-none">
           {/* Header Row */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className={`
                 w-8 h-8 rounded-lg flex items-center justify-center text-base font-medium
@@ -325,7 +324,7 @@ export function QuestionDisplay({
           </div>
 
           {/* Question Content */}
-          <div className="mb-2">
+          <div className="mb-1">
             <div className={`text-sm font-medium leading-5 mb-1 ${isActive ? 'text-indigo-800' : 'text-slate-800'
               }`}>
               {question.content || `Question ${index + 1}`}

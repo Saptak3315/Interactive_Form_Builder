@@ -10,6 +10,7 @@ import { useFormContext } from '../../../context/FormContext/FormProvider';
 const FormBuilderContainer: React.FC = () => {
   const { state, formVersion, isFormLoading } = useFormContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [updateCounter, setUpdateCounter] = useState(0);
   const navigate = useNavigate();
 
@@ -43,6 +44,10 @@ const FormBuilderContainer: React.FC = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const toggleRightPanel = () => {
+    setRightPanelOpen(!rightPanelOpen);
+  };
+
   // Show loading overlay when form operations are in progress
   if (isFormLoading) {
     return (
@@ -61,7 +66,7 @@ const FormBuilderContainer: React.FC = () => {
       {/* Top Header with FormCraft Logo */}
       <div className="bg-white border-b border-slate-200 shadow-sm">
         <div className="flex items-center justify-between px-6 py-3">
-          <div 
+          <div
             onClick={() => navigate('/')}
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
           >
@@ -70,7 +75,7 @@ const FormBuilderContainer: React.FC = () => {
             </div>
             <span className="text-xl font-bold text-slate-800">FormCraft</span>
           </div>
-          
+
           <div className="flex items-center gap-4 text-sm text-slate-600">
             <span className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${state.isFormSaved ? 'bg-green-500' : 'bg-orange-500'}`}></div>
@@ -82,10 +87,10 @@ const FormBuilderContainer: React.FC = () => {
       </div>
 
       {/* Form Header - Now Narrower */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white border-b border-slate-200 py-1">
         <FormHeader />
       </div>
-      
+
       <div className="flex-1 flex min-h-0 relative">
         {/* Sidebar */}
         <div className={`bg-white border-r border-slate-200 transition-all duration-300 ease-in-out overflow-y-auto z-10 ${
@@ -95,10 +100,10 @@ const FormBuilderContainer: React.FC = () => {
         </div>
 
         {/* Sidebar Toggle Button */}
-        <button 
+        <button
           className={`absolute top-5 z-15 w-8 h-8 bg-white border border-slate-200 cursor-pointer flex items-center justify-center text-sm text-slate-500 transition-all duration-300 ease-in-out shadow-md hover:bg-slate-50 hover:text-slate-700 ${
-            sidebarOpen 
-              ? 'left-80 rounded-r-md border-l-0' 
+            sidebarOpen
+              ? 'left-80 rounded-r-md border-l-0'
               : 'left-0 rounded-r-md'
           }`}
           onClick={toggleSidebar}
@@ -106,19 +111,23 @@ const FormBuilderContainer: React.FC = () => {
         >
           {sidebarOpen ? '◀' : '▶'}
         </button>
-        
+
         {/* Editor Section */}
         <div className={`flex-1 bg-slate-50 flex flex-col transition-all duration-300 ${
           sidebarOpen ? 'ml-10' : 'ml-10'
+        } ${
+          rightPanelOpen ? 'mr-10' : 'mr-10'
         }`}>
           <div className="flex-1 p-6 overflow-y-auto">
             {/* Force re-render of QuestionEditor when form structure changes */}
             <QuestionEditor key={`editor-${builderKey}-${updateCounter}`} />
           </div>
         </div>
-        
+
         {/* Right Panel (Details Only) */}
-        <div className="w-96 border-l border-slate-200 flex flex-col bg-white">
+        <div className={`border-l border-slate-200 flex flex-col bg-white transition-all duration-300 ease-in-out overflow-y-auto z-10 ${
+          rightPanelOpen ? 'w-96' : 'w-0 overflow-hidden'
+        }`}>
           {/* Panel Header */}
           <div className="flex border-b border-slate-200 bg-slate-50">
             <div className="px-4 py-3 text-lg text-indigo-600 relative flex items-center gap-2 flex-1">
@@ -127,14 +136,27 @@ const FormBuilderContainer: React.FC = () => {
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
             </div>
           </div>
-          
+
           {/* Panel Content */}
           <div className="flex-1 overflow-auto">
             {/* Force re-render of QuestionDetailEditor when form structure changes */}
             <QuestionDetailEditor key={`details-${builderKey}-${updateCounter}`} />
           </div>
         </div>
-      </div>      
+
+        {/* Right Panel Toggle Button */}
+        <button 
+          className={`absolute top-5 z-15 w-8 h-8 bg-white border border-slate-200 cursor-pointer flex items-center justify-center text-sm text-slate-500 transition-all duration-300 ease-in-out shadow-md hover:bg-slate-50 hover:text-slate-700 ${
+            rightPanelOpen 
+              ? 'right-96 rounded-l-md border-r-0' 
+              : 'right-0 rounded-l-md'
+          }`}
+          onClick={toggleRightPanel}
+          title={rightPanelOpen ? 'Hide field details' : 'Show field details'}
+        >
+          {rightPanelOpen ? '▶' : '◀'}
+        </button>
+      </div>
     </div>
   );
 };

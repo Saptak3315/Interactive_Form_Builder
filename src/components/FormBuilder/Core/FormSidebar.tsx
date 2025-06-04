@@ -208,15 +208,6 @@ const FormSidebar = () => {
 
   return (
     <div className="h-full flex flex-col bg-slate-50">
-      {/* Sidebar Header */}
-      <div className="px-5 py-6 border-b border-slate-200 bg-white">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2 m-0">
-          FormCraft
-        </h2>
-        <p className="text-sm text-slate-600 m-0">
-          {isDisabled ? 'Processing...' : 'Drag questions to build your form'}
-        </p>
-      </div>
 
       {/* Question Types Section */}
       <div className="p-5 border-b border-slate-200">
