@@ -1,5 +1,6 @@
 // src/components/FormBuilder/Core/FormBuilderContainer.tsx
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import FormHeader from './FormHeader';
 import FormSidebar from './FormSidebar';
 import QuestionEditor from './QuestionEditor';
@@ -10,6 +11,7 @@ const FormBuilderContainer: React.FC = () => {
   const { state, formVersion, isFormLoading } = useFormContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [updateCounter, setUpdateCounter] = useState(0);
+  const navigate = useNavigate();
 
   // Create a stable key for the entire form builder that changes when form significantly changes
   const builderKey = useMemo(() => {
@@ -56,7 +58,33 @@ const FormBuilderContainer: React.FC = () => {
 
   return (
     <div key={builderKey} className="h-screen flex flex-col bg-slate-50">
-      <FormHeader />
+      {/* Top Header with FormCraft Logo */}
+      <div className="bg-white border-b border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between px-6 py-3">
+          <div 
+            onClick={() => navigate('/')}
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">F</span>
+            </div>
+            <span className="text-xl font-bold text-slate-800">FormCraft</span>
+          </div>
+          
+          <div className="flex items-center gap-4 text-sm text-slate-600">
+            <span className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${state.isFormSaved ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+              {state.isFormSaved ? 'Saved' : 'Unsaved changes'}
+            </span>
+            <span>{state.questions.length} questions</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Form Header - Now Narrower */}
+      <div className="bg-white border-b border-slate-200">
+        <FormHeader />
+      </div>
       
       <div className="flex-1 flex min-h-0 relative">
         {/* Sidebar */}
@@ -80,25 +108,10 @@ const FormBuilderContainer: React.FC = () => {
         </button>
         
         {/* Editor Section */}
-        <div className={`flex-1 bg-white flex flex-col transition-all duration-300 ${
+        <div className={`flex-1 bg-slate-50 flex flex-col transition-all duration-300 ${
           sidebarOpen ? 'ml-10' : 'ml-10'
         }`}>
-          <div className="px-5 py-5 border-b border-slate-200 flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-slate-800 m-0">
-              Edit Form
-            </h3>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-600">
-                {state.questions.length} {state.questions.length === 1 ? 'Question' : 'Questions'}
-              </span>
-              {!state.isFormSaved && state.questions.length > 0 && (
-                <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded-full">
-                  Unsaved changes
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex-1 p-5 overflow-y-auto">
+          <div className="flex-1 p-6 overflow-y-auto">
             {/* Force re-render of QuestionEditor when form structure changes */}
             <QuestionEditor key={`editor-${builderKey}-${updateCounter}`} />
           </div>
