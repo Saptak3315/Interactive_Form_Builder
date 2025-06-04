@@ -487,41 +487,6 @@ const QuestionEditor: React.FC = () => {
     });
   }, [dispatch]);
 
-  const handleAddQuestionClick = () => {
-    const questionTypes = [
-      { type: 'text', label: 'Short Text' },
-      { type: 'textarea', label: 'Long Text' },
-      { type: 'number', label: 'Number' },
-      { type: 'multiple_choice', label: 'Multiple Choice' },
-      { type: 'checkbox', label: 'Checkboxes' },
-      { type: 'file', label: 'File Upload' },
-      { type: 'audio', label: 'Audio' },
-    ];
-
-    Swal.fire({
-      title: 'Select Question Type',
-      input: 'select',
-      inputOptions: questionTypes.reduce((acc, qt) => {
-        acc[qt.type] = qt.label;
-        return acc;
-      }, {} as Record<string, string>),
-      inputPlaceholder: 'Choose a question type',
-      showCancelButton: true,
-      confirmButtonText: 'Add Question',
-      cancelButtonText: 'Cancel',
-      inputValidator: (value) => {
-        if (!value) {
-          return 'Please select a question type';
-        }
-        return null;
-      }
-    }).then((result) => {
-      if (result.isConfirmed && result.value) {
-        addQuestionAtPosition(result.value);
-      }
-    });
-  };
-
   // Debug logging
   useEffect(() => {
     console.log('QuestionEditor state changed:', {
@@ -537,51 +502,6 @@ const QuestionEditor: React.FC = () => {
       shouldAutoScroll: shouldAutoScroll.current
     });
   }, [state.formId, state.questions.length, state.activeQuestionId, isNewQuestionDragActive, isUserScrolling, isDragInProgress, isInitialLoad, recentlyAddedQuestionId]);
-
-  if (state.questions.length === 0) {
-    return (
-      <div 
-        key={`empty-${formStateKey}`}
-        ref={dropZoneRef}
-        className={`
-          flex items-center justify-center h-full border-2 border-dashed rounded-xl transition-all duration-300
-          ${isNewQuestionDragActive
-            ? 'bg-blue-50 border-blue-400 shadow-inner shadow-blue-100' 
-            : 'bg-gray-50 hover:bg-blue-50 hover:border-blue-300 border-gray-300'
-          }
-        `}
-        style={{ minHeight: "400px" }}
-      >
-        <div className="text-center text-slate-600 p-10">
-          <div className={`text-5xl mb-4 transition-all duration-300 ${
-            isNewQuestionDragActive ? 'animate-bounce' : 'opacity-40'
-          }`}>
-            {isNewQuestionDragActive ? '🎯' : '📝'}
-          </div>
-          <h3 className="text-slate-800 text-xl font-semibold mb-2">
-            {isNewQuestionDragActive ? 'Drop here to add your first question!' : 'Start building your form'}
-          </h3>
-          <p className="text-base mb-5">
-            {isNewQuestionDragActive
-              ? 'Release to add question to your form' 
-              : 'Drag question types from the sidebar or click them to add'
-            }
-          </p>
-          <div className={`
-            px-6 py-3 border border-dashed rounded-md font-medium transition-all duration-300
-            ${isNewQuestionDragActive
-              ? 'bg-blue-100 border-blue-400 text-blue-800 shadow-lg'
-              : 'bg-blue-50 border-blue-300 text-blue-800'
-            }
-          `}>
-            <span>
-              {isNewQuestionDragActive ? '🎯 Drop question here!' : '📋 Drop question types here'}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div key={`editor-${formStateKey}`} className="h-full flex flex-col gap-5">
@@ -610,43 +530,6 @@ const QuestionEditor: React.FC = () => {
         ))}
       </div>
 
-      {/* Enhanced drop zone at bottom */}
-      <div
-        ref={dropZoneRef}
-        className={`
-          p-6 border-2 border-dashed rounded-lg text-center flex flex-col items-center gap-3 transition-all duration-300
-          ${isNewQuestionDragActive
-            ? 'border-blue-400 bg-blue-50 text-blue-700 shadow-lg shadow-blue-100' 
-            : 'border-gray-300 bg-gray-50 text-gray-400 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600'
-          }
-        `}
-        style={{ minHeight: "100px" }}
-      >
-        <div className={`text-2xl transition-all duration-300 ${
-          isNewQuestionDragActive ? 'animate-bounce' : ''
-        }`}>
-          {isNewQuestionDragActive ? '🎯' : '➕'}
-        </div>
-        <span className="font-medium text-lg">
-          {isNewQuestionDragActive 
-            ? 'Drop new question here to add at the end!' 
-            : 'Drop new questions here or'
-          }
-        </span>
-        {!isNewQuestionDragActive && (
-          <button
-            className="px-5 py-2.5 bg-indigo-500 text-white border-none rounded-md font-medium cursor-pointer hover:bg-indigo-600 transition-all duration-150 shadow-md hover:shadow-lg"
-            onClick={handleAddQuestionClick}
-          >
-            ➕ Add Question
-          </button>
-        )}
-        {isNewQuestionDragActive && (
-          <div className="text-sm text-blue-600 font-medium">
-            This will add question #{state.questions.length + 1}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
