@@ -107,6 +107,21 @@ const FullFormPreview: React.FC = () => {
       };
     }
 
+    // Handle full_name validation separately (arrays)
+    if (question.type === 'full_name' || question.type === 'address') {
+      if (question.isRequired) {
+        const values = Array.isArray(value) ? value : [];
+        const hasEmptyRequired = question.options?.some((_option: any, index: number) =>
+          !values[index] || !values[index].toString().trim()
+        );
+
+        if (hasEmptyRequired) {
+          return { isValid: false, error: 'All name fields are required' };
+        }
+      }
+      return { isValid: true };
+    }
+
     if (question.type === 'email' && (!question.validationType || question.validationType === 'none')) {
       question = { ...question, validationType: 'email' }; // Create new object instead of mutating
     }
@@ -166,6 +181,31 @@ const FullFormPreview: React.FC = () => {
           return { isValid: false, error: 'Please select an option' };
         }
       }
+    } else if (question.type === 'full_name' || question.type === 'address') {
+      const values = Array.isArray(value) ? value : [];
+
+      // Trim all values and check if any field has actual content (not just spaces)
+      const trimmedValues = values.map(val => val ? val.toString().trim() : '');
+      const hasAnyContent = trimmedValues.some(val => val.length > 0);
+
+      // If question is required OR if user started filling (has any content)
+      if (question.isRequired || hasAnyContent) {
+        const emptyFields: any[] = [];
+        question.options?.forEach((option: any, index: number) => {
+          const trimmedValue = values[index] ? values[index].toString().trim() : '';
+          if (!trimmedValue) {
+            emptyFields.push(option.content);
+          }
+        });
+
+        if (emptyFields.length > 0) {
+          if (question.isRequired) {
+            return { isValid: false, error: `${emptyFields.join(', ')} ${emptyFields.length === 1 ? 'is' : 'are'} required` };
+          } else if (hasAnyContent) {
+            return { isValid: false, error: `Please complete all name fields or leave all empty` };
+          }
+        }
+      }
     }
     return { isValid: true };
   };
@@ -174,9 +214,9 @@ const FullFormPreview: React.FC = () => {
   const performValidation = (questionId: number, question: any, value: any) => {
     let validation: { isValid: boolean; error?: string };
 
-    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'full_name' || question.type === 'phone') {
+    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone') {
       validation = validateInput(question, typeof value === 'string' ? value.trim() : value);
-    } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
+    } else if (question.type === 'multiple_choice' || question.type === 'checkbox' || question.type === 'full_name' || question.type === 'address') {
       validation = validateMultipleChoice(question, value);
     } else if (question.type === 'file') {
       validation = question.isRequired && !value
@@ -189,7 +229,6 @@ const FullFormPreview: React.FC = () => {
         : { isValid: true };
     }
 
-    // Update validation errors state
     setValidationErrors(prev => ({
       ...prev,
       [questionId]: validation.isValid ? '' : (validation.error || 'Invalid input')
@@ -200,7 +239,8 @@ const FullFormPreview: React.FC = () => {
 
   const handleInputChange = (questionId: number, question: any, value: any) => {
     // Perform validation
-    const validation = performValidation(questionId, question, value);
+    const processedValue = (question.type === 'full_name' || question.type === 'address') ? value : value;
+    const validation = performValidation(questionId, question, processedValue);
 
     // Update the response
     handleQuestionResponse(questionId, value, validation.isValid);
@@ -237,143 +277,6 @@ const FullFormPreview: React.FC = () => {
                 : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
                 }`}
               placeholder={question.placeholder || "Enter your answer"}
-            />
-
-            {hasError && (
-              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
-                <span>{validationErrors[question.id]}</span>
-              </div>
-            )}
-          </div>
-        );
-      case 'email':
-        return (
-          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
-              {index + 1}. {question.content || 'Email Address'}
-              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            {question.explanation && (
-              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
-                💡 {question.explanation}
-              </p>
-            )}
-
-            {renderQuestionMedia(question)}
-
-            <input
-              type="email"
-              value={currentValue}
-              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
-                }`}
-              placeholder="Enter your email"
-            />
-
-            {hasError && (
-              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
-                <span>{validationErrors[question.id]}</span>
-              </div>
-            )}
-          </div>
-        );
-
-      case 'phone':
-        return (
-          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
-              {index + 1}. {question.content || 'Phone Number'}
-              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            {question.explanation && (
-              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
-                💡 {question.explanation}
-              </p>
-            )}
-
-            {renderQuestionMedia(question)}
-
-            <input
-              type="tel"
-              value={currentValue || ''}
-              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
-                }`}
-              placeholder="Enter your phone number"
-            />
-
-            {hasError && (
-              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
-                <span>{validationErrors[question.id]}</span>
-              </div>
-            )}
-          </div>
-        );
-      case 'address':
-        return (
-          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
-              {index + 1}. {question.content || 'Address'}
-              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            {question.explanation && (
-              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
-                💡 {question.explanation}
-              </p>
-            )}
-
-            {renderQuestionMedia(question)}
-
-            <textarea
-              value={currentValue || ''}
-              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
-              rows={3}
-              className={`w-full px-4 py-3 border rounded-lg text-base resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
-                }`}
-              placeholder="Enter your address"
-            />
-
-            {hasError && (
-              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
-                <span>{validationErrors[question.id]}</span>
-              </div>
-            )}
-          </div>
-        );
-      case 'full_name':
-        return (
-          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
-              {index + 1}. {question.content || 'Full Name'}
-              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            {question.explanation && (
-              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
-                💡 {question.explanation}
-              </p>
-            )}
-
-            {renderQuestionMedia(question)}
-
-            <input
-              type="text"
-              value={currentValue || ''}
-              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
-                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
-                }`}
-              placeholder="Enter your full name"
             />
 
             {hasError && (
@@ -626,6 +529,138 @@ const FullFormPreview: React.FC = () => {
           </div>
         );
 
+      case 'email':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || 'Email Address'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <input
+              type="email"
+              value={currentValue}
+              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
+              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                }`}
+              placeholder="Enter your email"
+            />
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'phone':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || 'Phone Number'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <input
+              type="tel"
+              value={currentValue || ''}
+              onChange={(e) => handleInputChange(question.id, question, e.target.value)}
+              className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                }`}
+              placeholder="Enter your phone number"
+            />
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'address':
+      case 'full_name':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || (question.type === 'address' ? 'Address' : 'Full Name')}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {question.options?.map((option: any, optIndex: number) => {
+                const fieldValue = Array.isArray(currentValue) ? (currentValue[optIndex] || '') : '';
+
+                return (
+                  <div key={option.id}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {option.content}
+                      {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+
+                    <input
+                      type="text"
+                      value={fieldValue}
+                      onChange={(e) => {
+                        const newValue = Array.isArray(currentValue) ? [...currentValue] : [];
+                        while (newValue.length <= optIndex) {
+                          newValue.push('');
+                        }
+                        newValue[optIndex] = e.target.value;
+                        handleInputChange(question.id, question, newValue);
+                      }}
+                      className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                        ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                        : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
+                        }`}
+                      placeholder={option.placeholder || `Enter information`}
+                      disabled={false}
+                    />
+                  </div>
+                );
+              }) || (
+                  <div className="col-span-2 text-base text-slate-400 italic">No fields configured</div>
+                )}
+            </div>
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+
       case 'file':
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -721,9 +756,11 @@ const FullFormPreview: React.FC = () => {
 
       let validation: { isValid: boolean; error?: string };
 
-      if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'full_name' || question.type === 'phone') {
+      if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone') {
         validation = validateInput(question, typeof value === 'string' ? value.trim() : value);
       } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
+        validation = validateMultipleChoice(question, value);
+      } else if (question.type === 'full_name' || question.type === 'address') {
         validation = validateMultipleChoice(question, value);
       } else if (question.type === 'file') {
         validation = question.isRequired && !value
