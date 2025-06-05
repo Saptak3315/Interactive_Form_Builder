@@ -143,6 +143,94 @@ const FormPreview = () => {
             />
           </div>
         );
+        
+      case 'email':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'Email Address'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <input
+              type="email"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder={question.placeholder || "Enter your email address"}
+              disabled={true}
+            />
+          </div>
+        );
+
+      case 'phone':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'Phone Number'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <input
+              type="tel"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder={question.placeholder || "Enter your phone number"}
+              disabled={true}
+            />
+          </div>
+        );
+
+      case 'address':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'Address'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <textarea
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 min-h-16 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder={question.placeholder || "Enter your address"}
+              disabled={true}
+              rows={3}
+            />
+          </div>
+        );
+
+      case 'full_name':
+        return (
+          <div key={question.id} className="mb-6 pb-4 border-b border-slate-100 last:border-b-0 last:mb-2 last:pb-0">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 leading-relaxed">
+              {index + 1}. {question.content || 'Full Name'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            {question.explanation && (
+              <p className="text-xs text-slate-500 italic mb-2">{question.explanation}</p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-slate-50 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder={question.placeholder || "Enter your full name"}
+              disabled={true}
+            />
+          </div>
+        );
 
       case 'multiple_choice':
         const isMultiSelect = question.mcqSettings?.allowMultipleCorrect || false;

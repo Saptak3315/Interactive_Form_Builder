@@ -47,7 +47,7 @@ const QuestionDetailEditor: React.FC = () => {
       setLocalQuestion(questionData);
 
       // Handle different question types for options
-      if (activeQuestion.type === 'full_name') {
+      if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
         setLocalOptions(activeQuestion.options || []);
       } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
         setLocalMcqOptions(activeQuestion.options || []);
@@ -287,8 +287,8 @@ const QuestionDetailEditor: React.FC = () => {
   // Save changes to the question (including local options for full_name)
   const saveChanges = () => {
     if (activeQuestion && localQuestion) {
-      if (activeQuestion.type === 'full_name') {
-        // For full_name, include local options in the update
+      if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
+        // For full_name and address, include local options in the update
         const updatedQuestion = {
           ...localQuestion,
           options: localOptions
@@ -322,19 +322,17 @@ const QuestionDetailEditor: React.FC = () => {
   const handleAddOption = () => {
     if (!activeQuestion) return;
 
-    if (activeQuestion.type === 'full_name') {
-      // Add to local options for full_name
+    if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
       const newOption = {
-        id: Date.now(), // Generate unique ID
+        id: Date.now(),
         content: "",
         orderPosition: localOptions.length,
         isCorrect: false,
       };
       setLocalOptions(prev => [...prev, newOption]);
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
-      // Add to local MCQ options with current default points from settings
       const newOption = {
-        id: Date.now(), // Generate unique ID
+        id: Date.now(),
         content: "",
         orderPosition: localMcqOptions.length,
         isCorrect: false,
@@ -344,7 +342,6 @@ const QuestionDetailEditor: React.FC = () => {
       };
       setLocalMcqOptions(prev => [...prev, newOption]);
     } else {
-      // Original behavior for other types
       const newOption = {
         content: "",
         orderPosition: activeQuestion.options?.length || 0,
@@ -357,9 +354,9 @@ const QuestionDetailEditor: React.FC = () => {
   const handleDeleteOption = (optionId: number) => {
     if (!activeQuestion) return;
 
-    if (activeQuestion.type === 'full_name') {
+    if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
       if (localOptions.length <= 1) {
-        Swal.fire("A full name field must have at least 1 name field");
+        Swal.fire("A name field must have at least 1 field");
         return;
       }
       setLocalOptions(prev => prev.filter(option => option.id !== optionId));
@@ -370,7 +367,6 @@ const QuestionDetailEditor: React.FC = () => {
       }
       setLocalMcqOptions(prev => prev.filter(option => option.id !== optionId));
     } else {
-      // Original behavior
       if (activeQuestion.options && activeQuestion.options.length <= 2) {
         Swal.fire("A choice question must have at least 2 options");
         return;
@@ -381,19 +377,14 @@ const QuestionDetailEditor: React.FC = () => {
 
   // Check if there are unsaved changes (include options for full_name)
   const hasUnsavedChanges = () => {
-    // Check if there are any option validation errors
     const hasOptionErrors = Object.keys(optionErrors).length > 0;
-    if (hasOptionErrors) return false; // Disable save if there are errors
+    if (hasOptionErrors) return false;
 
     if (!activeQuestion) return false;
 
-    // Compare local question with active question
-    const questionChanged = JSON.stringify({
-      ...localQuestion,
-      mcqSettings: activeQuestion.type === 'multiple_choice' ? mcqSettings : undefined
-    }) !== JSON.stringify(activeQuestion);
+    const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
 
-    if (activeQuestion.type === 'full_name') {
+    if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
       const optionsChanged = JSON.stringify(localOptions) !== JSON.stringify(activeQuestion.options || []);
       return questionChanged || optionsChanged;
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
@@ -436,7 +427,8 @@ const QuestionDetailEditor: React.FC = () => {
   const hasOptions =
     activeQuestion.type === "multiple_choice" ||
     activeQuestion.type === "checkbox" ||
-    activeQuestion.type === "full_name";
+    activeQuestion.type === "full_name" ||
+    activeQuestion.type === "address";
 
   return (
     <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg">
@@ -710,7 +702,7 @@ const QuestionDetailEditor: React.FC = () => {
                         value={option.content}
                         onChange={(e) => {
                           const newValue = e.target.value;
-                          if (activeQuestion.type === 'full_name') {
+                          if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
                             handleLocalOptionChange(option.id, "content", newValue);
                           } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
                             handleLocalMcqOptionChange(option.id, "content", newValue);

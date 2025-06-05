@@ -94,18 +94,57 @@ export const createDefaultQuestion = (
         placeholder: 'Enter your full name',
         validationType: 'text',
         validationPattern: '',
-        explanation: '',
+        explanation: 'Enter your first and last name',
+        options: [
+          {
+            id: generateId(),
+            content: 'First Name',
+            orderPosition: 0,
+            isCorrect: false,
+          },
+          {
+            id: generateId(),
+            content: 'Last Name',
+            orderPosition: 1,
+            isCorrect: false,
+          },
+        ]
       };
 
     case 'address':
       return {
         ...baseQuestion,
         content: 'Address',
-        placeholder: 'Enter your address',
+        placeholder: 'Enter your Address',
         validationType: 'text',
         validationPattern: '',
-        maxLength: 320,
-        explanation: '',
+        explanation: 'Enter your address',
+        options: [
+          {
+            id: generateId(),
+            content: 'Street Address',
+            orderPosition: 0,
+            isCorrect: false,
+          },
+          {
+            id: generateId(),
+            content: 'City',
+            orderPosition: 1,
+            isCorrect: false,
+          },
+          {
+            id: generateId(),
+            content: 'State',
+            orderPosition: 2,
+            isCorrect: false,
+          },
+          {
+            id: generateId(),
+            content: 'Postal/Zip Code',
+            orderPosition: 3,
+            isCorrect: false,
+          },
+        ]
       };
 
     case 'email':
@@ -228,7 +267,7 @@ export const createDefaultQuestion = (
           { id: generateId(), content: 'Option 3', orderPosition: 2, isCorrect: false },
         ],
       };
-      
+
     case 'file':
       return {
         ...baseQuestion,
