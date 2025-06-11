@@ -157,54 +157,6 @@ const QuestionDetailEditor: React.FC = () => {
     );
   };
 
-  // Enhanced option change handlers that immediately sync to global state
-  const handleLocalOptionChangeWithSync = (
-    optionId: number,
-    field: keyof QuestionOption,
-    value: any
-  ) => {
-    if (!activeQuestion) return;
-
-    const updatedOptions = localOptions.map(option =>
-      option.id === optionId
-        ? { ...option, [field]: value }
-        : option
-    );
-
-    setLocalOptions(updatedOptions);
-
-    // Immediately sync to global state
-    const updatedQuestion = {
-      ...localQuestion,
-      options: updatedOptions,
-    };
-    dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
-  };
-
-  const handleLocalMcqOptionChangeWithSync = (
-    optionId: number,
-    field: keyof QuestionOption,
-    value: any
-  ) => {
-    if (!activeQuestion) return;
-
-    const updatedMcqOptions = localMcqOptions.map(option =>
-      option.id === optionId
-        ? { ...option, [field]: value }
-        : option
-    );
-
-    setLocalMcqOptions(updatedMcqOptions);
-
-    // Immediately sync to global state
-    const updatedQuestion = {
-      ...localQuestion,
-      options: updatedMcqOptions,
-      mcqSettings: mcqSettings,
-    };
-    dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
-  };
-
   // Validate option content
   const validateOptionContent = (optionId: number, content: string) => {
     const trimmedContent = content.trim();
@@ -370,6 +322,11 @@ const QuestionDetailEditor: React.FC = () => {
           options: localOptions,
         };
         dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
+        // Force refresh the current question ID to trigger state reset
+        setCurrentQuestionId(null);
+        setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+
       } else if (
         activeQuestion.type === "multiple_choice" ||
         activeQuestion.type === "checkbox"
@@ -381,8 +338,17 @@ const QuestionDetailEditor: React.FC = () => {
           mcqSettings: mcqSettings,
         };
         dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
+        // Force refresh the current question ID to trigger state reset
+        setCurrentQuestionId(null);
+        setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+
       } else {
         dispatch(updateQuestion(activeQuestion.id, localQuestion));
+
+        // Force refresh the current question ID to trigger state reset
+        setCurrentQuestionId(null);
+        setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
       }
     }
   };
@@ -408,16 +374,9 @@ const QuestionDetailEditor: React.FC = () => {
         isCorrect: false,
       };
 
-      // Update local state immediately
+      // Only update local state - don't dispatch to global state
       const updatedOptions = [...localOptions, newOption];
       setLocalOptions(updatedOptions);
-
-      // Also immediately dispatch to global state so changes persist
-      const updatedQuestion = {
-        ...localQuestion,
-        options: updatedOptions,
-      };
-      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
 
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
       const newOption = {
@@ -430,17 +389,9 @@ const QuestionDetailEditor: React.FC = () => {
         explanation: ''
       };
 
-      // Update local state immediately
+      // Only update local state - don't dispatch to global state
       const updatedMcqOptions = [...localMcqOptions, newOption];
       setLocalMcqOptions(updatedMcqOptions);
-
-      // Also immediately dispatch to global state
-      const updatedQuestion = {
-        ...localQuestion,
-        options: updatedMcqOptions,
-        mcqSettings: mcqSettings,
-      };
-      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
 
     } else {
       const newOption = {
@@ -461,16 +412,9 @@ const QuestionDetailEditor: React.FC = () => {
         return;
       }
 
-      // Update local state immediately
+      // Only update local state - don't dispatch to global state
       const updatedOptions = localOptions.filter(option => option.id !== optionId);
       setLocalOptions(updatedOptions);
-
-      // Also immediately dispatch to global state
-      const updatedQuestion = {
-        ...localQuestion,
-        options: updatedOptions,
-      };
-      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
 
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
       if (localMcqOptions.length <= 2) {
@@ -478,17 +422,9 @@ const QuestionDetailEditor: React.FC = () => {
         return;
       }
 
-      // Update local state immediately
+      // Only update local state - don't dispatch to global state
       const updatedMcqOptions = localMcqOptions.filter(option => option.id !== optionId);
       setLocalMcqOptions(updatedMcqOptions);
-
-      // Also immediately dispatch to global state
-      const updatedQuestion = {
-        ...localQuestion,
-        options: updatedMcqOptions,
-        mcqSettings: mcqSettings,
-      };
-      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
 
     } else {
       if (activeQuestion.options && activeQuestion.options.length <= 2) {
@@ -506,6 +442,7 @@ const QuestionDetailEditor: React.FC = () => {
 
     if (!activeQuestion) return false;
 
+    // For all question types, always check if the question fields have changed
     const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
 
     if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
@@ -828,9 +765,9 @@ const QuestionDetailEditor: React.FC = () => {
                         onChange={(e) => {
                           const newValue = e.target.value;
                           if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
-                            handleLocalOptionChangeWithSync(option.id, "content", newValue);
+                            handleLocalOptionChange(option.id, "content", newValue);
                           } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
-                            handleLocalMcqOptionChangeWithSync(option.id, "content", newValue);
+                            handleLocalMcqOptionChange(option.id, "content", newValue);
                           } else {
                             handleOptionChange(option.id, "content", newValue);
                           }
