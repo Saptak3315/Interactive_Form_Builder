@@ -40,10 +40,16 @@ const QuestionDetailEditor: React.FC = () => {
   });
 
   // Update local state when active question changes
-  useEffect(() => {
-    if (activeQuestion) {
-      let questionData = { ...activeQuestion };
+  // Track the current question ID to prevent unnecessary state resets
+  const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(null);
 
+  // Update local state when active question changes
+  useEffect(() => {
+    // Only reset state when switching to a different question
+    if (activeQuestion && activeQuestion.id !== currentQuestionId) {
+      console.log('Switching to different question, resetting local state');
+
+      let questionData = { ...activeQuestion };
       setLocalQuestion(questionData);
 
       // Handle different question types for options
@@ -75,8 +81,12 @@ const QuestionDetailEditor: React.FC = () => {
       if (activeQuestion.mediaUrl) {
         setFilePreview(activeQuestion.mediaUrl);
       }
+
+      setCurrentQuestionId(activeQuestion.id);
+    } else if (!activeQuestion) {
+      setCurrentQuestionId(null);
     }
-  }, [activeQuestion]);
+  }, [activeQuestion, currentQuestionId]);
 
   // Handle field updates
   const handleFieldChange = (field: keyof Question, value: any) => {
@@ -145,6 +155,54 @@ const QuestionDetailEditor: React.FC = () => {
           : option
       )
     );
+  };
+
+  // Enhanced option change handlers that immediately sync to global state
+  const handleLocalOptionChangeWithSync = (
+    optionId: number,
+    field: keyof QuestionOption,
+    value: any
+  ) => {
+    if (!activeQuestion) return;
+
+    const updatedOptions = localOptions.map(option =>
+      option.id === optionId
+        ? { ...option, [field]: value }
+        : option
+    );
+
+    setLocalOptions(updatedOptions);
+
+    // Immediately sync to global state
+    const updatedQuestion = {
+      ...localQuestion,
+      options: updatedOptions,
+    };
+    dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+  };
+
+  const handleLocalMcqOptionChangeWithSync = (
+    optionId: number,
+    field: keyof QuestionOption,
+    value: any
+  ) => {
+    if (!activeQuestion) return;
+
+    const updatedMcqOptions = localMcqOptions.map(option =>
+      option.id === optionId
+        ? { ...option, [field]: value }
+        : option
+    );
+
+    setLocalMcqOptions(updatedMcqOptions);
+
+    // Immediately sync to global state
+    const updatedQuestion = {
+      ...localQuestion,
+      options: updatedMcqOptions,
+      mcqSettings: mcqSettings,
+    };
+    dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
   };
 
   // Validate option content
@@ -312,6 +370,17 @@ const QuestionDetailEditor: React.FC = () => {
           options: localOptions,
         };
         dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+      } else if (
+        activeQuestion.type === "multiple_choice" ||
+        activeQuestion.type === "checkbox"
+      ) {
+        // Handle MCQ types with their local options and settings
+        const updatedQuestion = {
+          ...localQuestion,
+          options: localMcqOptions,
+          mcqSettings: mcqSettings,
+        };
+        dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
       } else {
         dispatch(updateQuestion(activeQuestion.id, localQuestion));
       }
@@ -338,7 +407,18 @@ const QuestionDetailEditor: React.FC = () => {
         orderPosition: localOptions.length,
         isCorrect: false,
       };
-      setLocalOptions(prev => [...prev, newOption]);
+
+      // Update local state immediately
+      const updatedOptions = [...localOptions, newOption];
+      setLocalOptions(updatedOptions);
+
+      // Also immediately dispatch to global state so changes persist
+      const updatedQuestion = {
+        ...localQuestion,
+        options: updatedOptions,
+      };
+      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
       const newOption = {
         id: Date.now(),
@@ -349,7 +429,19 @@ const QuestionDetailEditor: React.FC = () => {
         negativePoints: mcqSettings.defaultNegativePoints || 0,
         explanation: ''
       };
-      setLocalMcqOptions(prev => [...prev, newOption]);
+
+      // Update local state immediately
+      const updatedMcqOptions = [...localMcqOptions, newOption];
+      setLocalMcqOptions(updatedMcqOptions);
+
+      // Also immediately dispatch to global state
+      const updatedQuestion = {
+        ...localQuestion,
+        options: updatedMcqOptions,
+        mcqSettings: mcqSettings,
+      };
+      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
     } else {
       const newOption = {
         content: "",
@@ -368,13 +460,36 @@ const QuestionDetailEditor: React.FC = () => {
         Swal.fire("A name field must have at least 1 field");
         return;
       }
-      setLocalOptions(prev => prev.filter(option => option.id !== optionId));
+
+      // Update local state immediately
+      const updatedOptions = localOptions.filter(option => option.id !== optionId);
+      setLocalOptions(updatedOptions);
+
+      // Also immediately dispatch to global state
+      const updatedQuestion = {
+        ...localQuestion,
+        options: updatedOptions,
+      };
+      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
       if (localMcqOptions.length <= 2) {
         Swal.fire("A choice question must have at least 2 options");
         return;
       }
-      setLocalMcqOptions(prev => prev.filter(option => option.id !== optionId));
+
+      // Update local state immediately
+      const updatedMcqOptions = localMcqOptions.filter(option => option.id !== optionId);
+      setLocalMcqOptions(updatedMcqOptions);
+
+      // Also immediately dispatch to global state
+      const updatedQuestion = {
+        ...localQuestion,
+        options: updatedMcqOptions,
+        mcqSettings: mcqSettings,
+      };
+      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
     } else {
       if (activeQuestion.options && activeQuestion.options.length <= 2) {
         Swal.fire("A choice question must have at least 2 options");
@@ -713,9 +828,9 @@ const QuestionDetailEditor: React.FC = () => {
                         onChange={(e) => {
                           const newValue = e.target.value;
                           if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
-                            handleLocalOptionChange(option.id, "content", newValue);
+                            handleLocalOptionChangeWithSync(option.id, "content", newValue);
                           } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
-                            handleLocalMcqOptionChange(option.id, "content", newValue);
+                            handleLocalMcqOptionChangeWithSync(option.id, "content", newValue);
                           } else {
                             handleOptionChange(option.id, "content", newValue);
                           }
