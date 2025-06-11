@@ -625,7 +625,7 @@ const QuestionDetailEditor: React.FC = () => {
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">
-                {activeQuestion.type === 'full_name' ? 'Name Fields' :
+                {activeQuestion.type === 'full_name'|| activeQuestion.type==='address' ? 'Name Fields' :
                   activeQuestion.type === 'multiple_choice' ? 'Answer Options' : 'Answer Options'}
               </label>
 
@@ -653,7 +653,7 @@ const QuestionDetailEditor: React.FC = () => {
 
               {/* Other question types */}
               {activeQuestion.type !== 'multiple_choice' && (
-                activeQuestion.type === 'full_name' ? (
+                activeQuestion.type === 'full_name'  ? (
                   localOptions.length < 5 && (
                     <button
                       className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
