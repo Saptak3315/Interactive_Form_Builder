@@ -165,14 +165,14 @@ const QuestionDetailEditor: React.FC = () => {
       // Has content but only spaces
       setOptionErrors(prev => ({
         ...prev,
-        [optionId]: 'Option cannot contain only spaces'
+        [optionId]: 'Field cannot contain only spaces'
       }));
       return false;
     } else if (trimmedContent.length === 0) {
       // Completely empty
       setOptionErrors(prev => ({
         ...prev,
-        [optionId]: 'Option content is required'
+        [optionId]: 'Field content is required'
       }));
       return false;
     } else {
@@ -312,6 +312,34 @@ const QuestionDetailEditor: React.FC = () => {
       return;
     }
 
+    // Validate Name and Address fields before saving
+    if (activeQuestion && (activeQuestion.type === "full_name" || activeQuestion.type === "address")) {
+      const emptyOptions = localOptions.filter(option => !option.content || !option.content.trim());
+
+      if (emptyOptions.length > 0) {
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          text: `All ${activeQuestion.type === 'full_name' ? 'name' : 'address'} fields must have labels. Please fill in all empty fields.`,
+        });
+        return;
+      }
+    }
+
+    // Validate MCQ fields before saving
+    if (activeQuestion && (activeQuestion.type === "multiple_choice" || activeQuestion.type === "checkbox")) {
+      const emptyMcqOptions = localMcqOptions.filter(option => !option.content || !option.content.trim());
+
+      if (emptyMcqOptions.length > 0) {
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          text: "All options must have content. Please fill in all empty options.",
+        });
+        return;
+      }
+    }
+
     if (activeQuestion && localQuestion) {
       if (
         activeQuestion.type === "full_name" ||
@@ -442,7 +470,18 @@ const QuestionDetailEditor: React.FC = () => {
 
     if (!activeQuestion) return false;
 
-    // For all question types, always check if the question fields have changed
+    // Check for empty options in Name and Address fields
+    if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
+      const hasEmptyOptions = localOptions.some(option => !option.content || !option.content.trim());
+      if (hasEmptyOptions) return false; // Disable save if there are empty options
+    }
+
+    // Check for empty options in MCQ fields
+    if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
+      const hasEmptyMcqOptions = localMcqOptions.some(option => !option.content || !option.content.trim());
+      if (hasEmptyMcqOptions) return false; // Disable save if there are empty options
+    }
+
     const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
 
     if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
