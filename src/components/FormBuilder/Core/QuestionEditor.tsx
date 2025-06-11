@@ -9,10 +9,10 @@ import {
   setActiveQuestion,
   reorderQuestions
 } from '../../../context/FormContext/formActions';
-import { 
-  QuestionCard, 
-  isQuestionCardData, 
-  isQuestionDropTargetData, 
+import {
+  QuestionCard,
+  isQuestionCardData,
+  isQuestionDropTargetData,
   isNewQuestionTypeData,
   isDraggingAQuestion
 } from './QuestionCard';
@@ -29,22 +29,22 @@ const QuestionEditor: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const monitorsInitialized = useRef<boolean>(false);
   const questionRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  
+
   // Track user interactions and component initialization
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isDragInProgress, setIsDragInProgress] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const userScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastActiveQuestionRef = useRef<number | null>(null);
-  
+
   // Track drag state for better UX
   const [isNewQuestionDragActive, setIsNewQuestionDragActive] = useState(false);
   const [recentlyAddedQuestionId, setRecentlyAddedQuestionId] = useState<number | null>(null);
-  
+
   // NEW: Track scroll position when adding questions
   const scrollPositionBeforeAdd = useRef<number>(0);
   const shouldAutoScroll = useRef<boolean>(true);
-  
+
   // Create a stable key that changes when form structure changes significantly
   const formStateKey = useMemo(() => {
     return `${state.formId || 'new'}-${state.questions.length}-${Date.now()}`;
@@ -63,11 +63,11 @@ const QuestionEditor: React.FC = () => {
   const isNearBottom = useCallback(() => {
     const scrollContainer = scrollContainerRef.current;
     if (!scrollContainer) return false;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
     const scrollBottom = scrollTop + clientHeight;
     const threshold = 100; // 100px from bottom is considered "near bottom"
-    
+
     const nearBottom = scrollHeight - scrollBottom <= threshold;
     console.log('isNearBottom check:', {
       scrollTop,
@@ -77,14 +77,14 @@ const QuestionEditor: React.FC = () => {
       threshold,
       nearBottom
     });
-    
+
     return nearBottom;
   }, []);
 
   // COMPLETELY REWRITTEN: Smart scroll function that respects user position
   const scrollToQuestionIfNeeded = useCallback((questionId: number, context: 'initial' | 'new_question' | 'manual') => {
     console.log(`scrollToQuestionIfNeeded called: ${questionId}, context: ${context}, shouldAutoScroll: ${shouldAutoScroll.current}`);
-    
+
     // Don't scroll if user is currently scrolling or dragging
     if (isUserScrolling || isDragInProgress) {
       console.log('Auto-scroll prevented: user interaction in progress');
@@ -100,7 +100,7 @@ const QuestionEditor: React.FC = () => {
 
     const questionElement = questionRefs.current.get(questionId);
     const scrollContainer = scrollContainerRef.current;
-    
+
     if (!questionElement || !scrollContainer) {
       console.log('Auto-scroll prevented: missing elements');
       return;
@@ -135,12 +135,12 @@ const QuestionEditor: React.FC = () => {
 
     const handleScroll = () => {
       setIsUserScrolling(true);
-      
+
       // Clear existing timeout
       if (userScrollTimeoutRef.current) {
         clearTimeout(userScrollTimeoutRef.current);
       }
-      
+
       // Reset user scrolling flag after delay
       userScrollTimeoutRef.current = setTimeout(() => {
         setIsUserScrolling(false);
@@ -148,7 +148,7 @@ const QuestionEditor: React.FC = () => {
     };
 
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-    
+
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
       if (userScrollTimeoutRef.current) {
@@ -190,18 +190,18 @@ const QuestionEditor: React.FC = () => {
   // Enhanced add question function with scroll position tracking
   const addQuestionAtPosition = useCallback((questionType: string, insertIndex?: number) => {
     console.log('Adding question:', { questionType, insertIndex, currentLength: state.questions.length });
-    
+
     // CRITICAL: Capture scroll state BEFORE adding the question
     const wasNearBottom = isNearBottom();
     const isAddingAtEnd = insertIndex === undefined || insertIndex >= state.questions.length;
-    
+
     console.log('Scroll state before adding question:', {
       wasNearBottom,
       isAddingAtEnd,
       insertIndex,
       currentLength: state.questions.length
     });
-    
+
     // Set scroll behavior based on position
     if (isAddingAtEnd && wasNearBottom) {
       console.log('Adding at end while user is near bottom - DISABLING auto-scroll');
@@ -212,34 +212,34 @@ const QuestionEditor: React.FC = () => {
       shouldAutoScroll.current = true;
       scrollPositionBeforeAdd.current = 0; // Mark as "was not near bottom"
     }
-    
+
     const currentQuestions = state.questions;
     const orderPosition = insertIndex !== undefined ? insertIndex : currentQuestions.length;
     const newQuestion = createDefaultQuestion(questionType as any, orderPosition);
     const newQuestionId = Math.floor(Math.random() * 100000);
     const questionWithId = { ...newQuestion, id: newQuestionId };
-    
+
     if (insertIndex !== undefined && insertIndex >= 0 && insertIndex <= currentQuestions.length) {
       // Insert at specific position
       const newQuestions = [...currentQuestions];
       newQuestions.splice(insertIndex, 0, questionWithId);
-      
+
       // Update order positions for all questions
       const reorderedQuestions = newQuestions.map((question, index) => ({
         ...question,
         orderPosition: index
       }));
-      
+
       dispatch(reorderQuestions(reorderedQuestions));
       dispatch(setActiveQuestion(newQuestionId));
-      
+
       console.log('Question inserted at position:', insertIndex, 'New array length:', reorderedQuestions.length);
     } else {
       // Add at end
       dispatch(addQuestion(questionWithId));
       console.log('Question added at end, new length:', currentQuestions.length + 1);
     }
-    
+
     // Mark as recently added for auto-scroll detection
     setRecentlyAddedQuestionId(newQuestionId);
     setTimeout(() => setRecentlyAddedQuestionId(null), 1000);
@@ -260,20 +260,20 @@ const QuestionEditor: React.FC = () => {
   // Enhanced drag monitor with better debugging and error handling
   useEffect(() => {
     console.log('Setting up enhanced drag monitors for form:', state.formId, 'questions:', state.questions.length);
-    
+
     const cleanup = monitorForElements({
       canMonitor: isDraggingAQuestion,
       onDragStart({ source }) {
         console.log('Drag started:', source.data);
         setIsDragInProgress(true);
-        
+
         if (isNewQuestionTypeData(source.data)) {
           setIsNewQuestionDragActive(true);
         }
       },
       onDrop({ source, location }) {
         console.log('Drop event:', { source: source.data, location });
-        
+
         // Reset UI state first
         setIsDragInProgress(false);
         if (isNewQuestionTypeData(source.data)) {
@@ -286,51 +286,51 @@ const QuestionEditor: React.FC = () => {
           // Handle new question drops with positional insertion
           if (isNewQuestionTypeData(dragging)) {
             console.log('Processing new question drop:', dragging.questionType);
-            
+
             // CRITICAL: Capture scroll state BEFORE processing drop
             const wasNearBottom = isNearBottom();
-            
+
             // Check if dropped on main drop zone (at end)
-            const isDropZoneDrop = location.current.dropTargets.some(target => 
+            const isDropZoneDrop = location.current.dropTargets.some(target =>
               target.element === dropZoneRef.current
             );
-            
+
             if (isDropZoneDrop) {
               console.log('Dropping in main drop zone - adding at end, wasNearBottom:', wasNearBottom);
-              
+
               // If user is near bottom and dropping at end, disable auto-scroll
               if (wasNearBottom) {
                 shouldAutoScroll.current = false;
                 scrollPositionBeforeAdd.current = 1;
               }
-              
+
               setTimeout(() => addQuestionAtPosition(dragging.questionType), 0);
               return;
             }
-            
+
             // Handle insertion between questions
-            const targetDropData = location.current.dropTargets.find(target => 
+            const targetDropData = location.current.dropTargets.find(target =>
               isQuestionDropTargetData(target.data)
             );
-            
+
             if (targetDropData && isQuestionDropTargetData(targetDropData.data)) {
               console.log('Dropping between questions');
               const targetQuestion = targetDropData.data.question;
               const currentQuestions = state.questions;
               const targetIndex = currentQuestions.findIndex(q => q.id === targetQuestion.id);
-              
+
               if (targetIndex === -1) {
                 console.error('Target question not found in current questions array');
                 return;
               }
-              
+
               const closestEdge = extractClosestEdge(targetDropData.data);
               let insertIndex = targetIndex;
-              
+
               if (closestEdge === 'bottom') {
                 insertIndex = targetIndex + 1;
               }
-              
+
               console.log('Calculated insert position:', {
                 targetIndex,
                 closestEdge,
@@ -338,14 +338,14 @@ const QuestionEditor: React.FC = () => {
                 totalQuestions: currentQuestions.length,
                 wasNearBottom
               });
-              
+
               // For insertion, check if inserting at bottom while user is near bottom
               if (insertIndex >= currentQuestions.length && wasNearBottom) {
                 console.log('Inserting at end while near bottom - disabling auto-scroll');
                 shouldAutoScroll.current = false;
                 scrollPositionBeforeAdd.current = 1;
               }
-              
+
               // Validate insert index
               if (insertIndex >= 0 && insertIndex <= currentQuestions.length) {
                 setTimeout(() => addQuestionAtPosition(dragging.questionType, insertIndex), 0);
@@ -381,7 +381,7 @@ const QuestionEditor: React.FC = () => {
               console.error('Invalid question indices for reorder:', { startIndex, finishIndex });
               return;
             }
-            
+
             if (startIndex === finishIndex) {
               console.log('Same position, no reorder needed');
               return;
@@ -430,7 +430,7 @@ const QuestionEditor: React.FC = () => {
     if (!dropZone) return;
 
     console.log('Setting up enhanced drop zone for form:', state.formId);
-    
+
     return dropTargetForElements({
       element: dropZone,
       canDrop: ({ source }) => {
@@ -457,7 +457,7 @@ const QuestionEditor: React.FC = () => {
   // Question selection with toggle functionality (NO auto-scroll on manual selection)
   const handleQuestionSelect = useCallback((questionId: number) => {
     console.log('Question selection triggered:', questionId, 'Current active:', state.activeQuestionId);
-    
+
     if (state.activeQuestionId === questionId) {
       // Toggle off - deactivate the question
       console.log('Toggling off active question:', questionId);
@@ -502,21 +502,58 @@ const QuestionEditor: React.FC = () => {
       shouldAutoScroll: shouldAutoScroll.current
     });
   }, [state.formId, state.questions.length, state.activeQuestionId, isNewQuestionDragActive, isUserScrolling, isDragInProgress, isInitialLoad, recentlyAddedQuestionId]);
+  
+  if (state.questions.length === 0) {
+    return (
+      <div key={`editor-${formStateKey}`} className="h-full flex flex-col gap-5">
+        <div
+          ref={dropZoneRef}
+          className={`
+          flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-xl transition-all duration-300
+          ${isNewQuestionDragActive
+              ? 'border-indigo-500 bg-indigo-50 scale-105'
+              : 'border-gray-300 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-25'
+            }
+        `}
+        >
+          <div className="text-center p-12">
+            <div className={`text-6xl mb-6 transition-all duration-300 ${isNewQuestionDragActive ? 'scale-110 animate-bounce' : 'opacity-60'
+              }`}>
+              📝
+            </div>
+            <h3 className="text-2xl font-semibold text-gray-700 mb-3">
+              {isNewQuestionDragActive ? 'Drop to add question!' : 'Start building your form'}
+            </h3>
+            <p className="text-gray-500 text-lg leading-relaxed max-w-md">
+              {isNewQuestionDragActive
+                ? 'Release to add this question to your form'
+                : 'Drag a field type from the sidebar or click on any field type to get started'
+              }
+            </p>
+            {!isNewQuestionDragActive && (
+              <div className="mt-6 text-sm text-gray-400">
+                💡 You can also click on any field type in the sidebar to add it quickly
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div key={`editor-${formStateKey}`} className="h-full flex flex-col gap-5">
-      <div 
+      <div
         ref={scrollContainerRef}
         className="flex-1 flex flex-col gap-3 overflow-y-auto"
       >
         {state.questions.map((question, index) => (
-          <div 
+          <div
             key={`${question.id}-${formStateKey}`}
-            className={`transition-all duration-500 ${
-              recentlyAddedQuestionId === question.id 
-                ? 'animate-pulse scale-105 shadow-lg shadow-indigo-200' 
+            className={`transition-all duration-500 ${recentlyAddedQuestionId === question.id
+                ? 'animate-pulse scale-105 shadow-lg shadow-indigo-200'
                 : ''
-            }`}
+              }`}
           >
             <QuestionCard
               question={question}
