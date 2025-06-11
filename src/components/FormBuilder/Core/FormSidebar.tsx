@@ -31,6 +31,7 @@ const FormSidebar = () => {
     { type: 'checkbox', label: 'Checkboxes', icon: '☑️', description: 'Simple multiple selections for forms', category: 'Choice' },
     { type: 'file', label: 'File Upload', icon: '📎', description: 'File attachment field', category: 'Media' },
     { type: 'audio', label: 'Audio', icon: '🎵', description: 'Audio recording or upload', category: 'Media' },
+    { type: 'dynamic_text_fields', label: 'Dynamic Text Fields', icon: '🔄', description: 'User can add/remove multiple text fields for answers', category: 'Advanced' },
     { type: 'calculated', label: 'Calculated', icon: '🧮', description: 'Formula-based calculation', category: 'Advanced' },
   ];
 

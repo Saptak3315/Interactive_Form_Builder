@@ -286,24 +286,33 @@ const QuestionDetailEditor: React.FC = () => {
 
   // Save changes to the question (including local options for full_name)
   const saveChanges = () => {
+    if (activeQuestion &&
+      (activeQuestion.type === "text" ||
+        activeQuestion.type === "textarea" ||
+        activeQuestion.type === "dynamic_text_fields") &&
+      typeof localQuestion.minLength === "number" &&
+      typeof localQuestion.maxLength === "number" &&
+      localQuestion.maxLength < localQuestion.minLength
+    ) {
+      Swal.fire({
+        icon: "error",
+        title: "Validation Error",
+        text: "Minimum length cannot be greater than maximum length.",
+      });
+      return;
+    }
+
     if (activeQuestion && localQuestion) {
-      if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
-        // For full_name and address, include local options in the update
+      if (
+        activeQuestion.type === "full_name" ||
+        activeQuestion.type === "address"
+      ) {
         const updatedQuestion = {
           ...localQuestion,
-          options: localOptions
-        };
-        dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
-      } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
-        // For MCQ and checkbox, include local MCQ options and mcq settings in the update
-        const updatedQuestion = {
-          ...localQuestion,
-          options: localMcqOptions,
-          mcqSettings: activeQuestion.type === 'multiple_choice' ? mcqSettings : undefined
+          options: localOptions,
         };
         dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
       } else {
-        // For other question types, save normally
         dispatch(updateQuestion(activeQuestion.id, localQuestion));
       }
     }
@@ -420,6 +429,7 @@ const QuestionDetailEditor: React.FC = () => {
     { value: "checkbox", label: "Checkboxes" },
     { value: "file", label: "File Upload" },
     { value: "audio", label: "Audio" },
+    { value: "dynamic_text_fields", label: "Dynamic Text Fields" },
     { value: "calculated", label: "Calculated" },
   ];
 
@@ -1200,6 +1210,154 @@ const QuestionDetailEditor: React.FC = () => {
                   </div>
                 )}
 
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic Text Fields Settings */}
+        {activeQuestion.type === "dynamic_text_fields" && (
+          <div className="mb-5">
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Placeholder text for each field"
+                value={localQuestion.placeholder || ""}
+                onChange={(e) =>
+                  handleFieldChange("placeholder", e.target.value)
+                }
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+              />
+              <div className="flex gap-3">
+                <input
+                  type="number"
+                  placeholder="Min length per field"
+                  value={localQuestion.minLength || ""}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      "minLength",
+                      e.target.value ? parseInt(e.target.value) : undefined
+                    )
+                  }
+                  className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  min="0"
+                />
+                <input
+                  type="number"
+                  placeholder="Max length per field"
+                  value={localQuestion.maxLength || ""}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      "maxLength",
+                      e.target.value ? parseInt(e.target.value) : undefined
+                    )
+                  }
+                  className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  min="0"
+                />
+              </div>
+
+              {typeof localQuestion.minLength === "number" && localQuestion.minLength > 0 && (
+                <div className="mb-5">
+                  <label htmlFor="dynamic-min-error" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message For Minimum Length
+                  </label>
+                  <textarea
+                    id="dynamic-min-error"
+                    value={localQuestion.errorMessageForMinLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForMinLength", e.target.value)}
+                    placeholder="Each field should have minimum required characters"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              {typeof localQuestion.maxLength === "number" && localQuestion.maxLength > 0 && (
+                <div className="mb-5">
+                  <label htmlFor="dynamic-max-error" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message For Maximum Length
+                  </label>
+                  <textarea
+                    id="dynamic-max-error"
+                    value={localQuestion.errorMessageForMaxLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForMaxLength", e.target.value)}
+                    placeholder="Each field should not exceed maximum characters"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              {/* VALIDATION DROPDOWN for dynamic fields */}
+              <div>
+                <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Type</label>
+                <select
+                  value={localQuestion.validationType || "none"}
+                  onChange={(e) => {
+                    const selectedType = e.target.value;
+                    handleFieldChange("validationType", selectedType);
+
+                    // Auto-set regex patterns
+                    const patterns: Record<string, string> = {
+                      email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+                      url: "^https?:\\/\\/[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(?::\\d+)?(?:\\/[^\\s]*)?(#[^\\s]*)?$",
+                      number: "^\\d+$",
+                      alphanumeric: "^[a-zA-Z0-9]+$"
+                    };
+
+                    if (selectedType in patterns) {
+                      handleFieldChange("validationPattern", patterns[selectedType]);
+                    } else if (selectedType === "none") {
+                      handleFieldChange("validationPattern", "");
+                    }
+                  }}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                >
+                  <option value="none">No validation</option>
+                  <option value="email">Email address</option>
+                  <option value="url">Website URL</option>
+                  <option value="phone">Phone number</option>
+                  <option value="number">Numbers only</option>
+                  <option value="alphanumeric">Letters and numbers only</option>
+                  <option value="custom">Custom pattern</option>
+                </select>
+              </div>
+
+              {/* Error message and pattern inputs */}
+              {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                    <input
+                      type="text"
+                      placeholder="Enter error message for validation failure"
+                      value={localQuestion.errorMessageForPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("errorMessageForPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
+
+              {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Pattern</label>
+                    <input
+                      type="text"
+                      placeholder="Enter regex pattern (e.g., ^[0-9]+$)"
+                      value={localQuestion.validationPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("validationPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
             </div>
           </div>
         )}
