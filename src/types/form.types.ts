@@ -3,8 +3,7 @@
 export interface Question {
   id: number;
   content: string;
-  type: 'text' | 'textarea' | 'multiple_choice' | 'checkbox' | 'file' | 'audio' | 'number' | 'calculated' | 'full_name' | 'email' | 'address' | 'phone';
-  orderPosition: number;
+  type: 'text' | 'textarea' | 'multiple_choice' | 'checkbox' | 'file' | 'audio' | 'number' | 'calculated' | 'full_name' | 'email' | 'address' | 'phone' | 'dynamic_text_fields'; orderPosition: number;
   isRequired: boolean;
   points?: number;
   negativePoints?: number; // Add negative marking at question level

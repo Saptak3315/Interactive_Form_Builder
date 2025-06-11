@@ -83,31 +83,8 @@ const FullFormPreview: React.FC = () => {
     );
   };
 
-  const validateInput = (question: any, value: string): { isValid: boolean; error?: string } => {
-    // Required field check
-    if (question.isRequired && (!value || !value.toString().trim())) {
-      return { isValid: false, error: 'This field is required' };
-    }
-    if (!value || !value.toString().trim()) {
-      return { isValid: true };
-    }
-
-    const stringValue = value.toString();
-    if (question.minLength && stringValue.length < question.minLength) {
-      return {
-        isValid: false,
-        error: question.errorMessageForMinLength || `Minimum ${question.minLength} characters required`
-      };
-    }
-
-    if (question.maxLength && stringValue.length > question.maxLength) {
-      return {
-        isValid: false,
-        error: question.errorMessageForMaxLength || `Maximum ${question.maxLength} characters allowed`
-      };
-    }
-
-    // Handle full_name validation separately (arrays)
+  const validateInput = (question: any, value: any): { isValid: boolean; error?: string } => {
+    // Handle full_name and address validation separately (arrays)
     if (question.type === 'full_name' || question.type === 'address') {
       if (question.isRequired) {
         const values = Array.isArray(value) ? value : [];
@@ -122,9 +99,43 @@ const FullFormPreview: React.FC = () => {
       return { isValid: true };
     }
 
-    if (question.type === 'email' && (!question.validationType || question.validationType === 'none')) {
-      question = { ...question, validationType: 'email' }; // Create new object instead of mutating
+    // Single check for required fields (string values only)
+    if (question.isRequired && (!value || !value.toString().trim())) {
+      return { isValid: false, error: 'This field is required' };
     }
+
+    // Early return for empty optional fields
+    if (!value || !value.toString().trim()) {
+      return { isValid: true };
+    }
+
+    // Continue with other validations for non-empty values
+    const stringValue = value.toString();
+
+    // Length validations
+    if (question.minLength && stringValue.length < question.minLength) {
+      return {
+        isValid: false,
+        error: question.errorMessageForMinLength || `Minimum ${question.minLength} characters required`
+      };
+    }
+
+    if (question.maxLength && stringValue.length > question.maxLength) {
+      return {
+        isValid: false,
+        error: question.errorMessageForMaxLength || `Maximum ${question.maxLength} characters allowed`
+      };
+    }
+
+    // Auto-set email validation if not specified
+    if (question.type === 'email' && (!question.validationType || question.validationType === 'none')) {
+      question = { ...question, validationType: 'email' };
+    }
+    if (question.type === 'number' && (!question.validationType || question.validationType === 'none')) {
+      question = { ...question, validationType: 'number' };
+    }
+
+    // Pattern validation
     if (question.validationType && question.validationType !== 'none') {
       const pattern = getValidationPattern(question.validationType, question.validationPattern);
       if (pattern) {
@@ -206,6 +217,23 @@ const FullFormPreview: React.FC = () => {
           }
         }
       }
+    } else if (question.type === 'dynamic_text_fields') {
+      if (question.isRequired) {
+        const values = Array.isArray(value) ? value : [];
+
+        // Check if at least one field has content
+        const hasContent = values.some(val => val && val.toString().trim());
+
+        if (!hasContent) {
+          return { isValid: false, error: 'Please add at least one item' };
+        }
+
+        // Check for empty fields in between filled ones
+        const emptyFields = values.filter(val => !val || !val.toString().trim());
+        if (emptyFields.length > 0 && values.length > 1) {
+          return { isValid: false, error: 'Please fill all fields or remove empty ones' };
+        }
+      }
     }
     return { isValid: true };
   };
@@ -216,7 +244,7 @@ const FullFormPreview: React.FC = () => {
 
     if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone') {
       validation = validateInput(question, typeof value === 'string' ? value.trim() : value);
-    } else if (question.type === 'multiple_choice' || question.type === 'checkbox' || question.type === 'full_name' || question.type === 'address') {
+    } else if (question.type === 'multiple_choice' || question.type === 'checkbox' || question.type === 'full_name' || question.type === 'address' || question.type === 'dynamic_text_fields') {
       validation = validateMultipleChoice(question, value);
     } else if (question.type === 'file') {
       validation = question.isRequired && !value
@@ -726,6 +754,110 @@ const FullFormPreview: React.FC = () => {
           </div>
         );
 
+      case 'dynamic_text_fields':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || 'Dynamic Text Fields'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <div className="space-y-3">
+              {/* Render existing dynamic fields */}
+              {(() => {
+                // Ensure we always have at least one field
+                const fieldsArray = Array.isArray(currentValue) && currentValue.length > 0
+                  ? currentValue
+                  : [''];
+
+                return fieldsArray.map((fieldValue: string, fieldIndex: number) => (
+                  <div key={fieldIndex} className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      value={fieldValue || ''}
+                      onChange={(e) => {
+                        // Create a new array based on current state
+                        const currentArray = Array.isArray(currentValue) && currentValue.length > 0
+                          ? [...currentValue]
+                          : [''];
+
+                        // Update the specific field
+                        currentArray[fieldIndex] = e.target.value;
+
+                        // Call the handler with the updated array
+                        handleInputChange(question.id, question, currentArray);
+                      }}
+                      className={`flex-1 px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                        ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
+                        : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
+                        }`}
+                      placeholder={question.placeholder || `Enter item ${fieldIndex + 1}`}
+                    />
+
+                    {/* Remove button - only show if more than 1 field */}
+                    {fieldsArray.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentArray = Array.isArray(currentValue) && currentValue.length > 0
+                            ? [...currentValue]
+                            : [''];
+
+                          // Remove the field at the specified index
+                          currentArray.splice(fieldIndex, 1);
+
+                          // Ensure we always have at least one field
+                          const finalArray = currentArray.length > 0 ? currentArray : [''];
+
+                          handleInputChange(question.id, question, finalArray);
+                        }}
+                        className="px-3 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors flex-shrink-0"
+                        title="Remove field"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ));
+              })()}
+
+              {/* Add more field button */}
+              <button
+                type="button"
+                onClick={() => {
+                  // Get current values or start with empty array
+                  const currentArray = Array.isArray(currentValue) && currentValue.length > 0
+                    ? [...currentValue]
+                    : [''];
+
+                  // Add a new empty field
+                  currentArray.push('');
+
+                  handleInputChange(question.id, question, currentArray);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium"
+              >
+                + Add another
+              </button>
+            </div>
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -756,19 +888,20 @@ const FullFormPreview: React.FC = () => {
 
       let validation: { isValid: boolean; error?: string };
 
-      if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone') {
-        validation = validateInput(question, typeof value === 'string' ? value.trim() : value);
+      if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'phone' || question.type === 'number') {
+        validation = validateInput(question, value);
       } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
         validation = validateMultipleChoice(question, value);
-      } else if (question.type === 'full_name' || question.type === 'address') {
+      } else if (question.type === 'full_name') {
+        validation = validateMultipleChoice(question, value);
+      } else if (question.type === 'dynamic_text_fields') {
         validation = validateMultipleChoice(question, value);
       } else if (question.type === 'file') {
         validation = question.isRequired && !value
           ? { isValid: false, error: 'Please upload a file' }
           : { isValid: true };
       } else {
-        const stringValue = typeof value === 'string' ? value.trim() : value;
-        validation = question.isRequired && (!stringValue || stringValue === '')
+        validation = question.isRequired && (!value || value === '')
           ? { isValid: false, error: 'This field is required' }
           : { isValid: true };
       }

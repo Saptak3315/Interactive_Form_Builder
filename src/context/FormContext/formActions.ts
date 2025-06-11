@@ -286,6 +286,14 @@ export const createDefaultQuestion = (
         content: 'Calculated Field',
       };
 
+    case 'dynamic_text_fields':
+      return {
+        ...baseQuestion,
+        content: 'Dynamic Text Fields',
+        placeholder: 'Enter item',
+        explanation: 'Users can add multiple text entries dynamically',
+      };
+
     default:
       return baseQuestion;
   }
