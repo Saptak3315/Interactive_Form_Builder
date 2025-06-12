@@ -157,54 +157,6 @@ const QuestionDetailEditor: React.FC = () => {
     );
   };
 
-  // Enhanced option change handlers that immediately sync to global state
-  const handleLocalOptionChangeWithSync = (
-    optionId: number,
-    field: keyof QuestionOption,
-    value: any
-  ) => {
-    if (!activeQuestion) return;
-
-    const updatedOptions = localOptions.map(option =>
-      option.id === optionId
-        ? { ...option, [field]: value }
-        : option
-    );
-
-    setLocalOptions(updatedOptions);
-
-    // Immediately sync to global state
-    const updatedQuestion = {
-      ...localQuestion,
-      options: updatedOptions,
-    };
-    dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
-  };
-
-  const handleLocalMcqOptionChangeWithSync = (
-    optionId: number,
-    field: keyof QuestionOption,
-    value: any
-  ) => {
-    if (!activeQuestion) return;
-
-    const updatedMcqOptions = localMcqOptions.map(option =>
-      option.id === optionId
-        ? { ...option, [field]: value }
-        : option
-    );
-
-    setLocalMcqOptions(updatedMcqOptions);
-
-    // Immediately sync to global state
-    const updatedQuestion = {
-      ...localQuestion,
-      options: updatedMcqOptions,
-      mcqSettings: mcqSettings,
-    };
-    dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
-  };
-
   // Validate option content
   const validateOptionContent = (optionId: number, content: string) => {
     const trimmedContent = content.trim();
@@ -213,14 +165,14 @@ const QuestionDetailEditor: React.FC = () => {
       // Has content but only spaces
       setOptionErrors(prev => ({
         ...prev,
-        [optionId]: 'Option cannot contain only spaces'
+        [optionId]: 'Field cannot contain only spaces'
       }));
       return false;
     } else if (trimmedContent.length === 0) {
       // Completely empty
       setOptionErrors(prev => ({
         ...prev,
-        [optionId]: 'Option content is required'
+        [optionId]: 'Field content is required'
       }));
       return false;
     } else {
@@ -360,6 +312,34 @@ const QuestionDetailEditor: React.FC = () => {
       return;
     }
 
+    // Validate Name and Address fields before saving
+    if (activeQuestion && (activeQuestion.type === "full_name" || activeQuestion.type === "address")) {
+      const emptyOptions = localOptions.filter(option => !option.content || !option.content.trim());
+
+      if (emptyOptions.length > 0) {
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          text: `All ${activeQuestion.type === 'full_name' ? 'name' : 'address'} fields must have labels. Please fill in all empty fields.`,
+        });
+        return;
+      }
+    }
+
+    // Validate MCQ fields before saving
+    if (activeQuestion && (activeQuestion.type === "multiple_choice" || activeQuestion.type === "checkbox")) {
+      const emptyMcqOptions = localMcqOptions.filter(option => !option.content || !option.content.trim());
+
+      if (emptyMcqOptions.length > 0) {
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          text: "All options must have content. Please fill in all empty options.",
+        });
+        return;
+      }
+    }
+
     if (activeQuestion && localQuestion) {
       if (
         activeQuestion.type === "full_name" ||
@@ -370,6 +350,11 @@ const QuestionDetailEditor: React.FC = () => {
           options: localOptions,
         };
         dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
+        // Force refresh the current question ID to trigger state reset
+        setCurrentQuestionId(null);
+        setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+
       } else if (
         activeQuestion.type === "multiple_choice" ||
         activeQuestion.type === "checkbox"
@@ -381,8 +366,17 @@ const QuestionDetailEditor: React.FC = () => {
           mcqSettings: mcqSettings,
         };
         dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
+        // Force refresh the current question ID to trigger state reset
+        setCurrentQuestionId(null);
+        setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+
       } else {
         dispatch(updateQuestion(activeQuestion.id, localQuestion));
+
+        // Force refresh the current question ID to trigger state reset
+        setCurrentQuestionId(null);
+        setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
       }
     }
   };
@@ -408,16 +402,9 @@ const QuestionDetailEditor: React.FC = () => {
         isCorrect: false,
       };
 
-      // Update local state immediately
+      // Only update local state - don't dispatch to global state
       const updatedOptions = [...localOptions, newOption];
       setLocalOptions(updatedOptions);
-
-      // Also immediately dispatch to global state so changes persist
-      const updatedQuestion = {
-        ...localQuestion,
-        options: updatedOptions,
-      };
-      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
 
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
       const newOption = {
@@ -430,17 +417,9 @@ const QuestionDetailEditor: React.FC = () => {
         explanation: ''
       };
 
-      // Update local state immediately
+      // Only update local state - don't dispatch to global state
       const updatedMcqOptions = [...localMcqOptions, newOption];
       setLocalMcqOptions(updatedMcqOptions);
-
-      // Also immediately dispatch to global state
-      const updatedQuestion = {
-        ...localQuestion,
-        options: updatedMcqOptions,
-        mcqSettings: mcqSettings,
-      };
-      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
 
     } else {
       const newOption = {
@@ -461,16 +440,9 @@ const QuestionDetailEditor: React.FC = () => {
         return;
       }
 
-      // Update local state immediately
+      // Only update local state - don't dispatch to global state
       const updatedOptions = localOptions.filter(option => option.id !== optionId);
       setLocalOptions(updatedOptions);
-
-      // Also immediately dispatch to global state
-      const updatedQuestion = {
-        ...localQuestion,
-        options: updatedOptions,
-      };
-      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
 
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
       if (localMcqOptions.length <= 2) {
@@ -478,17 +450,9 @@ const QuestionDetailEditor: React.FC = () => {
         return;
       }
 
-      // Update local state immediately
+      // Only update local state - don't dispatch to global state
       const updatedMcqOptions = localMcqOptions.filter(option => option.id !== optionId);
       setLocalMcqOptions(updatedMcqOptions);
-
-      // Also immediately dispatch to global state
-      const updatedQuestion = {
-        ...localQuestion,
-        options: updatedMcqOptions,
-        mcqSettings: mcqSettings,
-      };
-      dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
 
     } else {
       if (activeQuestion.options && activeQuestion.options.length <= 2) {
@@ -505,6 +469,18 @@ const QuestionDetailEditor: React.FC = () => {
     if (hasOptionErrors) return false;
 
     if (!activeQuestion) return false;
+
+    // Check for empty options in Name and Address fields
+    if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
+      const hasEmptyOptions = localOptions.some(option => !option.content || !option.content.trim());
+      if (hasEmptyOptions) return false; // Disable save if there are empty options
+    }
+
+    // Check for empty options in MCQ fields
+    if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
+      const hasEmptyMcqOptions = localMcqOptions.some(option => !option.content || !option.content.trim());
+      if (hasEmptyMcqOptions) return false; // Disable save if there are empty options
+    }
 
     const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
 
@@ -649,7 +625,7 @@ const QuestionDetailEditor: React.FC = () => {
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">
-                {activeQuestion.type === 'full_name' ? 'Name Fields' :
+                {activeQuestion.type === 'full_name'|| activeQuestion.type==='address' ? 'Name Fields' :
                   activeQuestion.type === 'multiple_choice' ? 'Answer Options' : 'Answer Options'}
               </label>
 
@@ -677,7 +653,7 @@ const QuestionDetailEditor: React.FC = () => {
 
               {/* Other question types */}
               {activeQuestion.type !== 'multiple_choice' && (
-                activeQuestion.type === 'full_name' ? (
+                activeQuestion.type === 'full_name'  ? (
                   localOptions.length < 5 && (
                     <button
                       className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
@@ -789,7 +765,7 @@ const QuestionDetailEditor: React.FC = () => {
             <div className="flex flex-col gap-3">
               {/* Use localOptions for full_name, activeQuestion.options for others */}
               {/* Use appropriate local state for different question types */}
-              {(activeQuestion.type === 'full_name' ? localOptions :
+              {(activeQuestion.type === 'full_name'||activeQuestion.type==='address' ? localOptions :
                 activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox' ? localMcqOptions :
                   activeQuestion.options)?.map((option: any, index: number) => (
                     <div key={option.id} className={`p-4 border rounded-lg ${activeQuestion.type === 'multiple_choice'
@@ -801,7 +777,7 @@ const QuestionDetailEditor: React.FC = () => {
                           ? 'bg-blue-200 text-blue-800'
                           : 'bg-gray-200 text-gray-600'
                           }`}>
-                          {activeQuestion.type === 'full_name' ? `Field ${index + 1}` :
+                          {activeQuestion.type === 'full_name' ||activeQuestion.type==='address'? `Field ${index + 1}` :
                             activeQuestion.type === 'multiple_choice' ? String.fromCharCode(65 + index) : `${index + 1}`}
                         </span>
                         <button
@@ -828,9 +804,9 @@ const QuestionDetailEditor: React.FC = () => {
                         onChange={(e) => {
                           const newValue = e.target.value;
                           if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
-                            handleLocalOptionChangeWithSync(option.id, "content", newValue);
+                            handleLocalOptionChange(option.id, "content", newValue);
                           } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
-                            handleLocalMcqOptionChangeWithSync(option.id, "content", newValue);
+                            handleLocalMcqOptionChange(option.id, "content", newValue);
                           } else {
                             handleOptionChange(option.id, "content", newValue);
                           }
