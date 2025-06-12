@@ -765,7 +765,7 @@ const QuestionDetailEditor: React.FC = () => {
             <div className="flex flex-col gap-3">
               {/* Use localOptions for full_name, activeQuestion.options for others */}
               {/* Use appropriate local state for different question types */}
-              {(activeQuestion.type === 'full_name' ? localOptions :
+              {(activeQuestion.type === 'full_name'||activeQuestion.type==='address' ? localOptions :
                 activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox' ? localMcqOptions :
                   activeQuestion.options)?.map((option: any, index: number) => (
                     <div key={option.id} className={`p-4 border rounded-lg ${activeQuestion.type === 'multiple_choice'
@@ -777,7 +777,7 @@ const QuestionDetailEditor: React.FC = () => {
                           ? 'bg-blue-200 text-blue-800'
                           : 'bg-gray-200 text-gray-600'
                           }`}>
-                          {activeQuestion.type === 'full_name' ? `Field ${index + 1}` :
+                          {activeQuestion.type === 'full_name' ||activeQuestion.type==='address'? `Field ${index + 1}` :
                             activeQuestion.type === 'multiple_choice' ? String.fromCharCode(65 + index) : `${index + 1}`}
                         </span>
                         <button
