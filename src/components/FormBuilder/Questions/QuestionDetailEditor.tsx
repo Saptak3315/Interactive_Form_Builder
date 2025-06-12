@@ -678,32 +678,6 @@ const QuestionDetailEditor: React.FC = () => {
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="text-sm font-medium text-blue-800 mb-3">📊 Scoring Settings</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Default Points per Option</label>
-                    <input
-                      type="number"
-                      value={mcqSettings.defaultPoints || 0}
-                      onChange={(e) => {
-                        const value = e.target.valueAsNumber || 0;
-                        handleMcqSettingsChange('defaultPoints', value);
-                      }}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      min="0"
-                      step="0.1"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Negative Marking</label>
-                    <input
-                      type="number"
-                      value={mcqSettings.defaultNegativePoints || 0}
-                      onChange={(e) => handleMcqSettingsChange('defaultNegativePoints', parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      min="0"
-                      step="0.1"
-                    />
-                  </div>
-
                   <div className="col-span-2">
                     <label className="block text-xs font-medium text-gray-700 mb-1">Selection Limits (for multi-select)</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -734,30 +708,6 @@ const QuestionDetailEditor: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Scoring Method</label>
-                    <select
-                      value={mcqSettings.scoringMethod || 'standard'}
-                      onChange={(e) => handleMcqSettingsChange('scoringMethod', e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    >
-                      <option value="standard">Standard (No negative)</option>
-                      <option value="negative_marking">Negative Marking</option>
-                      <option value="no_negative">No Negative Points</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="partial-credit"
-                      checked={mcqSettings.partialCredit || false}
-                      onChange={(e) => handleMcqSettingsChange('partialCredit', e.target.checked)}
-                      className="w-4 h-4 mr-2"
-                    />
-                    <label htmlFor="partial-credit" className="text-xs font-medium text-gray-700">
-                      Allow Partial Credit
-                    </label>
-                  </div>
                 </div>
               </div>
             )}
@@ -837,19 +787,6 @@ const QuestionDetailEditor: React.FC = () => {
                       {/* MCQ-specific fields */}
                       {activeQuestion.type === 'multiple_choice' && (
                         <>
-                          {/* Explanation field */}
-                          <textarea
-                            value={option.explanation || ''}
-                            onChange={(e) => {
-                              if (activeQuestion.type === 'multiple_choice') {
-                                handleLocalMcqOptionChange(option.id, "explanation", e.target.value);
-                              }
-                            }}
-                            placeholder="Explanation for this option (optional)"
-                            className="w-full px-3 py-2 border border-gray-300 rounded mb-3 text-sm resize-none"
-                            rows={2}
-                          />
-
                           {/* Scoring and correctness */}
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div className="flex items-center gap-2">

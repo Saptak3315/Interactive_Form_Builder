@@ -467,20 +467,6 @@ const FullFormPreview: React.FC = () => {
                         📝 {option.explanation}
                       </p>
                     )}
-                    {(option.points || option.negativePoints) && (
-                      <div className="flex items-center gap-2 mt-2">
-                        {option.points && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">
-                            +{option.points} pts
-                          </span>
-                        )}
-                        {option.negativePoints > 0 && (
-                          <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded font-medium">
-                            -{option.negativePoints} pts (if wrong)
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </label>
               )) || (

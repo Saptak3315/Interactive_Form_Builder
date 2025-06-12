@@ -40,7 +40,6 @@ export interface QuestionOption {
   isCorrect: boolean;
   points?: number;
   negativePoints?: number; // Add negative marking support
-  explanation?: string; // Add explanation for each option
   mediaUrl?: string;
   mediaType?: string;
 }
