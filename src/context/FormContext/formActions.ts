@@ -211,7 +211,7 @@ export const createDefaultQuestion = (
           showCorrectAnswers: true,
           partialCredit: false,
           scoringMethod: 'standard',
-          defaultPoints: 1,
+          defaultPoints: 0,
           defaultNegativePoints: 0,
           minSelections: undefined,
           maxSelections: undefined,

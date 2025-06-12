@@ -33,7 +33,7 @@ const QuestionDetailEditor: React.FC = () => {
     showCorrectAnswers: true,
     partialCredit: false,
     scoringMethod: 'standard' as const,
-    defaultPoints: 1,
+    defaultPoints: 0,
     defaultNegativePoints: 0,
     minSelections: undefined,
     maxSelections: undefined,
@@ -65,7 +65,7 @@ const QuestionDetailEditor: React.FC = () => {
         showCorrectAnswers: true,
         partialCredit: false,
         scoringMethod: 'standard' as const,
-        defaultPoints: 1,
+        defaultPoints: 0,
         defaultNegativePoints: 0,
         minSelections: undefined,
         maxSelections: undefined,
@@ -682,14 +682,14 @@ const QuestionDetailEditor: React.FC = () => {
                     <label className="block text-xs font-medium text-gray-700 mb-1">Default Points per Option</label>
                     <input
                       type="number"
-                      value={mcqSettings.defaultPoints || 1}
+                      value={mcqSettings.defaultPoints || 0}
                       onChange={(e) => {
-                        const value = e.target.valueAsNumber || 1;
+                        const value = e.target.valueAsNumber || 0;
                         handleMcqSettingsChange('defaultPoints', value);
                       }}
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                       min="0"
-                      step="1"
+                      step="0.1"
                     />
                   </div>
                   <div>
@@ -873,7 +873,7 @@ const QuestionDetailEditor: React.FC = () => {
                               <label className="block text-xs font-medium text-gray-700 mb-1">Points (+)</label>
                               <input
                                 type="number"
-                                value={option.points !== undefined ? option.points : (mcqSettings.defaultPoints || 1)}
+                                value={option.points !== undefined ? option.points : (mcqSettings.defaultPoints || 0)}
                                 onChange={(e) => {
                                   const newValue = parseFloat(e.target.value) || 0;
                                   if (activeQuestion.type === 'multiple_choice') {
@@ -1319,7 +1319,7 @@ const QuestionDetailEditor: React.FC = () => {
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
               />
-              <div className="flex gap-3">
+              {/* <div className="flex gap-3">
                 <input
                   type="number"
                   placeholder="Min length per field"
@@ -1346,9 +1346,9 @@ const QuestionDetailEditor: React.FC = () => {
                   className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                   min="0"
                 />
-              </div>
+              </div> */}
 
-              {typeof localQuestion.minLength === "number" && localQuestion.minLength > 0 && (
+              {/* {typeof localQuestion.minLength === "number" && localQuestion.minLength > 0 && (
                 <div className="mb-5">
                   <label htmlFor="dynamic-min-error" className="block mb-1.5 text-sm font-medium text-gray-700">
                     Error Message For Minimum Length
@@ -1362,9 +1362,9 @@ const QuestionDetailEditor: React.FC = () => {
                     rows={3}
                   />
                 </div>
-              )}
+              )} */}
 
-              {typeof localQuestion.maxLength === "number" && localQuestion.maxLength > 0 && (
+              {/* {typeof localQuestion.maxLength === "number" && localQuestion.maxLength > 0 && (
                 <div className="mb-5">
                   <label htmlFor="dynamic-max-error" className="block mb-1.5 text-sm font-medium text-gray-700">
                     Error Message For Maximum Length
@@ -1378,10 +1378,10 @@ const QuestionDetailEditor: React.FC = () => {
                     rows={3}
                   />
                 </div>
-              )}
+              )} */}
 
               {/* VALIDATION DROPDOWN for dynamic fields */}
-              <div>
+              {/* <div>
                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Type</label>
                 <select
                   value={localQuestion.validationType || "none"}
@@ -1413,7 +1413,7 @@ const QuestionDetailEditor: React.FC = () => {
                   <option value="alphanumeric">Letters and numbers only</option>
                   <option value="custom">Custom pattern</option>
                 </select>
-              </div>
+              </div> */}
 
               {/* Error message and pattern inputs */}
               {localQuestion.validationType &&
@@ -1454,7 +1454,7 @@ const QuestionDetailEditor: React.FC = () => {
         )}
 
         {/* Number Settings */}
-        {activeQuestion.type === "number" && (
+        {/* {activeQuestion.type === "number" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Number Settings</label>
             <div className="flex gap-3 items-center flex-wrap">
@@ -1475,10 +1475,10 @@ const QuestionDetailEditor: React.FC = () => {
               </select>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* File Upload Settings */}
-        {activeQuestion.type === "file" && (
+        {/* {activeQuestion.type === "file" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">File Upload Settings</label>
             <div className="flex gap-3 items-center flex-wrap">
@@ -1495,7 +1495,7 @@ const QuestionDetailEditor: React.FC = () => {
               />
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
