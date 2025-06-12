@@ -978,10 +978,10 @@ const QuestionDetailEditor: React.FC = () => {
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                 >
                   <option value="none">No validation</option>
-                  <option value="email">Email address</option>
+                  {/* <option value="email">Email address</option> */}
                   <option value="url">Website URL</option>
-                  <option value="phone">Phone number</option>
-                  <option value="number">Numbers only</option>
+                  {/* <option value="phone">Phone number</option> */}
+                  {/* <option value="number">Numbers only</option> */}
                   <option value="alphanumeric">Letters and numbers only</option>
                   <option value="custom">Custom pattern</option>
                 </select>
@@ -1194,10 +1194,10 @@ const QuestionDetailEditor: React.FC = () => {
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                 >
                   <option value="none">No validation</option>
-                  <option value="email">Email address</option>
+                  {/* <option value="email">Email address</option> */}
                   <option value="url">Website URL</option>
-                  <option value="phone">Phone number</option>
-                  <option value="number">Numbers only</option>
+                  {/* <option value="phone">Phone number</option> */}
+                  {/* <option value="number">Numbers only</option> */}
                   <option value="alphanumeric">Letters and numbers only</option>
                   <option value="custom">Custom pattern</option>
                 </select>
