@@ -21,6 +21,7 @@ const FullFormPreview: React.FC = () => {
   const { responses, handleQuestionResponse, submitForm, isSubmitting, submitError, validateForm } = useFormSubmission(state);
   const [showValidation, setShowValidation] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ [key: number]: string }>({});
+  const [filePreviewUrls, setFilePreviewUrls] = useState<{ [questionId: number]: string }>({});
 
   // Helper function to get file type from media type
   const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
@@ -99,7 +100,20 @@ const FullFormPreview: React.FC = () => {
     // Update the response
     handleQuestionResponse(questionId, value, validation.isValid);
   };
-
+  // Add this function after handleInputChange
+  const handleFilePreview = (questionId: number, file: File) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setFilePreviewUrls(prev => ({
+          ...prev,
+          [questionId]: result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const renderQuestion = (question: any, index: number) => {
     const response = responses.find(r => r.questionId === question.id);
     const currentValue = response?.answer || '';
@@ -522,11 +536,69 @@ const FullFormPreview: React.FC = () => {
                 type="file"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  handleInputChange(question.id, question, file);
+                  if (file) {
+                    handleInputChange(question.id, question, file);
+                    handleFilePreview(question.id, file);
+                  }
                 }}
                 className="flex-1 text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
               />
             </div>
+
+            {/* File Preview Section - ADD THIS */}
+            {filePreviewUrls[question.id] && (
+              <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <div className="text-sm font-medium text-slate-700 mb-2">Preview:</div>
+                {(() => {
+                  const fileUrl = filePreviewUrls[question.id];
+                  const fileType = currentValue?.type || '';
+
+                  if (fileType.startsWith('image/')) {
+                    return (
+                      <img
+                        src={fileUrl}
+                        alt="Uploaded file preview"
+                        className="max-w-full h-48 object-cover rounded border shadow-sm"
+                      />
+                    );
+                  } else if (fileType.startsWith('video/')) {
+                    return (
+                      <video
+                        src={fileUrl}
+                        controls
+                        className="max-w-full h-48 rounded border shadow-sm"
+                      >
+                        Your browser does not support video playback.
+                      </video>
+                    );
+                  } else if (fileType.startsWith('audio/')) {
+                    return (
+                      <audio
+                        src={fileUrl}
+                        controls
+                        className="w-full"
+                      >
+                        Your browser does not support audio playback.
+                      </audio>
+                    );
+                  } else {
+                    return (
+                      <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded">
+                        <div className="text-2xl">📎</div>
+                        <div>
+                          <div className="font-medium text-slate-800">
+                            {currentValue?.name || 'Uploaded file'}
+                          </div>
+                          <div className="text-sm text-slate-500">
+                            {currentValue?.size ? `${(currentValue.size / 1024).toFixed(1)} KB` : 'File uploaded'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            )}
 
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
