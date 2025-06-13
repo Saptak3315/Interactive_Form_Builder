@@ -150,6 +150,18 @@ export const FormStorageService = {
       : submissions;
   },
 
+  // Get response count for a specific form
+  getResponseCount: (formId: number): number => {
+    const submissions = FormStorageService.getSubmissions(formId);
+    return submissions.length;
+  },
+
+  // Get total response count across all forms
+  getTotalResponseCount: (): number => {
+    const allSubmissions = FormStorageService.getSubmissions();
+    return allSubmissions.length;
+  },
+
   saveSubmission: (submission: FormSubmission): FormSubmission => {
     const submissions = FormStorageService.getSubmissions();
 

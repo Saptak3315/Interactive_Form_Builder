@@ -1,3 +1,4 @@
+// src/components/FormResponses/FormResponsesContainer.tsx
 import React, { useState, useEffect, type JSX } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -54,7 +55,7 @@ const FormResponsesContainer: React.FC = () => {
   const loadFormAndSubmissions = async () => {
     try {
       setLoading(true);
-      
+
       const formData = FormStorageService.getFormById(parseInt(formId!));
       if (!formData) {
         console.error('Form not found');
@@ -65,13 +66,26 @@ const FormResponsesContainer: React.FC = () => {
 
       const formSubmissions = FormStorageService.getSubmissions(parseInt(formId!));
       setSubmissions(formSubmissions);
-      
+
     } catch (error) {
       console.error('Error loading form responses:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Add effect to refresh dashboard when responses change
+  useEffect(() => {
+    // Listen for storage changes to update counts in real-time
+    const handleStorageChange = () => {
+      loadFormAndSubmissions();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const handleBackToDashboard = () => {
     navigate('/');
@@ -110,7 +124,7 @@ const FormResponsesContainer: React.FC = () => {
 
   const formatDetailedAnswer = (response: any, question: any): JSX.Element => {
     const { answer } = response;
-    
+
     if (!answer || (Array.isArray(answer) && answer.length === 0)) {
       return (
         <div className="flex items-center gap-2 text-slate-400 italic py-3">
@@ -141,7 +155,7 @@ const FormResponsesContainer: React.FC = () => {
 
       case 'multiple_choice':
         const isMultiSelect = question.mcqSettings?.allowMultipleCorrect || false;
-        
+
         if (isMultiSelect && Array.isArray(answer)) {
           return (
             <div className="py-3 space-y-3">
@@ -150,11 +164,10 @@ const FormResponsesContainer: React.FC = () => {
                 return (
                   <div
                     key={option.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
-                      isSelected
+                    className={`flex items-center gap-3 p-3 rounded-lg border ${isSelected
                         ? 'bg-indigo-50 border-indigo-200'
                         : 'bg-slate-50 border-slate-200'
-                    }`}
+                      }`}
                   >
                     <input
                       type="checkbox"
@@ -182,11 +195,10 @@ const FormResponsesContainer: React.FC = () => {
                 return (
                   <div
                     key={option.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
-                      isSelected
+                    className={`flex items-center gap-3 p-3 rounded-lg border ${isSelected
                         ? 'bg-indigo-50 border-indigo-200'
                         : 'bg-slate-50 border-slate-200'
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
@@ -216,11 +228,10 @@ const FormResponsesContainer: React.FC = () => {
               return (
                 <div
                   key={option.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border ${
-                    isSelected
+                  className={`flex items-center gap-3 p-3 rounded-lg border ${isSelected
                       ? 'bg-green-50 border-green-200'
                       : 'bg-slate-50 border-slate-200'
-                  }`}
+                    }`}
                 >
                   <input
                     type="checkbox"
@@ -331,11 +342,11 @@ const FormResponsesContainer: React.FC = () => {
 
   const calculateCompletionTime = (submission: FormSubmission): string => {
     if (!submission.completedAt) return 'Not completed';
-    
+
     const startTime = new Date(submission.startedAt).getTime();
     const endTime = new Date(submission.completedAt).getTime();
     const diffMinutes = Math.round((endTime - startTime) / (1000 * 60));
-    
+
     if (diffMinutes < 1) return 'Less than 1 minute';
     if (diffMinutes === 1) return '1 minute';
     return `${diffMinutes} minutes`;
@@ -345,7 +356,7 @@ const FormResponsesContainer: React.FC = () => {
     const total = submission.responses.length;
     const valid = submission.responses.filter(r => r.isValid).length;
     const invalid = total - valid;
-    
+
     return { total, valid, invalid, percentage: total > 0 ? Math.round((valid / total) * 100) : 0 };
   };
 
@@ -452,7 +463,7 @@ const FormResponsesContainer: React.FC = () => {
                 All Responses ({submissions.length})
               </h3>
             </div>
-            
+
             <div className="p-6">
               {submissions.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
@@ -467,11 +478,10 @@ const FormResponsesContainer: React.FC = () => {
                     return (
                       <div
                         key={submission.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-                          selectedSubmission?.id === submission.id
+                        className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${selectedSubmission?.id === submission.id
                             ? 'border-indigo-500 bg-indigo-50'
                             : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                        }`}
+                          }`}
                         onClick={() => handleViewSubmission(submission)}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -479,11 +489,10 @@ const FormResponsesContainer: React.FC = () => {
                             Response #{submission.id}
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              submission.completedAt
+                            <span className={`px-2 py-1 text-xs rounded-full ${submission.completedAt
                                 ? 'bg-green-100 text-green-700'
                                 : 'bg-orange-100 text-orange-700'
-                            }`}>
+                              }`}>
                               {submission.completedAt ? 'Complete' : 'Incomplete'}
                             </span>
                             <FontAwesomeIcon icon={faEye} className="text-slate-400" />
@@ -498,9 +507,8 @@ const FormResponsesContainer: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-4">
                             <span>⏱️ {calculateCompletionTime(submission)}</span>
-                            <span className={`flex items-center gap-1 ${
-                              validationSummary.percentage === 100 ? 'text-green-600' : 'text-orange-600'
-                            }`}>
+                            <span className={`flex items-center gap-1 ${validationSummary.percentage === 100 ? 'text-green-600' : 'text-orange-600'
+                              }`}>
                               <FontAwesomeIcon icon={faCheckCircle} className="w-3 h-3" />
                               {validationSummary.valid}/{validationSummary.total} valid
                             </span>
@@ -521,7 +529,7 @@ const FormResponsesContainer: React.FC = () => {
                 Response Details
               </h3>
             </div>
-            
+
             <div className="overflow-y-auto max-h-[800px]">
               {!selectedSubmission ? (
                 <div className="p-6 text-center py-12 text-slate-500">
@@ -542,15 +550,14 @@ const FormResponsesContainer: React.FC = () => {
                           Submission Details
                         </div>
                       </div>
-                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                        selectedSubmission.completedAt
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${selectedSubmission.completedAt
                           ? 'bg-green-100 text-green-700 border border-green-200'
                           : 'bg-orange-100 text-orange-700 border border-orange-200'
-                      }`}>
+                        }`}>
                         {selectedSubmission.completedAt ? '✅ Complete' : '⏳ Incomplete'}
                       </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div className="flex items-center gap-2 text-slate-600">
                         <FontAwesomeIcon icon={faClock} className="text-indigo-500" />
@@ -586,38 +593,36 @@ const FormResponsesContainer: React.FC = () => {
                       <FontAwesomeIcon icon={faFileAlt} className="text-indigo-600" />
                       Submitted Answers
                     </h5>
-                    
+
                     <div className="space-y-6">
                       {form.questions.map((question, index) => {
                         const response = selectedSubmission.responses.find(r => r.questionId === question.id);
                         const hasResponse = response && response.answer !== null && response.answer !== undefined && response.answer !== '';
-                        
+
                         return (
                           <div key={question.id} className="border border-slate-200 rounded-lg overflow-hidden">
                             {/* Question Header */}
-                            <div className={`p-4 border-b border-slate-200 ${
-                              hasResponse 
-                                ? response.isValid 
-                                  ? 'bg-green-50' 
+                            <div className={`p-4 border-b border-slate-200 ${hasResponse
+                                ? response.isValid
+                                  ? 'bg-green-50'
                                   : 'bg-red-50'
                                 : 'bg-gray-50'
-                            }`}>
+                              }`}>
                               <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-3 flex-1">
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
-                                    hasResponse 
-                                      ? response.isValid 
-                                        ? 'bg-green-500' 
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${hasResponse
+                                      ? response.isValid
+                                        ? 'bg-green-500'
                                         : 'bg-red-500'
                                       : 'bg-gray-400'
-                                  }`}>
+                                    }`}>
                                     {index + 1}
                                   </div>
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
-                                      <FontAwesomeIcon 
-                                        icon={getQuestionIcon(question.type)} 
-                                        className="text-slate-500 text-sm" 
+                                      <FontAwesomeIcon
+                                        icon={getQuestionIcon(question.type)}
+                                        className="text-slate-500 text-sm"
                                       />
                                       <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full uppercase font-medium">
                                         {question.type.replace('_', ' ')}

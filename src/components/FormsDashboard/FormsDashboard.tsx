@@ -53,15 +53,19 @@ const FormsDashboard: React.FC = () => {
       setLoading(true);
       const storedForms = FormStorageService.getForms();
 
-      const formattedForms: FormData[] = storedForms.map(form => ({
-        formId: form.formId!,
-        title: form.title || 'Untitled Form',
-        description: form.description || 'No description',
-        createdDate: new Date().toLocaleDateString(), // You can store actual creation date later
-        responses: 0, // Will be calculated from submissions later
-        status: form.isFormSaved ? "active" : "draft",
-        questionsCount: form.questions?.length || 0
-      }));
+      const formattedForms: FormData[] = storedForms.map(form => {
+        const responseCount = FormStorageService.getSubmissions(form.formId!).length;
+
+        return {
+          formId: form.formId!,
+          title: form.title || 'Untitled Form',
+          description: form.description || 'No description',
+          createdDate: new Date().toLocaleDateString(),
+          responses: responseCount, // Now shows actual response count
+          status: form.isFormSaved ? "active" : "draft",
+          questionsCount: form.questions?.length || 0
+        };
+      });
 
       setForms(formattedForms);
     } catch (error) {
@@ -72,7 +76,9 @@ const FormsDashboard: React.FC = () => {
     }
   };
 
-  // Calculate stats from forms
+  // Calculate total responses dynamically
+  const totalResponses = FormStorageService.getTotalResponseCount();
+
   const stats: StatCard[] = [
     {
       icon: faFileAlt,
@@ -82,7 +88,7 @@ const FormsDashboard: React.FC = () => {
     },
     {
       icon: faPaperPlane,
-      value: forms.reduce((sum, form) => sum + form.responses, 0),
+      value: totalResponses,
       label: "Total Submissions",
       color: "success",
     },
