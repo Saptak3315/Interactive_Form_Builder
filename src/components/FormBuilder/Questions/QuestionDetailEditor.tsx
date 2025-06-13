@@ -203,18 +203,40 @@ const QuestionDetailEditor: React.FC = () => {
     }
   };
 
-  // Handle file upload - Remove file type restrictions
+  // Update the handleFileUpload function to include size warning
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
 
-    // Validate file size (5MB limit) - keep this validation
+    // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       Swal.fire('File size must be less than 5 MB');
       return;
     }
 
+    // Warn about large files that might affect saving
+    if (file.size > 1 * 1024 * 1024) { // 1MB warning
+      Swal.fire({
+        title: 'Large File Warning',
+        text: 'Large media files may cause issues when saving the form. Consider using smaller files for better performance.',
+        icon: 'warning',
+        showConfirmButton: true,
+        confirmButtonText: 'Continue',
+        showCancelButton: true,
+        cancelButtonText: 'Choose Different File'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          processFileUpload(file);
+        }
+      });
+    } else {
+      processFileUpload(file);
+    }
+  };
+
+  // Add this helper function
+  const processFileUpload = (file: File) => {
     setUploadedFile(file);
 
     // Create preview URL
