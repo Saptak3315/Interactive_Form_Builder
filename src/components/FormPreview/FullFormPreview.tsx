@@ -13,21 +13,8 @@ import {
   faExclamationTriangle,
   faClipboardList
 } from "@fortawesome/free-solid-svg-icons";
+import { validateQuestion } from "../../utils/validationSchemas";
 
-const getValidationPattern = (validationType?: string, customPattern?: string): string | null => {
-  const patterns: Record<string, string> = {
-    email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
-    url: "^https?:\\/\\/(?:[\\w-]+\\.)+[a-zA-Z]{2,}(?::\\d+)?(?:\\/[\\w\\-._~:/?#[\\]@!$&'()*+,;=%]*)?$",
-    phone: "^\\+?[1-9]\\d{0,14}$",
-    number: "^\\d+$",
-    alphanumeric: "^[a-zA-Z0-9]+$"
-  };
-
-  if (validationType && patterns[validationType]) {
-    return patterns[validationType];
-  }
-  return customPattern || null;
-};
 const FullFormPreview: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useFormContext();
@@ -84,178 +71,17 @@ const FullFormPreview: React.FC = () => {
   };
 
   const validateInput = (question: any, value: any): { isValid: boolean; error?: string } => {
-    // Handle full_name and address validation separately (arrays)
-    if (question.type === 'full_name' || question.type === 'address') {
-      if (question.isRequired) {
-        const values = Array.isArray(value) ? value : [];
-        const hasEmptyRequired = question.options?.some((_option: any, index: number) =>
-          !values[index] || !values[index].toString().trim()
-        );
-
-        if (hasEmptyRequired) {
-          return { isValid: false, error: 'All name fields are required' };
-        }
-      }
-      return { isValid: true };
-    }
-
-    // Single check for required fields (string values only)
-    if (question.isRequired && (!value || !value.toString().trim())) {
-      return { isValid: false, error: 'This field is required' };
-    }
-
-    // Early return for empty optional fields
-    if (!value || !value.toString().trim()) {
-      return { isValid: true };
-    }
-
-    // Continue with other validations for non-empty values
-    const stringValue = value.toString();
-
-    // Length validations
-    if (question.minLength && stringValue.length < question.minLength) {
-      return {
-        isValid: false,
-        error: question.errorMessageForMinLength || `Minimum ${question.minLength} characters required`
-      };
-    }
-
-    if (question.maxLength && stringValue.length > question.maxLength) {
-      return {
-        isValid: false,
-        error: question.errorMessageForMaxLength || `Maximum ${question.maxLength} characters allowed`
-      };
-    }
-
-    // Auto-set email validation if not specified
-    if (question.type === 'email' && (!question.validationType || question.validationType === 'none')) {
-      question = { ...question, validationType: 'email' };
-    }
-    if (question.type === 'number' && (!question.validationType || question.validationType === 'none')) {
-      question = { ...question, validationType: 'number' };
-    }
-
-    // Pattern validation
-    if (question.validationType && question.validationType !== 'none') {
-      const pattern = getValidationPattern(question.validationType, question.validationPattern);
-      if (pattern) {
-        try {
-          const regex = new RegExp(pattern);
-          if (!regex.test(stringValue)) {
-            return {
-              isValid: false,
-              error: question.errorMessageForPattern || `Invalid ${question.validationType} format`
-            };
-          }
-        } catch (e) {
-          console.error('Invalid regex pattern:', e);
-          return { isValid: false, error: 'Invalid validation pattern configured' };
-        }
-      }
-    }
-
-    return { isValid: true };
+    return validateQuestion(question, typeof value === 'string' ? value.trim() : value);
   };
 
   // Validate checkbox/multiple choice required fields
   const validateMultipleChoice = (question: any, value: any): { isValid: boolean; error?: string } => {
-    if (question.type === 'checkbox') {
-      const selectedOptions = Array.isArray(value) ? value : [];
-      if (question.isRequired && selectedOptions.length === 0) {
-        return { isValid: false, error: 'Please select at least one option' };
-      }
-    } else if (question.type === 'multiple_choice') {
-      const isMultiSelect = question.mcqSettings?.allowMultipleCorrect || false;
-
-      if (isMultiSelect) {
-        const selectedOptions = Array.isArray(value) ? value : [];
-
-        // Check required
-        if (question.isRequired && selectedOptions.length === 0) {
-          return { isValid: false, error: 'Please select at least one option' };
-        }
-
-        // Check min selections
-        const minSelections = question.mcqSettings?.minSelections;
-        if (minSelections && selectedOptions.length < minSelections) {
-          return { isValid: false, error: `Please select at least ${minSelections} option(s)` };
-        }
-
-        // Check max selections (should not happen due to UI prevention, but good to have)
-        const maxSelections = question.mcqSettings?.maxSelections;
-        if (maxSelections && selectedOptions.length > maxSelections) {
-          return { isValid: false, error: `Please select no more than ${maxSelections} option(s)` };
-        }
-      } else {
-        // Single selection
-        if (question.isRequired && (!value || value === '' || value === null || value === undefined)) {
-          return { isValid: false, error: 'Please select an option' };
-        }
-      }
-    } else if (question.type === 'full_name' || question.type === 'address') {
-      const values = Array.isArray(value) ? value : [];
-
-      // Trim all values and check if any field has actual content (not just spaces)
-      const trimmedValues = values.map(val => val ? val.toString().trim() : '');
-      const hasAnyContent = trimmedValues.some(val => val.length > 0);
-
-      // If question is required OR if user started filling (has any content)
-      if (question.isRequired || hasAnyContent) {
-        const emptyFields: any[] = [];
-        question.options?.forEach((option: any, index: number) => {
-          const trimmedValue = values[index] ? values[index].toString().trim() : '';
-          if (!trimmedValue) {
-            emptyFields.push(option.content);
-          }
-        });
-
-        if (emptyFields.length > 0) {
-          if (question.isRequired) {
-            return { isValid: false, error: `${emptyFields.join(', ')} ${emptyFields.length === 1 ? 'is' : 'are'} required` };
-          } else if (hasAnyContent) {
-            return { isValid: false, error: `Please complete all name fields or leave all empty` };
-          }
-        }
-      }
-    } else if (question.type === 'dynamic_text_fields') {
-      if (question.isRequired) {
-        const values = Array.isArray(value) ? value : [];
-
-        // Check if at least one field has content
-        const hasContent = values.some(val => val && val.toString().trim());
-
-        if (!hasContent) {
-          return { isValid: false, error: 'Please add at least one item' };
-        }
-
-        // Check for empty fields in between filled ones
-        const emptyFields = values.filter(val => !val || !val.toString().trim());
-        if (emptyFields.length > 0 && values.length > 1) {
-          return { isValid: false, error: 'Please fill all fields or remove empty ones' };
-        }
-      }
-    }
-    return { isValid: true };
+    return validateQuestion(question, value);
   };
 
   // Real-time validation function
   const performValidation = (questionId: number, question: any, value: any) => {
-    let validation: { isValid: boolean; error?: string };
-
-    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone' || question.type === 'number') {
-      validation = validateInput(question, typeof value === 'string' ? value.trim() : value);
-    } else if (question.type === 'multiple_choice' || question.type === 'checkbox' || question.type === 'full_name' || question.type === 'address' || question.type === 'dynamic_text_fields') {
-      validation = validateMultipleChoice(question, value);
-    } else if (question.type === 'file' || question.type === 'audio') {
-      validation = question.isRequired && !value
-        ? { isValid: false, error: 'Please upload a file' }
-        : { isValid: true };
-    } else {
-      const stringValue = typeof value === 'string' ? value.trim() : value;
-      validation = question.isRequired && (!stringValue || stringValue === '')
-        ? { isValid: false, error: 'This field is required' }
-        : { isValid: true };
-    }
+    const validation = validateQuestion(question, value);
 
     setValidationErrors(prev => ({
       ...prev,
@@ -674,7 +500,7 @@ const FullFormPreview: React.FC = () => {
           </div>
         );
 
-        
+
 
       case 'file':
         return (
@@ -897,6 +723,7 @@ const FullFormPreview: React.FC = () => {
     setShowValidation(true);
 
     // Validate all questions
+    // Validate all questions
     let hasErrors = false;
     const newErrors: { [key: number]: string } = {};
 
@@ -904,25 +731,7 @@ const FullFormPreview: React.FC = () => {
       const response = responses.find(r => r.questionId === question.id);
       const value = response?.answer || '';
 
-      let validation: { isValid: boolean; error?: string };
-
-      if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'address' || question.type === 'phone' || question.type === 'number') {
-        validation = validateInput(question, value);
-      } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
-        validation = validateMultipleChoice(question, value);
-      } else if (question.type === 'full_name') {
-        validation = validateMultipleChoice(question, value);
-      } else if (question.type === 'dynamic_text_fields') {
-        validation = validateMultipleChoice(question, value);
-      } else if (question.type === 'file') {
-        validation = question.isRequired && !value
-          ? { isValid: false, error: 'Please upload a file' }
-          : { isValid: true };
-      } else {
-        validation = question.isRequired && (!value || value === '')
-          ? { isValid: false, error: 'This field is required' }
-          : { isValid: true };
-      }
+      const validation = validateQuestion(question, value);
 
       if (!validation.isValid) {
         hasErrors = true;
