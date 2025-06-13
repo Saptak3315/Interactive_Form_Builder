@@ -74,7 +74,7 @@ export const FormStorageService = {
         if (!updatedForm.formId) {
           updatedForm.formId = Date.now();
         }
-        forms.push(updatedForm);
+        forms.unshift(updatedForm);
       }
 
       localStorage.setItem(FORMS_KEY, JSON.stringify(forms));
