@@ -26,6 +26,7 @@ const QuestionDetailEditor: React.FC = () => {
   const [optionErrors, setOptionErrors] = useState<{ [optionId: number]: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localMcqOptions, setLocalMcqOptions] = useState<QuestionOption[]>([]);
+  const [filePreviewUrls, setFilePreviewUrls] = useState<{ [questionId: number]: string }>({});
 
   // Add MCQ-specific local state
   const [mcqSettings, setMcqSettings] = useState(activeQuestion?.mcqSettings || {
@@ -93,7 +94,22 @@ const QuestionDetailEditor: React.FC = () => {
   const handleFieldChange = (field: keyof Question, value: any) => {
     setLocalQuestion((prev) => ({ ...prev, [field]: value }));
   };
-
+  // Add this function after other handlers
+  const handleFilePreview = (file: File) => {
+    if (file && activeQuestion) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (typeof result === 'string') {
+          setFilePreviewUrls(prev => ({
+            ...prev,
+            [activeQuestion.id]: result
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   // Handle MCQ settings updates
   const handleMcqSettingsChange = (field: string, value: any) => {
     // Validate min/max selections
@@ -187,17 +203,13 @@ const QuestionDetailEditor: React.FC = () => {
     }
   };
 
-  // Handle file upload
+  // Handle file upload - Remove file type restrictions
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'audio/mp3', 'audio/wav'];
 
     if (!file) return;
-    if (!allowedTypes.includes(file.type)) {
-      Swal.fire('Please upload an image, video, or audio file');
-      return;
-    }
-    // Validate file size (5MB limit)
+
+    // Validate file size (5MB limit) - keep this validation
     if (file.size > 5 * 1024 * 1024) {
       Swal.fire('File size must be less than 5 MB');
       return;
@@ -208,12 +220,14 @@ const QuestionDetailEditor: React.FC = () => {
     // Create preview URL
     const reader = new FileReader();
     reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setFilePreview(result);
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        setFilePreview(result);
 
-      // Update question with file data
-      handleFieldChange('mediaUrl', result);
-      handleFieldChange('mediaType', file.type);
+        // Update question with file data
+        handleFieldChange('mediaUrl', result);
+        handleFieldChange('mediaType', file.type);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -225,74 +239,19 @@ const QuestionDetailEditor: React.FC = () => {
     handleFieldChange('mediaUrl', '');
     handleFieldChange('mediaType', '');
 
+    // Clear preview URL for this question
+    if (activeQuestion) {
+      setFilePreviewUrls(prev => {
+        const newUrls = { ...prev };
+        delete newUrls[activeQuestion.id];
+        return newUrls;
+      });
+    }
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  // Get file type for display
-  const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
-    if (!mediaType) return 'unknown';
-    if (mediaType.startsWith('image/')) return 'image';
-    if (mediaType.startsWith('video/')) return 'video';
-    if (mediaType.startsWith('audio/')) return 'audio';
-    return 'unknown';
-  };
-
-  // Render media preview
-  const renderMediaPreview = () => {
-    if (!filePreview) return null;
-
-    const fileType = getFileType(localQuestion.mediaType);
-    const fileName = uploadedFile?.name || 'uploaded-file';
-
-    return (
-      <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50">
-        <div className="flex justify-between items-start mb-2">
-          <span className="text-sm font-medium text-gray-700">Uploaded Media:</span>
-          <button
-            type="button"
-            onClick={handleRemoveFile}
-            className="text-red-600 hover:text-red-800 text-sm"
-          >
-            ✕ Remove
-          </button>
-        </div>
-
-        {fileType === 'image' && (
-          <img
-            src={filePreview}
-            alt={fileName}
-            className="max-w-full h-32 object-cover rounded border"
-          />
-        )}
-
-        {fileType === 'video' && (
-          <video
-            src={filePreview}
-            controls
-            className="max-w-full h-32 rounded border"
-          >
-            Your browser does not support video playback.
-          </video>
-        )}
-
-        {fileType === 'audio' && (
-          <audio
-            src={filePreview}
-            controls
-            className="w-full"
-          >
-            Your browser does not support audio playback.
-          </audio>
-        )}
-
-        <div className="mt-2 text-xs text-gray-500">
-          {fileName} • {uploadedFile ? `${(uploadedFile.size / 1024).toFixed(1)} KB` : 'External file'}
-        </div>
-      </div>
-    );
   };
 
   // Save changes to the question (including local options for full_name)
@@ -640,17 +599,87 @@ const QuestionDetailEditor: React.FC = () => {
             Field Media
           </label>
           <div className="space-y-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*,audio/*"
-              onChange={handleFileUpload}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-            />
-            <div className="text-xs text-gray-500">
-              Supported formats: Images (JPG, PNG, GIF, WebP), Videos (MP4), Audio (MP3, WAV). Max size: 5MB
+            <div className="flex items-center gap-4 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleFileUpload(e);
+                    handleFilePreview(file);
+                  }
+                }}
+                className="flex-1 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+              />
             </div>
-            {renderMediaPreview()}
+            <div className="text-xs text-gray-500">
+              Upload any file type. Max size: 5MB
+            </div>
+
+            {/* File Preview Section - Same as FormPreview */}
+            {(activeQuestion && filePreviewUrls[activeQuestion.id]) || filePreview ? (
+              <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="text-sm font-medium text-slate-700">Preview:</div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    ✕ Remove
+                  </button>
+                </div>
+                {(() => {
+                  const previewUrl = (activeQuestion && filePreviewUrls[activeQuestion.id]) || filePreview || '';
+                  const fileType = localQuestion.mediaType || uploadedFile?.type || '';
+
+                  if (fileType.startsWith('image/')) {
+                    return (
+                      <img
+                        src={previewUrl}
+                        alt="Uploaded file preview"
+                        className="max-w-full h-48 object-cover rounded border shadow-sm"
+                      />
+                    );
+                  } else if (fileType.startsWith('video/')) {
+                    return (
+                      <video
+                        src={previewUrl}
+                        controls
+                        className="max-w-full h-48 rounded border shadow-sm"
+                      >
+                        Your browser does not support video playback.
+                      </video>
+                    );
+                  } else if (fileType.startsWith('audio/')) {
+                    return (
+                      <audio
+                        src={previewUrl}
+                        controls
+                        className="w-full"
+                      >
+                        Your browser does not support audio playback.
+                      </audio>
+                    );
+                  } else {
+                    return (
+                      <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded">
+                        <div className="text-2xl">📎</div>
+                        <div>
+                          <div className="font-medium text-slate-800">
+                            {uploadedFile?.name || 'Uploaded file'}
+                          </div>
+                          <div className="text-sm text-slate-500">
+                            {uploadedFile?.size ? `${(uploadedFile.size / 1024).toFixed(1)} KB` : 'File uploaded'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            ) : null}
           </div>
         </div>
 
