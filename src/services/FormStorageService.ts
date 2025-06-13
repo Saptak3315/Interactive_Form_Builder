@@ -1,5 +1,4 @@
 // src/services/FormStorageService.ts
-import { useFormContext } from "../context/FormContext/FormProvider";
 import type { FormState } from "../types/form.types";
 
 // Keys for localStorage
@@ -17,7 +16,14 @@ interface FormSubmission {
   completedAt: string | null;
   responses: QuestionResponse[];
 }
-
+// Add this interface at the top of the file if not present
+interface FormSubmission {
+  id: number;
+  formId: number;
+  startedAt: string;
+  completedAt: string | null;
+  responses: QuestionResponse[];
+}
 export interface QuestionResponse {
   questionId: number;
   answer: any;
@@ -33,18 +39,18 @@ export const FormStorageService = {
     const forms = FormStorageService.getForms();
     return forms.find(form => form.formId === formId) || null;
   },
-  
+
   saveForm: (form: FormState): FormState => {
     form.description = localStorage.getItem("form_description") ?? "";
-    form.title=localStorage.getItem("form_name")??""
+    form.title = localStorage.getItem("form_name") ?? ""
     const forms = FormStorageService.getForms();
     const updatedForm: StoredForm = {
       ...form,
       updatedAt: new Date().toISOString()
     };
-    
+
     const existingIndex = forms.findIndex(f => f.formId === form.formId);
-    
+
     if (existingIndex >= 0) {
       // Update existing form
       forms[existingIndex] = updatedForm;
@@ -53,43 +59,43 @@ export const FormStorageService = {
       if (!updatedForm.formId) {
         updatedForm.formId = Date.now();
       }
-      forms.push(updatedForm);
+      forms.unshift(updatedForm);
     }
     localStorage.setItem(FORMS_KEY, JSON.stringify(forms));
     return updatedForm;
   },
-  
+
   deleteForm: (formId: number): boolean => {
     const forms = FormStorageService.getForms();
     const newForms = forms.filter(form => form.formId !== formId);
-    
+
     if (newForms.length < forms.length) {
       localStorage.setItem(FORMS_KEY, JSON.stringify(newForms));
       return true;
     }
     return false;
   },
-  
+
   // Submission operations
   getSubmissions: (formId?: number): FormSubmission[] => {
     const storedSubmissions = localStorage.getItem(SUBMISSIONS_KEY);
     const submissions: FormSubmission[] = storedSubmissions ? JSON.parse(storedSubmissions) : [];
-    
-    return formId 
-      ? submissions.filter(sub => sub.formId === formId) 
+
+    return formId
+      ? submissions.filter(sub => sub.formId === formId)
       : submissions;
   },
-  
+
   saveSubmission: (submission: FormSubmission): FormSubmission => {
     const submissions = FormStorageService.getSubmissions();
-    
+
     // Generate ID if not present
     if (!submission.id) {
       submission.id = Date.now();
     }
-    
+
     const existingIndex = submissions.findIndex(s => s.id === submission.id);
-    
+
     if (existingIndex >= 0) {
       // Update existing submission
       submissions[existingIndex] = submission;
@@ -97,11 +103,11 @@ export const FormStorageService = {
       // Add new submission
       submissions.push(submission);
     }
-    
+
     localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(submissions));
     return submission;
   },
-  
+
   // Helper methods that will be useful when transitioning to API
   createForm: (form: Omit<FormState, 'formId'>): FormState => {
     const newForm: FormState = {
@@ -110,7 +116,7 @@ export const FormStorageService = {
     };
     return FormStorageService.saveForm(newForm);
   },
-  
+
   updateForm: (form: FormState): FormState => {
     return FormStorageService.saveForm(form);
   }
