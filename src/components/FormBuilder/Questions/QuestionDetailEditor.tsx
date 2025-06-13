@@ -10,6 +10,7 @@ import {
   updateQuestion,
 } from "../../../context/FormContext/formActions";
 import Swal from "sweetalert2";
+import z from "zod";
 
 const QuestionDetailEditor: React.FC = () => {
   const { state, dispatch } = useFormContext();
@@ -296,88 +297,121 @@ const QuestionDetailEditor: React.FC = () => {
 
   // Save changes to the question (including local options for full_name)
   const saveChanges = () => {
-    if (activeQuestion &&
-      (activeQuestion.type === "text" ||
-        activeQuestion.type === "textarea" ||
-        activeQuestion.type === "dynamic_text_fields") &&
-      typeof localQuestion.minLength === "number" &&
-      typeof localQuestion.maxLength === "number" &&
-      localQuestion.maxLength < localQuestion.minLength
-    ) {
+    try {
+      // Validate min/max length relationship
+      if (activeQuestion &&
+        (activeQuestion.type === "text" ||
+          activeQuestion.type === "textarea" ||
+          activeQuestion.type === "dynamic_text_fields")) {
+
+        const minMaxSchema = z.object({
+          minLength: z.number().optional(),
+          maxLength: z.number().optional(),
+        }).refine((data) => {
+          if (data.minLength && data.maxLength) {
+            return data.maxLength >= data.minLength;
+          }
+          return true;
+        }, {
+          message: "Minimum length cannot be greater than maximum length."
+        });
+
+        const result = minMaxSchema.safeParse({
+          minLength: localQuestion.minLength,
+          maxLength: localQuestion.maxLength
+        });
+
+        if (!result.success) {
+          Swal.fire({
+            icon: "error",
+            title: "Validation Error",
+            text: result.error.errors[0].message,
+          });
+          return;
+        }
+      }
+
+      // Validate Name and Address fields before saving
+      if (activeQuestion && (activeQuestion.type === "full_name" || activeQuestion.type === "address")) {
+        const optionsSchema = z.array(z.object({
+          content: z.string().min(1, "Field content is required").trim()
+        })).min(1, "At least one field is required");
+
+        const result = optionsSchema.safeParse(localOptions);
+        if (!result.success) {
+          Swal.fire({
+            icon: "error",
+            title: "Validation Error",
+            text: `All ${activeQuestion.type === 'full_name' ? 'name' : 'address'} fields must have labels. Please fill in all empty fields.`,
+          });
+          return;
+        }
+      }
+
+      // Validate MCQ fields before saving
+      if (activeQuestion && (activeQuestion.type === "multiple_choice" || activeQuestion.type === "checkbox")) {
+        const mcqOptionsSchema = z.array(z.object({
+          content: z.string().min(1, "Option content is required").trim()
+        })).min(2, "At least two options are required");
+
+        const result = mcqOptionsSchema.safeParse(localMcqOptions);
+        if (!result.success) {
+          Swal.fire({
+            icon: "error",
+            title: "Validation Error",
+            text: "All options must have content. Please fill in all empty options.",
+          });
+          return;
+        }
+      }
+
+      // Rest of the save logic remains the same...
+      if (activeQuestion && localQuestion) {
+        if (
+          activeQuestion.type === "full_name" ||
+          activeQuestion.type === "address"
+        ) {
+          const updatedQuestion = {
+            ...localQuestion,
+            options: localOptions,
+          };
+          dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
+          // Force refresh the current question ID to trigger state reset
+          setCurrentQuestionId(null);
+          setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+
+        } else if (
+          activeQuestion.type === "multiple_choice" ||
+          activeQuestion.type === "checkbox"
+        ) {
+          // Handle MCQ types with their local options and settings
+          const updatedQuestion = {
+            ...localQuestion,
+            options: localMcqOptions,
+            mcqSettings: mcqSettings,
+          };
+          dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
+          // Force refresh the current question ID to trigger state reset
+          setCurrentQuestionId(null);
+          setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+
+        } else {
+          dispatch(updateQuestion(activeQuestion.id, localQuestion));
+
+          // Force refresh the current question ID to trigger state reset
+          setCurrentQuestionId(null);
+          setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving changes:', error);
       Swal.fire({
         icon: "error",
-        title: "Validation Error",
-        text: "Minimum length cannot be greater than maximum length.",
+        title: "Save Error",
+        text: "An error occurred while saving changes. Please try again.",
       });
-      return;
-    }
-
-    // Validate Name and Address fields before saving
-    if (activeQuestion && (activeQuestion.type === "full_name" || activeQuestion.type === "address")) {
-      const emptyOptions = localOptions.filter(option => !option.content || !option.content.trim());
-
-      if (emptyOptions.length > 0) {
-        Swal.fire({
-          icon: "error",
-          title: "Validation Error",
-          text: `All ${activeQuestion.type === 'full_name' ? 'name' : 'address'} fields must have labels. Please fill in all empty fields.`,
-        });
-        return;
-      }
-    }
-
-    // Validate MCQ fields before saving
-    if (activeQuestion && (activeQuestion.type === "multiple_choice" || activeQuestion.type === "checkbox")) {
-      const emptyMcqOptions = localMcqOptions.filter(option => !option.content || !option.content.trim());
-
-      if (emptyMcqOptions.length > 0) {
-        Swal.fire({
-          icon: "error",
-          title: "Validation Error",
-          text: "All options must have content. Please fill in all empty options.",
-        });
-        return;
-      }
-    }
-
-    if (activeQuestion && localQuestion) {
-      if (
-        activeQuestion.type === "full_name" ||
-        activeQuestion.type === "address"
-      ) {
-        const updatedQuestion = {
-          ...localQuestion,
-          options: localOptions,
-        };
-        dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
-
-        // Force refresh the current question ID to trigger state reset
-        setCurrentQuestionId(null);
-        setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
-
-      } else if (
-        activeQuestion.type === "multiple_choice" ||
-        activeQuestion.type === "checkbox"
-      ) {
-        // Handle MCQ types with their local options and settings
-        const updatedQuestion = {
-          ...localQuestion,
-          options: localMcqOptions,
-          mcqSettings: mcqSettings,
-        };
-        dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
-
-        // Force refresh the current question ID to trigger state reset
-        setCurrentQuestionId(null);
-        setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
-
-      } else {
-        dispatch(updateQuestion(activeQuestion.id, localQuestion));
-
-        // Force refresh the current question ID to trigger state reset
-        setCurrentQuestionId(null);
-        setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
-      }
     }
   };
 
@@ -625,7 +659,7 @@ const QuestionDetailEditor: React.FC = () => {
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">
-                {activeQuestion.type === 'full_name'|| activeQuestion.type==='address' ? 'Name Fields' :
+                {activeQuestion.type === 'full_name' || activeQuestion.type === 'address' ? 'Name Fields' :
                   activeQuestion.type === 'multiple_choice' ? 'Answer Options' : 'Answer Options'}
               </label>
 
@@ -653,7 +687,7 @@ const QuestionDetailEditor: React.FC = () => {
 
               {/* Other question types */}
               {activeQuestion.type !== 'multiple_choice' && (
-                activeQuestion.type === 'full_name'  ? (
+                activeQuestion.type === 'full_name' ? (
                   localOptions.length < 5 && (
                     <button
                       className="px-3 py-1.5 bg-indigo-500 text-white border-none rounded text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-indigo-600"
@@ -715,7 +749,7 @@ const QuestionDetailEditor: React.FC = () => {
             <div className="flex flex-col gap-3">
               {/* Use localOptions for full_name, activeQuestion.options for others */}
               {/* Use appropriate local state for different question types */}
-              {(activeQuestion.type === 'full_name'||activeQuestion.type==='address' ? localOptions :
+              {(activeQuestion.type === 'full_name' || activeQuestion.type === 'address' ? localOptions :
                 activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox' ? localMcqOptions :
                   activeQuestion.options)?.map((option: any, index: number) => (
                     <div key={option.id} className={`p-4 border rounded-lg ${activeQuestion.type === 'multiple_choice'
@@ -727,7 +761,7 @@ const QuestionDetailEditor: React.FC = () => {
                           ? 'bg-blue-200 text-blue-800'
                           : 'bg-gray-200 text-gray-600'
                           }`}>
-                          {activeQuestion.type === 'full_name' ||activeQuestion.type==='address'? `Field ${index + 1}` :
+                          {activeQuestion.type === 'full_name' || activeQuestion.type === 'address' ? `Field ${index + 1}` :
                             activeQuestion.type === 'multiple_choice' ? String.fromCharCode(65 + index) : `${index + 1}`}
                         </span>
                         <button
@@ -1177,16 +1211,14 @@ const QuestionDetailEditor: React.FC = () => {
                     const selectedType = e.target.value;
                     handleFieldChange("validationType", selectedType);
 
-                    // Auto-set regex patterns
-                    const patterns: Record<string, string> = {
-                      email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-                      url: "/^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?::\d+)?(\/[^\s]*)?(#[^\s]*)?$/",
-                      number: "^\d+$",
-                      alphanumeric: "^[a-zA-Z0-9]+$"
-                    };
-
-                    if (selectedType in patterns) {
-                      handleFieldChange("validationPattern", patterns[selectedType]);
+                    // Auto-set regex patterns using our centralized schemas
+                    if (selectedType === 'email' || selectedType === 'url') {
+                      // For built-in Zod validators, we don't need to set patterns
+                      handleFieldChange("validationPattern", "");
+                    } else if (selectedType === 'phone') {
+                      handleFieldChange("validationPattern", "^\\+?[1-9]\\d{0,14}$"); // No built-in phone validator
+                    } else if (selectedType === 'alphanumeric') {
+                      handleFieldChange("validationPattern", "^[a-zA-Z0-9]+$"); // No built-in alphanumeric validator
                     } else if (selectedType === "none") {
                       handleFieldChange("validationPattern", "");
                     }
@@ -1194,10 +1226,7 @@ const QuestionDetailEditor: React.FC = () => {
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                 >
                   <option value="none">No validation</option>
-                  {/* <option value="email">Email address</option> */}
                   <option value="url">Website URL</option>
-                  {/* <option value="phone">Phone number</option> */}
-                  {/* <option value="number">Numbers only</option> */}
                   <option value="alphanumeric">Letters and numbers only</option>
                   <option value="custom">Custom pattern</option>
                 </select>
