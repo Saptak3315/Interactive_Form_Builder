@@ -21,11 +21,11 @@ const getInitialState = (): FormState => {
         console.log('Loading existing form for editing:', existingForm);
         // Clear the edit form ID after loading
         localStorage.removeItem('formcraft_edit_form_id');
-        
+
         // Also sync with the individual localStorage items for FormHeader
         if (existingForm.title) localStorage.setItem('form_name', existingForm.title);
         if (existingForm.description) localStorage.setItem('form_description', existingForm.description);
-        
+
         return existingForm;
       }
     } catch (error) {
@@ -82,9 +82,9 @@ export const FormContext = createContext<FormContextType>({
   dispatch: () => {
     // Empty function as placeholder
   },
-  saveCurrentForm: () => {},
-  clearCurrentForm: () => {},
-  loadForm: () => {},
+  saveCurrentForm: () => { },
+  clearCurrentForm: () => { },
+  loadForm: () => { },
   isFormLoading: false,
   formVersion: 0,
 });
@@ -109,32 +109,32 @@ export const FormProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         console.error('Error auto-saving form:', error);
       }
-    }, 500); // 500ms debounce
+    }, 1000); // Increased debounce to 1 second
 
     return () => clearTimeout(timeoutId);
-  }, [state]);
+  }, [state.formId, state.title, state.description, state.questions, state.isFormSaved]); // More specific dependencies
 
   // Manual save function for explicit saves
   const saveCurrentForm = useCallback(async () => {
     try {
       setIsFormLoading(true);
-      
+
       // Save to permanent storage
       const savedForm = FormStorageService.saveForm(state);
-      
+
       // Update the current form state with the saved form ID
       if (state.formId !== savedForm.formId) {
         dispatch({ type: 'SET_FORM', payload: { form: { formId: savedForm.formId } } });
       }
-      
+
       // Mark as saved
       dispatch({ type: 'SET_FORM', payload: { form: { isFormSaved: true } } });
-      
+
       console.log('Form explicitly saved:', savedForm);
-      
+
       // Small delay to ensure state updates are processed
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
     } catch (error) {
       console.error('Error saving form:', error);
       throw error;
@@ -147,7 +147,7 @@ export const FormProvider = ({ children }: { children: React.ReactNode }) => {
   const clearCurrentForm = useCallback(async () => {
     console.log('Clearing current form...');
     setIsFormLoading(true);
-    
+
     try {
       const freshState: FormState = {
         formId: null,
@@ -157,23 +157,23 @@ export const FormProvider = ({ children }: { children: React.ReactNode }) => {
         activeQuestionId: null,
         isFormSaved: true,
       };
-      
+
       // Clear localStorage first
       localStorage.removeItem(CURRENT_FORM_KEY);
       localStorage.removeItem('form_name');
       localStorage.removeItem('form_description');
-      
+
       // Update state
       dispatch({ type: 'SET_FORM', payload: { form: freshState } });
-      
+
       // Increment version to trigger re-initialization of components
       incrementFormVersion();
-      
+
       console.log('Form cleared successfully');
-      
+
       // Small delay to ensure all state updates are processed
       await new Promise(resolve => setTimeout(resolve, 150));
-      
+
     } catch (error) {
       console.error('Error clearing form:', error);
     } finally {
@@ -185,25 +185,25 @@ export const FormProvider = ({ children }: { children: React.ReactNode }) => {
   const loadForm = useCallback(async (formId: number) => {
     console.log('Loading form:', formId);
     setIsFormLoading(true);
-    
+
     try {
       const form = FormStorageService.getFormById(formId);
       if (form) {
         // Update state
         dispatch({ type: 'SET_FORM', payload: { form } });
-        
+
         // Also update the separate localStorage items used by FormHeader
         if (form.title) localStorage.setItem('form_name', form.title);
         if (form.description) localStorage.setItem('form_description', form.description);
-        
+
         // Increment version to trigger re-initialization
         incrementFormVersion();
-        
+
         console.log('Form loaded successfully:', form);
-        
+
         // Small delay to ensure state updates are processed
         await new Promise(resolve => setTimeout(resolve, 150));
-        
+
       } else {
         console.error('Form not found:', formId);
         throw new Error('Form not found');
@@ -223,7 +223,7 @@ export const FormProvider = ({ children }: { children: React.ReactNode }) => {
     const isSignificantChange = (
       state.formId === null && state.questions.length === 0 // New form
     );
-    
+
     if (isSignificantChange) {
       console.log('Significant form state change detected');
       incrementFormVersion();
@@ -244,11 +244,11 @@ export const FormProvider = ({ children }: { children: React.ReactNode }) => {
   }, [state, formVersion, isFormLoading]);
 
   return (
-    <FormContext.Provider value={{ 
-      state, 
-      dispatch, 
-      saveCurrentForm, 
-      clearCurrentForm, 
+    <FormContext.Provider value={{
+      state,
+      dispatch,
+      saveCurrentForm,
+      clearCurrentForm,
       loadForm,
       isFormLoading,
       formVersion
@@ -261,10 +261,10 @@ export const FormProvider = ({ children }: { children: React.ReactNode }) => {
 // Custom hook for accessing the form context
 export const useFormContext = (): FormContextType => {
   const context = useContext(FormContext);
-  
+
   if (!context) {
     throw new Error('useFormContext must be used within a FormProvider');
   }
-  
+
   return context;
 };

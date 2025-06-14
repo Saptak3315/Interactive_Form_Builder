@@ -365,9 +365,6 @@ export function QuestionDisplay({
             {/* Options preview - more compact */}
             {question.options && question.options.length > 0 && (
               <div className="mt-2 p-2 bg-slate-50 rounded-md border border-slate-100">
-                <div className="text-xs text-slate-500 font-medium mb-1">
-                  {question.options.length} options:
-                </div>
                 {question.options.slice(0, 2).map((option, optIndex) => (
                   <div key={option.id} className="text-xs text-slate-600 truncate">
                     • {option.content || `Option ${optIndex + 1}`}

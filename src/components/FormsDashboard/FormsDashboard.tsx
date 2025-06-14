@@ -52,17 +52,21 @@ const FormsDashboard: React.FC = () => {
     try {
       setLoading(true);
       const storedForms = FormStorageService.getForms();
-      
-      const formattedForms: FormData[] = storedForms.map(form => ({
-        formId: form.formId!,
-        title: form.title || 'Untitled Form',
-        description: form.description || 'No description',
-        createdDate: new Date().toLocaleDateString(), // You can store actual creation date later
-        responses: 0, // Will be calculated from submissions later
-        status: form.isFormSaved ? "active" : "draft",
-        questionsCount: form.questions?.length || 0
-      }));
-      
+
+      const formattedForms: FormData[] = storedForms.map(form => {
+        const responseCount = FormStorageService.getSubmissions(form.formId!).length;
+
+        return {
+          formId: form.formId!,
+          title: form.title || 'Untitled Form',
+          description: form.description || 'No description',
+          createdDate: new Date().toLocaleDateString(),
+          responses: responseCount, // Now shows actual response count
+          status: form.isFormSaved ? "active" : "draft",
+          questionsCount: form.questions?.length || 0
+        };
+      });
+
       setForms(formattedForms);
     } catch (error) {
       console.error('Error loading forms:', error);
@@ -72,7 +76,9 @@ const FormsDashboard: React.FC = () => {
     }
   };
 
-  // Calculate stats from forms
+  // Calculate total responses dynamically
+  const totalResponses = FormStorageService.getTotalResponseCount();
+
   const stats: StatCard[] = [
     {
       icon: faFileAlt,
@@ -82,7 +88,7 @@ const FormsDashboard: React.FC = () => {
     },
     {
       icon: faPaperPlane,
-      value: forms.reduce((sum, form) => sum + form.responses, 0),
+      value: totalResponses,
       label: "Total Submissions",
       color: "success",
     },
@@ -133,17 +139,17 @@ const FormsDashboard: React.FC = () => {
     navigate('/form-builder');
   };
 
+  // Replace the existing handleViewResponses function with this:
   const handleViewResponses = (formId: number) => {
-    // TODO: Navigate to responses view
-    Swal.fire(`Viewing responses for form ${formId} (Feature coming soon)`);
+    navigate(`/form-responses/${formId}`);
   };
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         height: '100vh',
         fontFamily: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif"
       }}>
@@ -306,14 +312,14 @@ const FormsDashboard: React.FC = () => {
                       stat.color === "primary"
                         ? "rgba(67, 97, 238, 0.1)"
                         : stat.color === "success"
-                        ? "rgba(76, 201, 240, 0.1)"
-                        : "rgba(248, 150, 30, 0.1)",
+                          ? "rgba(76, 201, 240, 0.1)"
+                          : "rgba(248, 150, 30, 0.1)",
                     color:
                       stat.color === "primary"
                         ? "#4361ee"
                         : stat.color === "success"
-                        ? "#4cc9f0"
-                        : "#f8961e",
+                          ? "#4cc9f0"
+                          : "#f8961e",
                   }}
                 >
                   <FontAwesomeIcon icon={stat.icon} />
@@ -396,10 +402,10 @@ const FormsDashboard: React.FC = () => {
             </div>
 
             {filteredForms.length === 0 ? (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '40px', 
-                color: '#adb5bd' 
+              <div style={{
+                textAlign: 'center',
+                padding: '40px',
+                color: '#adb5bd'
               }}>
                 {forms.length === 0 ? (
                   <div>
@@ -521,8 +527,8 @@ const FormsDashboard: React.FC = () => {
                           />
                           <div>
                             <div>{form.title}</div>
-                            <div style={{ 
-                              fontSize: '12px', 
+                            <div style={{
+                              fontSize: '12px',
                               color: '#adb5bd',
                               marginTop: '2px'
                             }}>

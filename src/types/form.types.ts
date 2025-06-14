@@ -3,13 +3,14 @@
 export interface Question {
   id: number;
   content: string;
-  type: 'text' | 'textarea' | 'multiple_choice' | 'checkbox' | 'file' | 'audio' | 'number' | 'calculated' | 'full_name' | 'email' | 'address' | 'phone';
+  type: 'text' | 'textarea' | 'multiple_choice' | 'checkbox' | 'file' | 'audio' | 'number' | 'calculated' | 'full_name' | 'email' | 'address' | 'phone' | 'dynamic_text_fields';
   orderPosition: number;
   isRequired: boolean;
   points?: number;
-  negativePoints?: number; // Add negative marking at question level
+  negativePoints?: number;
   mediaUrl?: string;
   mediaType?: string;
+  hasUploadedMedia?: boolean; // Add this new property
   explanation?: string;
   placeholder?: string;
   minLength?: number;
@@ -18,7 +19,7 @@ export interface Question {
   validationType?: string;
   validationPattern?: string;
   options?: QuestionOption[];
-  errorMessageForPattern?: string
+  errorMessageForPattern?: string;
   errorMessageForMaxLength?: string;
   // MCQ-specific settings
   mcqSettings?: {
@@ -41,7 +42,6 @@ export interface QuestionOption {
   isCorrect: boolean;
   points?: number;
   negativePoints?: number; // Add negative marking support
-  explanation?: string; // Add explanation for each option
   mediaUrl?: string;
   mediaType?: string;
 }

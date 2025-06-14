@@ -1,7 +1,7 @@
 // src/test/test.tsx
 const test = () => {
   return (
-    <div>test_Ador_merge</div>
+    <div>test_main</div>
   )
 }
 

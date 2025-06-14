@@ -11,7 +11,6 @@ const FormBuilderContainer: React.FC = () => {
   const { state, formVersion, isFormLoading } = useFormContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
-  const [updateCounter, setUpdateCounter] = useState(0);
   const navigate = useNavigate();
 
   // Create a stable key for the entire form builder that changes when form significantly changes
@@ -28,17 +27,6 @@ const FormBuilderContainer: React.FC = () => {
       isFormLoading
     });
   }, [state, formVersion, isFormLoading]);
-
-  useEffect(() => {
-    console.log('FormBuilderContainer: questions updated', state.questions);
-    setUpdateCounter(prev => prev + 1);
-  }, [state.questions]);
-
-  // Force re-render when form version changes (after new form creation, etc.)
-  useEffect(() => {
-    console.log('Form version changed, forcing re-render:', formVersion);
-    setUpdateCounter(prev => prev + 1);
-  }, [formVersion]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -120,7 +108,7 @@ const FormBuilderContainer: React.FC = () => {
         }`}>
           <div className="flex-1 p-6 overflow-y-auto">
             {/* Force re-render of QuestionEditor when form structure changes */}
-            <QuestionEditor key={`editor-${builderKey}-${updateCounter}`} />
+            <QuestionEditor key={`editor-${builderKey}`} />
           </div>
         </div>
 
@@ -140,7 +128,7 @@ const FormBuilderContainer: React.FC = () => {
           {/* Panel Content */}
           <div className="flex-1 overflow-auto">
             {/* Force re-render of QuestionDetailEditor when form structure changes */}
-            <QuestionDetailEditor key={`details-${builderKey}-${updateCounter}`} />
+            <QuestionDetailEditor key={`details-${builderKey}`} />
           </div>
         </div>
 

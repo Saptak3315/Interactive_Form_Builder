@@ -7,12 +7,12 @@ export const useFormSubmission = (form: FormState) => {
   const [responses, setResponses] = useState<QuestionResponse[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  
+
   const handleQuestionResponse = (questionId: number, answer: any, isValid: boolean) => {
     setResponses(prev => {
       const existingIndex = prev.findIndex(r => r.questionId === questionId);
       const newResponse = { questionId, answer, isValid };
-      
+
       if (existingIndex >= 0) {
         const newResponses = [...prev];
         newResponses[existingIndex] = newResponse;
@@ -22,7 +22,7 @@ export const useFormSubmission = (form: FormState) => {
       }
     });
   };
-  
+
   const validateForm = () => {
     // Check if all required questions are answered and valid
     const allValid = form.questions
@@ -31,25 +31,25 @@ export const useFormSubmission = (form: FormState) => {
         const response = responses.find(r => r.questionId === q.id);
         return response && response.isValid;
       });
-      
+
     return allValid;
   };
-  
+
   const submitForm = async () => {
     setIsSubmitting(true);
     setSubmitError(null);
-    
+
     try {
       if (!validateForm()) {
         setSubmitError('Please complete all required questions correctly.');
         return false;
       }
-      
+
       if (!form.formId) {
         setSubmitError('Form ID is missing.');
         return false;
       }
-      
+
       const submission = {
         id: Date.now(),
         formId: form.formId,
@@ -57,8 +57,12 @@ export const useFormSubmission = (form: FormState) => {
         completedAt: new Date().toISOString(),
         responses
       };
-      
+
       FormStorageService.saveSubmission(submission);
+
+      // Trigger storage event to update dashboard counts
+      window.dispatchEvent(new Event('storage'));
+
       return true;
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -68,7 +72,7 @@ export const useFormSubmission = (form: FormState) => {
       setIsSubmitting(false);
     }
   };
-  
+
   return {
     responses,
     handleQuestionResponse,

@@ -13,27 +13,15 @@ import {
   faExclamationTriangle,
   faClipboardList
 } from "@fortawesome/free-solid-svg-icons";
+import { validateQuestion } from "../../utils/validationSchemas";
 
-const getValidationPattern = (validationType?: string, customPattern?: string): string | null => {
-  const patterns: Record<string, string> = {
-    email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
-    url: "^https?:\\/\\/(?:[\\w-]+\\.)+[a-zA-Z]{2,}(?::\\d+)?(?:\\/[\\w\\-._~:/?#[\\]@!$&'()*+,;=%]*)?$",
-    phone: "^\\+?[1-9]\\d{0,14}$",
-    number: "^\\d+$",
-    alphanumeric: "^[a-zA-Z0-9]+$"
-  };
-
-  if (validationType && patterns[validationType]) {
-    return patterns[validationType];
-  }
-  return customPattern || null;
-};
 const FullFormPreview: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useFormContext();
   const { responses, handleQuestionResponse, submitForm, isSubmitting, submitError, validateForm } = useFormSubmission(state);
   const [showValidation, setShowValidation] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ [key: number]: string }>({});
+  const [filePreviewUrls, setFilePreviewUrls] = useState<{ [questionId: number]: string }>({});
 
   // Helper function to get file type from media type
   const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
@@ -83,151 +71,18 @@ const FullFormPreview: React.FC = () => {
     );
   };
 
-  const validateInput = (question: any, value: string): { isValid: boolean; error?: string } => {
-    // Required field check
-    if (question.isRequired && (!value || !value.toString().trim())) {
-      return { isValid: false, error: 'This field is required' };
-    }
-    if (!value || !value.toString().trim()) {
-      return { isValid: true };
-    }
-
-    const stringValue = value.toString();
-    if (question.minLength && stringValue.length < question.minLength) {
-      return {
-        isValid: false,
-        error: question.errorMessageForMinLength || `Minimum ${question.minLength} characters required`
-      };
-    }
-
-    if (question.maxLength && stringValue.length > question.maxLength) {
-      return {
-        isValid: false,
-        error: question.errorMessageForMaxLength || `Maximum ${question.maxLength} characters allowed`
-      };
-    }
-
-    // Handle full_name validation separately (arrays)
-    if (question.type === 'full_name' || question.type === 'address') {
-      if (question.isRequired) {
-        const values = Array.isArray(value) ? value : [];
-        const hasEmptyRequired = question.options?.some((_option: any, index: number) =>
-          !values[index] || !values[index].toString().trim()
-        );
-
-        if (hasEmptyRequired) {
-          return { isValid: false, error: 'All name fields are required' };
-        }
-      }
-      return { isValid: true };
-    }
-
-    if (question.type === 'email' && (!question.validationType || question.validationType === 'none')) {
-      question = { ...question, validationType: 'email' }; // Create new object instead of mutating
-    }
-    if (question.validationType && question.validationType !== 'none') {
-      const pattern = getValidationPattern(question.validationType, question.validationPattern);
-      if (pattern) {
-        try {
-          const regex = new RegExp(pattern);
-          if (!regex.test(stringValue)) {
-            return {
-              isValid: false,
-              error: question.errorMessageForPattern || `Invalid ${question.validationType} format`
-            };
-          }
-        } catch (e) {
-          console.error('Invalid regex pattern:', e);
-          return { isValid: false, error: 'Invalid validation pattern configured' };
-        }
-      }
-    }
-
-    return { isValid: true };
+  const validateInput = (question: any, value: any): { isValid: boolean; error?: string } => {
+    return validateQuestion(question, typeof value === 'string' ? value.trim() : value);
   };
 
   // Validate checkbox/multiple choice required fields
   const validateMultipleChoice = (question: any, value: any): { isValid: boolean; error?: string } => {
-    if (question.type === 'checkbox') {
-      const selectedOptions = Array.isArray(value) ? value : [];
-      if (question.isRequired && selectedOptions.length === 0) {
-        return { isValid: false, error: 'Please select at least one option' };
-      }
-    } else if (question.type === 'multiple_choice') {
-      const isMultiSelect = question.mcqSettings?.allowMultipleCorrect || false;
-
-      if (isMultiSelect) {
-        const selectedOptions = Array.isArray(value) ? value : [];
-
-        // Check required
-        if (question.isRequired && selectedOptions.length === 0) {
-          return { isValid: false, error: 'Please select at least one option' };
-        }
-
-        // Check min selections
-        const minSelections = question.mcqSettings?.minSelections;
-        if (minSelections && selectedOptions.length < minSelections) {
-          return { isValid: false, error: `Please select at least ${minSelections} option(s)` };
-        }
-
-        // Check max selections (should not happen due to UI prevention, but good to have)
-        const maxSelections = question.mcqSettings?.maxSelections;
-        if (maxSelections && selectedOptions.length > maxSelections) {
-          return { isValid: false, error: `Please select no more than ${maxSelections} option(s)` };
-        }
-      } else {
-        // Single selection
-        if (question.isRequired && (!value || value === '' || value === null || value === undefined)) {
-          return { isValid: false, error: 'Please select an option' };
-        }
-      }
-    } else if (question.type === 'full_name' || question.type === 'address') {
-      const values = Array.isArray(value) ? value : [];
-
-      // Trim all values and check if any field has actual content (not just spaces)
-      const trimmedValues = values.map(val => val ? val.toString().trim() : '');
-      const hasAnyContent = trimmedValues.some(val => val.length > 0);
-
-      // If question is required OR if user started filling (has any content)
-      if (question.isRequired || hasAnyContent) {
-        const emptyFields: any[] = [];
-        question.options?.forEach((option: any, index: number) => {
-          const trimmedValue = values[index] ? values[index].toString().trim() : '';
-          if (!trimmedValue) {
-            emptyFields.push(option.content);
-          }
-        });
-
-        if (emptyFields.length > 0) {
-          if (question.isRequired) {
-            return { isValid: false, error: `${emptyFields.join(', ')} ${emptyFields.length === 1 ? 'is' : 'are'} required` };
-          } else if (hasAnyContent) {
-            return { isValid: false, error: `Please complete all name fields or leave all empty` };
-          }
-        }
-      }
-    }
-    return { isValid: true };
+    return validateQuestion(question, value);
   };
 
   // Real-time validation function
   const performValidation = (questionId: number, question: any, value: any) => {
-    let validation: { isValid: boolean; error?: string };
-
-    if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone') {
-      validation = validateInput(question, typeof value === 'string' ? value.trim() : value);
-    } else if (question.type === 'multiple_choice' || question.type === 'checkbox' || question.type === 'full_name' || question.type === 'address') {
-      validation = validateMultipleChoice(question, value);
-    } else if (question.type === 'file') {
-      validation = question.isRequired && !value
-        ? { isValid: false, error: 'Please upload a file' }
-        : { isValid: true };
-    } else {
-      const stringValue = typeof value === 'string' ? value.trim() : value;
-      validation = question.isRequired && (!stringValue || stringValue === '')
-        ? { isValid: false, error: 'This field is required' }
-        : { isValid: true };
-    }
+    const validation = validateQuestion(question, value);
 
     setValidationErrors(prev => ({
       ...prev,
@@ -245,7 +100,20 @@ const FullFormPreview: React.FC = () => {
     // Update the response
     handleQuestionResponse(questionId, value, validation.isValid);
   };
-
+  // Add this function after handleInputChange
+  const handleFilePreview = (questionId: number, file: File) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setFilePreviewUrls(prev => ({
+          ...prev,
+          [questionId]: result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const renderQuestion = (question: any, index: number) => {
     const response = responses.find(r => r.questionId === question.id);
     const currentValue = response?.answer || '';
@@ -339,7 +207,7 @@ const FullFormPreview: React.FC = () => {
             {renderQuestionMedia(question)}
 
             <input
-              type="number"
+              type="text"
               value={currentValue}
               onChange={(e) => handleInputChange(question.id, question, e.target.value)}
               className={`w-full px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
@@ -438,20 +306,6 @@ const FullFormPreview: React.FC = () => {
                       <p className="text-sm text-slate-500 italic mb-2">
                         📝 {option.explanation}
                       </p>
-                    )}
-                    {(option.points || option.negativePoints) && (
-                      <div className="flex items-center gap-2 mt-2">
-                        {option.points && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">
-                            +{option.points} pts
-                          </span>
-                        )}
-                        {option.negativePoints > 0 && (
-                          <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded font-medium">
-                            -{option.negativePoints} pts (if wrong)
-                          </span>
-                        )}
-                      </div>
                     )}
                   </div>
                 </label>
@@ -599,8 +453,8 @@ const FullFormPreview: React.FC = () => {
           </div>
         );
 
-      case 'address':
       case 'full_name':
+      case 'address':
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
             <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
@@ -642,8 +496,7 @@ const FullFormPreview: React.FC = () => {
                         ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
                         : 'border-slate-300 text-slate-700 focus:border-indigo-500 focus:ring-indigo-500'
                         }`}
-                      placeholder={option.placeholder || `Enter information`}
-                      disabled={false}
+                      placeholder={option.placeholder || `Enter ${option.content.toLowerCase()}`}
                     />
                   </div>
                 );
@@ -660,6 +513,8 @@ const FullFormPreview: React.FC = () => {
             )}
           </div>
         );
+
+
 
       case 'file':
         return (
@@ -681,11 +536,69 @@ const FullFormPreview: React.FC = () => {
                 type="file"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  handleInputChange(question.id, question, file);
+                  if (file) {
+                    handleInputChange(question.id, question, file);
+                    handleFilePreview(question.id, file);
+                  }
                 }}
                 className="flex-1 text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
               />
             </div>
+
+            {/* File Preview Section - ADD THIS */}
+            {filePreviewUrls[question.id] && (
+              <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <div className="text-sm font-medium text-slate-700 mb-2">Preview:</div>
+                {(() => {
+                  const fileUrl = filePreviewUrls[question.id];
+                  const fileType = currentValue?.type || '';
+
+                  if (fileType.startsWith('image/')) {
+                    return (
+                      <img
+                        src={fileUrl}
+                        alt="Uploaded file preview"
+                        className="max-w-full h-48 object-cover rounded border shadow-sm"
+                      />
+                    );
+                  } else if (fileType.startsWith('video/')) {
+                    return (
+                      <video
+                        src={fileUrl}
+                        controls
+                        className="max-w-full h-48 rounded border shadow-sm"
+                      >
+                        Your browser does not support video playback.
+                      </video>
+                    );
+                  } else if (fileType.startsWith('audio/')) {
+                    return (
+                      <audio
+                        src={fileUrl}
+                        controls
+                        className="w-full"
+                      >
+                        Your browser does not support audio playback.
+                      </audio>
+                    );
+                  } else {
+                    return (
+                      <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded">
+                        <div className="text-2xl">📎</div>
+                        <div>
+                          <div className="font-medium text-slate-800">
+                            {currentValue?.name || 'Uploaded file'}
+                          </div>
+                          <div className="text-sm text-slate-500">
+                            {currentValue?.size ? `${(currentValue.size / 1024).toFixed(1)} KB` : 'File uploaded'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            )}
 
             {hasError && (
               <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
@@ -726,6 +639,141 @@ const FullFormPreview: React.FC = () => {
           </div>
         );
 
+      case 'dynamic_text_fields':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || 'Dynamic Text Fields'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <div className="space-y-3">
+              {/* Render existing dynamic fields */}
+              {(() => {
+                // Ensure we always have at least one field
+                const fieldsArray = Array.isArray(currentValue) && currentValue.length > 0
+                  ? currentValue
+                  : [''];
+
+                return fieldsArray.map((fieldValue: string, fieldIndex: number) => (
+                  <div key={fieldIndex} className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      value={fieldValue || ''}
+                      onChange={(e) => {
+                        // Create a new array based on current state
+                        const currentArray = Array.isArray(currentValue) && currentValue.length > 0
+                          ? [...currentValue]
+                          : [''];
+
+                        // Update the specific field
+                        currentArray[fieldIndex] = e.target.value;
+
+                        // Call the handler with the updated array
+                        handleInputChange(question.id, question, currentArray);
+                      }}
+                      className={`flex-1 px-4 py-3 border rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${hasError
+                        ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
+                        : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
+                        }`}
+                      placeholder={question.placeholder || `Enter item ${fieldIndex + 1}`}
+                    />
+
+                    {/* Remove button - only show if more than 1 field */}
+                    {fieldsArray.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentArray = Array.isArray(currentValue) && currentValue.length > 0
+                            ? [...currentValue]
+                            : [''];
+
+                          // Remove the field at the specified index
+                          currentArray.splice(fieldIndex, 1);
+
+                          // Ensure we always have at least one field
+                          const finalArray = currentArray.length > 0 ? currentArray : [''];
+
+                          handleInputChange(question.id, question, finalArray);
+                        }}
+                        className="px-3 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors flex-shrink-0"
+                        title="Remove field"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ));
+              })()}
+
+              {/* Add more field button */}
+              <button
+                type="button"
+                onClick={() => {
+                  // Get current values or start with empty array
+                  const currentArray = Array.isArray(currentValue) && currentValue.length > 0
+                    ? [...currentValue]
+                    : [''];
+
+                  // Add a new empty field
+                  currentArray.push('');
+
+                  handleInputChange(question.id, question, currentArray);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium"
+              >
+                + Add another
+              </button>
+            </div>
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'calculated':
+        return (
+          <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <label className="block text-lg font-semibold text-gray-800 mb-3 leading-relaxed">
+              {index + 1}. {question.content || 'Calculated Field'}
+              {question.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+
+            {question.explanation && (
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                💡 {question.explanation}
+              </p>
+            )}
+
+            {renderQuestionMedia(question)}
+
+            <div className="p-4 bg-slate-50 border border-slate-300 rounded-lg">
+              <span className="text-slate-600 font-medium">
+                Result: {currentValue || 'Calculation pending...'}
+              </span>
+            </div>
+
+            {hasError && (
+              <div className="flex items-center gap-2 mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="flex-shrink-0" />
+                <span>{validationErrors[question.id]}</span>
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return (
           <div key={question.id} className="mb-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -747,6 +795,7 @@ const FullFormPreview: React.FC = () => {
     setShowValidation(true);
 
     // Validate all questions
+    // Validate all questions
     let hasErrors = false;
     const newErrors: { [key: number]: string } = {};
 
@@ -754,24 +803,7 @@ const FullFormPreview: React.FC = () => {
       const response = responses.find(r => r.questionId === question.id);
       const value = response?.answer || '';
 
-      let validation: { isValid: boolean; error?: string };
-
-      if (question.type === 'text' || question.type === 'textarea' || question.type === 'email' || question.type === 'phone') {
-        validation = validateInput(question, typeof value === 'string' ? value.trim() : value);
-      } else if (question.type === 'multiple_choice' || question.type === 'checkbox') {
-        validation = validateMultipleChoice(question, value);
-      } else if (question.type === 'full_name' || question.type === 'address') {
-        validation = validateMultipleChoice(question, value);
-      } else if (question.type === 'file') {
-        validation = question.isRequired && !value
-          ? { isValid: false, error: 'Please upload a file' }
-          : { isValid: true };
-      } else {
-        const stringValue = typeof value === 'string' ? value.trim() : value;
-        validation = question.isRequired && (!stringValue || stringValue === '')
-          ? { isValid: false, error: 'This field is required' }
-          : { isValid: true };
-      }
+      const validation = validateQuestion(question, value);
 
       if (!validation.isValid) {
         hasErrors = true;
