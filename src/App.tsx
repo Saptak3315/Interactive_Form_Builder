@@ -6,6 +6,7 @@ import Test from './test/test';
 import FormBuilder from './pages/FormBuilder';
 import PublishForm from './pages/PublishForm';
 import FormPreview from './pages/FormPreview';
+import FormResponses from './pages/FormResponses';
 
 function AppRoutes() {
   return (
@@ -15,6 +16,7 @@ function AppRoutes() {
       <Route path="/form-builder" element={<FormBuilder />} />
       <Route path="/form-preview" element={<FormPreview />} />
       <Route path="/publish-form" element={<PublishForm />} />
+<Route path="/form-responses/:formId" element={<FormResponses />} />
       <Route path="/test" element={<Test />} /> 
     </Routes>
   );

@@ -31,6 +31,7 @@ const FormSidebar = () => {
     { type: 'checkbox', label: 'Checkboxes', icon: '☑️', description: 'Simple multiple selections for forms', category: 'Choice' },
     { type: 'file', label: 'File Upload', icon: '📎', description: 'File attachment field', category: 'Media' },
     { type: 'audio', label: 'Audio', icon: '🎵', description: 'Audio recording or upload', category: 'Media' },
+    { type: 'dynamic_text_fields', label: 'Dynamic Text Fields', icon: '🔄', description: 'User can add/remove multiple text fields for answers', category: 'Advanced' },
     { type: 'calculated', label: 'Calculated', icon: '🧮', description: 'Formula-based calculation', category: 'Advanced' },
   ];
 
@@ -48,15 +49,39 @@ const FormSidebar = () => {
     setIsOperationInProgress(true);
     try {
       await saveCurrentForm();
-      Swal.fire('Form saved successfully!');
+      Swal.fire({
+        title: 'Success!',
+        text: 'Form saved successfully!',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (error) {
       console.error('Error saving form:', error);
-      Swal.fire('There was an error saving your form. Please try again.');
+
+      // Show more specific error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+      if (errorMessage.includes('Storage limit exceeded')) {
+        Swal.fire({
+          title: 'Storage Limit Exceeded',
+          text: 'Form contains large media files. Consider using smaller files or removing some media content.',
+          icon: 'warning',
+          confirmButtonText: 'OK'
+        });
+      } else {
+        Swal.fire({
+          title: 'Save Error',
+          text: 'There was an error saving your form. Please try again.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
     } finally {
       setIsOperationInProgress(false);
     }
   }, [saveCurrentForm, isFormLoading, isOperationInProgress]);
-
+  
   const handleNewForm = useCallback(async () => {
     if (isFormLoading || isOperationInProgress) return;
 
@@ -241,8 +266,8 @@ const FormSidebar = () => {
         <div className="flex flex-col gap-3">
           <button
             className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${isDisabled
-                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'border-slate-300 bg-white hover:bg-green-500 hover:text-white hover:border-green-500 cursor-pointer'
+              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+              : 'border-slate-300 bg-white hover:bg-green-500 hover:text-white hover:border-green-500 cursor-pointer'
               }`}
             onClick={handleSaveForm}
             disabled={isDisabled}
@@ -253,8 +278,8 @@ const FormSidebar = () => {
 
           <button
             className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${isDisabled
-                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'border-slate-300 bg-white hover:bg-indigo-500 hover:text-white hover:border-indigo-500 cursor-pointer'
+              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+              : 'border-slate-300 bg-white hover:bg-indigo-500 hover:text-white hover:border-indigo-500 cursor-pointer'
               }`}
             onClick={handleNewForm}
             disabled={isDisabled}
@@ -265,8 +290,8 @@ const FormSidebar = () => {
 
           <button
             className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${isDisabled
-                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'border-slate-300 bg-white hover:bg-blue-500 hover:text-white hover:border-blue-500 cursor-pointer'
+              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+              : 'border-slate-300 bg-white hover:bg-blue-500 hover:text-white hover:border-blue-500 cursor-pointer'
               }`}
             onClick={handlePreviewForm}
             disabled={isDisabled}
@@ -277,8 +302,8 @@ const FormSidebar = () => {
 
           <button
             className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${(state.questions.length === 0 || !state.title.trim() || isDisabled)
-                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'border-slate-300 bg-white hover:bg-purple-500 hover:text-white hover:border-purple-500 cursor-pointer'
+              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+              : 'border-slate-300 bg-white hover:bg-purple-500 hover:text-white hover:border-purple-500 cursor-pointer'
               }`}
             onClick={handlePublishForm}
             disabled={state.questions.length === 0 || !state.title.trim() || isDisabled}
@@ -289,8 +314,8 @@ const FormSidebar = () => {
 
           <button
             className={`flex items-center gap-2 px-4 py-3 border rounded-lg font-medium transition-all duration-200 text-left ${isDisabled
-                ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'border-slate-300 bg-white hover:bg-gray-500 hover:text-white hover:border-gray-500 cursor-pointer'
+              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+              : 'border-slate-300 bg-white hover:bg-gray-500 hover:text-white hover:border-gray-500 cursor-pointer'
               }`}
             onClick={handleBackToDashboard}
             disabled={isDisabled}

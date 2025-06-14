@@ -10,6 +10,7 @@ import {
   updateQuestion,
 } from "../../../context/FormContext/formActions";
 import Swal from "sweetalert2";
+import z from "zod";
 
 const QuestionDetailEditor: React.FC = () => {
   const { state, dispatch } = useFormContext();
@@ -25,6 +26,7 @@ const QuestionDetailEditor: React.FC = () => {
   const [optionErrors, setOptionErrors] = useState<{ [optionId: number]: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localMcqOptions, setLocalMcqOptions] = useState<QuestionOption[]>([]);
+  const [filePreviewUrls, setFilePreviewUrls] = useState<{ [questionId: number]: string }>({});
 
   // Add MCQ-specific local state
   const [mcqSettings, setMcqSettings] = useState(activeQuestion?.mcqSettings || {
@@ -33,17 +35,23 @@ const QuestionDetailEditor: React.FC = () => {
     showCorrectAnswers: true,
     partialCredit: false,
     scoringMethod: 'standard' as const,
-    defaultPoints: 1,
+    defaultPoints: 0,
     defaultNegativePoints: 0,
     minSelections: undefined,
     maxSelections: undefined,
   });
 
   // Update local state when active question changes
-  useEffect(() => {
-    if (activeQuestion) {
-      let questionData = { ...activeQuestion };
+  // Track the current question ID to prevent unnecessary state resets
+  const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(null);
 
+  // Update local state when active question changes
+  useEffect(() => {
+    // Only reset state when switching to a different question
+    if (activeQuestion && activeQuestion.id !== currentQuestionId) {
+      console.log('Switching to different question, resetting local state');
+
+      let questionData = { ...activeQuestion };
       setLocalQuestion(questionData);
 
       // Handle different question types for options
@@ -59,7 +67,7 @@ const QuestionDetailEditor: React.FC = () => {
         showCorrectAnswers: true,
         partialCredit: false,
         scoringMethod: 'standard' as const,
-        defaultPoints: 1,
+        defaultPoints: 0,
         defaultNegativePoints: 0,
         minSelections: undefined,
         maxSelections: undefined,
@@ -75,14 +83,33 @@ const QuestionDetailEditor: React.FC = () => {
       if (activeQuestion.mediaUrl) {
         setFilePreview(activeQuestion.mediaUrl);
       }
+
+      setCurrentQuestionId(activeQuestion.id);
+    } else if (!activeQuestion) {
+      setCurrentQuestionId(null);
     }
-  }, [activeQuestion]);
+  }, [activeQuestion, currentQuestionId]);
 
   // Handle field updates
   const handleFieldChange = (field: keyof Question, value: any) => {
     setLocalQuestion((prev) => ({ ...prev, [field]: value }));
   };
-
+  // Add this function after other handlers
+  const handleFilePreview = (file: File) => {
+    if (file && activeQuestion) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (typeof result === 'string') {
+          setFilePreviewUrls(prev => ({
+            ...prev,
+            [activeQuestion.id]: result
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   // Handle MCQ settings updates
   const handleMcqSettingsChange = (field: string, value: any) => {
     // Validate min/max selections
@@ -155,14 +182,14 @@ const QuestionDetailEditor: React.FC = () => {
       // Has content but only spaces
       setOptionErrors(prev => ({
         ...prev,
-        [optionId]: 'Option cannot contain only spaces'
+        [optionId]: 'Field cannot contain only spaces'
       }));
       return false;
     } else if (trimmedContent.length === 0) {
       // Completely empty
       setOptionErrors(prev => ({
         ...prev,
-        [optionId]: 'Option content is required'
+        [optionId]: 'Field content is required'
       }));
       return false;
     } else {
@@ -176,33 +203,53 @@ const QuestionDetailEditor: React.FC = () => {
     }
   };
 
-  // Handle file upload
+  // Update the handleFileUpload function to include size warning
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'audio/mp3', 'audio/wav'];
 
     if (!file) return;
-    if (!allowedTypes.includes(file.type)) {
-      Swal.fire('Please upload an image, video, or audio file');
-      return;
-    }
+
     // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       Swal.fire('File size must be less than 5 MB');
       return;
     }
 
+    // Warn about large files that might affect saving
+    if (file.size > 1 * 1024 * 1024) { // 1MB warning
+      Swal.fire({
+        title: 'Large File Warning',
+        text: 'Large media files may cause issues when saving the form. Consider using smaller files for better performance.',
+        icon: 'warning',
+        showConfirmButton: true,
+        confirmButtonText: 'Continue',
+        showCancelButton: true,
+        cancelButtonText: 'Choose Different File'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          processFileUpload(file);
+        }
+      });
+    } else {
+      processFileUpload(file);
+    }
+  };
+
+  // Add this helper function
+  const processFileUpload = (file: File) => {
     setUploadedFile(file);
 
     // Create preview URL
     const reader = new FileReader();
     reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setFilePreview(result);
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        setFilePreview(result);
 
-      // Update question with file data
-      handleFieldChange('mediaUrl', result);
-      handleFieldChange('mediaType', file.type);
+        // Update question with file data
+        handleFieldChange('mediaUrl', result);
+        handleFieldChange('mediaType', file.type);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -214,98 +261,138 @@ const QuestionDetailEditor: React.FC = () => {
     handleFieldChange('mediaUrl', '');
     handleFieldChange('mediaType', '');
 
+    // Clear preview URL for this question
+    if (activeQuestion) {
+      setFilePreviewUrls(prev => {
+        const newUrls = { ...prev };
+        delete newUrls[activeQuestion.id];
+        return newUrls;
+      });
+    }
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  // Get file type for display
-  const getFileType = (mediaType?: string): 'image' | 'video' | 'audio' | 'unknown' => {
-    if (!mediaType) return 'unknown';
-    if (mediaType.startsWith('image/')) return 'image';
-    if (mediaType.startsWith('video/')) return 'video';
-    if (mediaType.startsWith('audio/')) return 'audio';
-    return 'unknown';
-  };
-
-  // Render media preview
-  const renderMediaPreview = () => {
-    if (!filePreview) return null;
-
-    const fileType = getFileType(localQuestion.mediaType);
-    const fileName = uploadedFile?.name || 'uploaded-file';
-
-    return (
-      <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50">
-        <div className="flex justify-between items-start mb-2">
-          <span className="text-sm font-medium text-gray-700">Uploaded Media:</span>
-          <button
-            type="button"
-            onClick={handleRemoveFile}
-            className="text-red-600 hover:text-red-800 text-sm"
-          >
-            ✕ Remove
-          </button>
-        </div>
-
-        {fileType === 'image' && (
-          <img
-            src={filePreview}
-            alt={fileName}
-            className="max-w-full h-32 object-cover rounded border"
-          />
-        )}
-
-        {fileType === 'video' && (
-          <video
-            src={filePreview}
-            controls
-            className="max-w-full h-32 rounded border"
-          >
-            Your browser does not support video playback.
-          </video>
-        )}
-
-        {fileType === 'audio' && (
-          <audio
-            src={filePreview}
-            controls
-            className="w-full"
-          >
-            Your browser does not support audio playback.
-          </audio>
-        )}
-
-        <div className="mt-2 text-xs text-gray-500">
-          {fileName} • {uploadedFile ? `${(uploadedFile.size / 1024).toFixed(1)} KB` : 'External file'}
-        </div>
-      </div>
-    );
-  };
-
   // Save changes to the question (including local options for full_name)
   const saveChanges = () => {
-    if (activeQuestion && localQuestion) {
-      if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
-        // For full_name and address, include local options in the update
-        const updatedQuestion = {
-          ...localQuestion,
-          options: localOptions
-        };
-        dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
-      } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
-        // For MCQ and checkbox, include local MCQ options and mcq settings in the update
-        const updatedQuestion = {
-          ...localQuestion,
-          options: localMcqOptions,
-          mcqSettings: activeQuestion.type === 'multiple_choice' ? mcqSettings : undefined
-        };
-        dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
-      } else {
-        // For other question types, save normally
-        dispatch(updateQuestion(activeQuestion.id, localQuestion));
+    try {
+      // Validate min/max length relationship
+      if (activeQuestion &&
+        (activeQuestion.type === "text" ||
+          activeQuestion.type === "textarea" ||
+          activeQuestion.type === "dynamic_text_fields")) {
+
+        const minMaxSchema = z.object({
+          minLength: z.number().optional(),
+          maxLength: z.number().optional(),
+        }).refine((data) => {
+          if (data.minLength && data.maxLength) {
+            return data.maxLength >= data.minLength;
+          }
+          return true;
+        }, {
+          message: "Minimum length cannot be greater than maximum length."
+        });
+
+        const result = minMaxSchema.safeParse({
+          minLength: localQuestion.minLength,
+          maxLength: localQuestion.maxLength
+        });
+
+        if (!result.success) {
+          Swal.fire({
+            icon: "error",
+            title: "Validation Error",
+            text: result.error.errors[0].message,
+          });
+          return;
+        }
       }
+
+      // Validate Name and Address fields before saving
+      if (activeQuestion && (activeQuestion.type === "full_name" || activeQuestion.type === "address")) {
+        const optionsSchema = z.array(z.object({
+          content: z.string().min(1, "Field content is required").trim()
+        })).min(1, "At least one field is required");
+
+        const result = optionsSchema.safeParse(localOptions);
+        if (!result.success) {
+          Swal.fire({
+            icon: "error",
+            title: "Validation Error",
+            text: `All ${activeQuestion.type === 'full_name' ? 'name' : 'address'} fields must have labels. Please fill in all empty fields.`,
+          });
+          return;
+        }
+      }
+
+      // Validate MCQ fields before saving
+      if (activeQuestion && (activeQuestion.type === "multiple_choice" || activeQuestion.type === "checkbox")) {
+        const mcqOptionsSchema = z.array(z.object({
+          content: z.string().min(1, "Option content is required").trim()
+        })).min(2, "At least two options are required");
+
+        const result = mcqOptionsSchema.safeParse(localMcqOptions);
+        if (!result.success) {
+          Swal.fire({
+            icon: "error",
+            title: "Validation Error",
+            text: "All options must have content. Please fill in all empty options.",
+          });
+          return;
+        }
+      }
+
+      // Rest of the save logic remains the same...
+      if (activeQuestion && localQuestion) {
+        if (
+          activeQuestion.type === "full_name" ||
+          activeQuestion.type === "address"
+        ) {
+          const updatedQuestion = {
+            ...localQuestion,
+            options: localOptions,
+          };
+          dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
+          // Force refresh the current question ID to trigger state reset
+          setCurrentQuestionId(null);
+          setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+
+        } else if (
+          activeQuestion.type === "multiple_choice" ||
+          activeQuestion.type === "checkbox"
+        ) {
+          // Handle MCQ types with their local options and settings
+          const updatedQuestion = {
+            ...localQuestion,
+            options: localMcqOptions,
+            mcqSettings: mcqSettings,
+          };
+          dispatch(updateQuestion(activeQuestion.id, updatedQuestion));
+
+          // Force refresh the current question ID to trigger state reset
+          setCurrentQuestionId(null);
+          setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+
+        } else {
+          dispatch(updateQuestion(activeQuestion.id, localQuestion));
+
+          // Force refresh the current question ID to trigger state reset
+          setCurrentQuestionId(null);
+          setTimeout(() => setCurrentQuestionId(activeQuestion.id), 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      Swal.fire({
+        icon: "error",
+        title: "Save Error",
+        text: "An error occurred while saving changes. Please try again.",
+      });
     }
   };
 
@@ -329,7 +416,11 @@ const QuestionDetailEditor: React.FC = () => {
         orderPosition: localOptions.length,
         isCorrect: false,
       };
-      setLocalOptions(prev => [...prev, newOption]);
+
+      // Only update local state - don't dispatch to global state
+      const updatedOptions = [...localOptions, newOption];
+      setLocalOptions(updatedOptions);
+
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
       const newOption = {
         id: Date.now(),
@@ -340,7 +431,11 @@ const QuestionDetailEditor: React.FC = () => {
         negativePoints: mcqSettings.defaultNegativePoints || 0,
         explanation: ''
       };
-      setLocalMcqOptions(prev => [...prev, newOption]);
+
+      // Only update local state - don't dispatch to global state
+      const updatedMcqOptions = [...localMcqOptions, newOption];
+      setLocalMcqOptions(updatedMcqOptions);
+
     } else {
       const newOption = {
         content: "",
@@ -359,13 +454,21 @@ const QuestionDetailEditor: React.FC = () => {
         Swal.fire("A name field must have at least 1 field");
         return;
       }
-      setLocalOptions(prev => prev.filter(option => option.id !== optionId));
+
+      // Only update local state - don't dispatch to global state
+      const updatedOptions = localOptions.filter(option => option.id !== optionId);
+      setLocalOptions(updatedOptions);
+
     } else if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
       if (localMcqOptions.length <= 2) {
         Swal.fire("A choice question must have at least 2 options");
         return;
       }
-      setLocalMcqOptions(prev => prev.filter(option => option.id !== optionId));
+
+      // Only update local state - don't dispatch to global state
+      const updatedMcqOptions = localMcqOptions.filter(option => option.id !== optionId);
+      setLocalMcqOptions(updatedMcqOptions);
+
     } else {
       if (activeQuestion.options && activeQuestion.options.length <= 2) {
         Swal.fire("A choice question must have at least 2 options");
@@ -381,6 +484,18 @@ const QuestionDetailEditor: React.FC = () => {
     if (hasOptionErrors) return false;
 
     if (!activeQuestion) return false;
+
+    // Check for empty options in Name and Address fields
+    if (activeQuestion.type === 'full_name' || activeQuestion.type === 'address') {
+      const hasEmptyOptions = localOptions.some(option => !option.content || !option.content.trim());
+      if (hasEmptyOptions) return false; // Disable save if there are empty options
+    }
+
+    // Check for empty options in MCQ fields
+    if (activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox') {
+      const hasEmptyMcqOptions = localMcqOptions.some(option => !option.content || !option.content.trim());
+      if (hasEmptyMcqOptions) return false; // Disable save if there are empty options
+    }
 
     const questionChanged = JSON.stringify(localQuestion) !== JSON.stringify(activeQuestion);
 
@@ -420,6 +535,7 @@ const QuestionDetailEditor: React.FC = () => {
     { value: "checkbox", label: "Checkboxes" },
     { value: "file", label: "File Upload" },
     { value: "audio", label: "Audio" },
+    { value: "dynamic_text_fields", label: "Dynamic Text Fields" },
     { value: "calculated", label: "Calculated" },
   ];
 
@@ -505,17 +621,87 @@ const QuestionDetailEditor: React.FC = () => {
             Field Media
           </label>
           <div className="space-y-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*,audio/*"
-              onChange={handleFileUpload}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-            />
-            <div className="text-xs text-gray-500">
-              Supported formats: Images (JPG, PNG, GIF, WebP), Videos (MP4), Audio (MP3, WAV). Max size: 5MB
+            <div className="flex items-center gap-4 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleFileUpload(e);
+                    handleFilePreview(file);
+                  }
+                }}
+                className="flex-1 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+              />
             </div>
-            {renderMediaPreview()}
+            <div className="text-xs text-gray-500">
+              Upload any file type. Max size: 5MB
+            </div>
+
+            {/* File Preview Section - Same as FormPreview */}
+            {(activeQuestion && filePreviewUrls[activeQuestion.id]) || filePreview ? (
+              <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="text-sm font-medium text-slate-700">Preview:</div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    ✕ Remove
+                  </button>
+                </div>
+                {(() => {
+                  const previewUrl = (activeQuestion && filePreviewUrls[activeQuestion.id]) || filePreview || '';
+                  const fileType = localQuestion.mediaType || uploadedFile?.type || '';
+
+                  if (fileType.startsWith('image/')) {
+                    return (
+                      <img
+                        src={previewUrl}
+                        alt="Uploaded file preview"
+                        className="max-w-full h-48 object-cover rounded border shadow-sm"
+                      />
+                    );
+                  } else if (fileType.startsWith('video/')) {
+                    return (
+                      <video
+                        src={previewUrl}
+                        controls
+                        className="max-w-full h-48 rounded border shadow-sm"
+                      >
+                        Your browser does not support video playback.
+                      </video>
+                    );
+                  } else if (fileType.startsWith('audio/')) {
+                    return (
+                      <audio
+                        src={previewUrl}
+                        controls
+                        className="w-full"
+                      >
+                        Your browser does not support audio playback.
+                      </audio>
+                    );
+                  } else {
+                    return (
+                      <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded">
+                        <div className="text-2xl">📎</div>
+                        <div>
+                          <div className="font-medium text-slate-800">
+                            {uploadedFile?.name || 'Uploaded file'}
+                          </div>
+                          <div className="text-sm text-slate-500">
+                            {uploadedFile?.size ? `${(uploadedFile.size / 1024).toFixed(1)} KB` : 'File uploaded'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -524,7 +710,7 @@ const QuestionDetailEditor: React.FC = () => {
           <div className="mb-5">
             <div className="flex justify-between items-center mb-3">
               <label className="block text-sm font-medium text-gray-700">
-                {activeQuestion.type === 'full_name' ? 'Name Fields' :
+                {activeQuestion.type === 'full_name' || activeQuestion.type === 'address' ? 'Name Fields' :
                   activeQuestion.type === 'multiple_choice' ? 'Answer Options' : 'Answer Options'}
               </label>
 
@@ -577,32 +763,6 @@ const QuestionDetailEditor: React.FC = () => {
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="text-sm font-medium text-blue-800 mb-3">📊 Scoring Settings</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Default Points per Option</label>
-                    <input
-                      type="number"
-                      value={mcqSettings.defaultPoints || 1}
-                      onChange={(e) => {
-                        const value = e.target.valueAsNumber || 1;
-                        handleMcqSettingsChange('defaultPoints', value);
-                      }}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      min="0"
-                      step="1"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Negative Marking</label>
-                    <input
-                      type="number"
-                      value={mcqSettings.defaultNegativePoints || 0}
-                      onChange={(e) => handleMcqSettingsChange('defaultNegativePoints', parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      min="0"
-                      step="0.1"
-                    />
-                  </div>
-
                   <div className="col-span-2">
                     <label className="block text-xs font-medium text-gray-700 mb-1">Selection Limits (for multi-select)</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -633,30 +793,6 @@ const QuestionDetailEditor: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Scoring Method</label>
-                    <select
-                      value={mcqSettings.scoringMethod || 'standard'}
-                      onChange={(e) => handleMcqSettingsChange('scoringMethod', e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    >
-                      <option value="standard">Standard (No negative)</option>
-                      <option value="negative_marking">Negative Marking</option>
-                      <option value="no_negative">No Negative Points</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="partial-credit"
-                      checked={mcqSettings.partialCredit || false}
-                      onChange={(e) => handleMcqSettingsChange('partialCredit', e.target.checked)}
-                      className="w-4 h-4 mr-2"
-                    />
-                    <label htmlFor="partial-credit" className="text-xs font-medium text-gray-700">
-                      Allow Partial Credit
-                    </label>
-                  </div>
                 </div>
               </div>
             )}
@@ -664,7 +800,7 @@ const QuestionDetailEditor: React.FC = () => {
             <div className="flex flex-col gap-3">
               {/* Use localOptions for full_name, activeQuestion.options for others */}
               {/* Use appropriate local state for different question types */}
-              {(activeQuestion.type === 'full_name' ? localOptions :
+              {(activeQuestion.type === 'full_name' || activeQuestion.type === 'address' ? localOptions :
                 activeQuestion.type === 'multiple_choice' || activeQuestion.type === 'checkbox' ? localMcqOptions :
                   activeQuestion.options)?.map((option: any, index: number) => (
                     <div key={option.id} className={`p-4 border rounded-lg ${activeQuestion.type === 'multiple_choice'
@@ -676,7 +812,7 @@ const QuestionDetailEditor: React.FC = () => {
                           ? 'bg-blue-200 text-blue-800'
                           : 'bg-gray-200 text-gray-600'
                           }`}>
-                          {activeQuestion.type === 'full_name' ? `Field ${index + 1}` :
+                          {activeQuestion.type === 'full_name' || activeQuestion.type === 'address' ? `Field ${index + 1}` :
                             activeQuestion.type === 'multiple_choice' ? String.fromCharCode(65 + index) : `${index + 1}`}
                         </span>
                         <button
@@ -736,19 +872,6 @@ const QuestionDetailEditor: React.FC = () => {
                       {/* MCQ-specific fields */}
                       {activeQuestion.type === 'multiple_choice' && (
                         <>
-                          {/* Explanation field */}
-                          <textarea
-                            value={option.explanation || ''}
-                            onChange={(e) => {
-                              if (activeQuestion.type === 'multiple_choice') {
-                                handleLocalMcqOptionChange(option.id, "explanation", e.target.value);
-                              }
-                            }}
-                            placeholder="Explanation for this option (optional)"
-                            className="w-full px-3 py-2 border border-gray-300 rounded mb-3 text-sm resize-none"
-                            rows={2}
-                          />
-
                           {/* Scoring and correctness */}
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div className="flex items-center gap-2">
@@ -772,7 +895,7 @@ const QuestionDetailEditor: React.FC = () => {
                               <label className="block text-xs font-medium text-gray-700 mb-1">Points (+)</label>
                               <input
                                 type="number"
-                                value={option.points !== undefined ? option.points : (mcqSettings.defaultPoints || 1)}
+                                value={option.points !== undefined ? option.points : (mcqSettings.defaultPoints || 0)}
                                 onChange={(e) => {
                                   const newValue = parseFloat(e.target.value) || 0;
                                   if (activeQuestion.type === 'multiple_choice') {
@@ -940,10 +1063,10 @@ const QuestionDetailEditor: React.FC = () => {
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                 >
                   <option value="none">No validation</option>
-                  <option value="email">Email address</option>
+                  {/* <option value="email">Email address</option> */}
                   <option value="url">Website URL</option>
-                  <option value="phone">Phone number</option>
-                  <option value="number">Numbers only</option>
+                  {/* <option value="phone">Phone number</option> */}
+                  {/* <option value="number">Numbers only</option> */}
                   <option value="alphanumeric">Letters and numbers only</option>
                   <option value="custom">Custom pattern</option>
                 </select>
@@ -1139,16 +1262,14 @@ const QuestionDetailEditor: React.FC = () => {
                     const selectedType = e.target.value;
                     handleFieldChange("validationType", selectedType);
 
-                    // Auto-set regex patterns
-                    const patterns: Record<string, string> = {
-                      email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-                      url: "/^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?::\d+)?(\/[^\s]*)?(#[^\s]*)?$/",
-                      number: "^\d+$",
-                      alphanumeric: "^[a-zA-Z0-9]+$"
-                    };
-
-                    if (selectedType in patterns) {
-                      handleFieldChange("validationPattern", patterns[selectedType]);
+                    // Auto-set regex patterns using our centralized schemas
+                    if (selectedType === 'email' || selectedType === 'url') {
+                      // For built-in Zod validators, we don't need to set patterns
+                      handleFieldChange("validationPattern", "");
+                    } else if (selectedType === 'phone') {
+                      handleFieldChange("validationPattern", "^\\+?[1-9]\\d{0,14}$"); // No built-in phone validator
+                    } else if (selectedType === 'alphanumeric') {
+                      handleFieldChange("validationPattern", "^[a-zA-Z0-9]+$"); // No built-in alphanumeric validator
                     } else if (selectedType === "none") {
                       handleFieldChange("validationPattern", "");
                     }
@@ -1156,10 +1277,7 @@ const QuestionDetailEditor: React.FC = () => {
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
                 >
                   <option value="none">No validation</option>
-                  <option value="email">Email address</option>
                   <option value="url">Website URL</option>
-                  <option value="phone">Phone number</option>
-                  <option value="number">Numbers only</option>
                   <option value="alphanumeric">Letters and numbers only</option>
                   <option value="custom">Custom pattern</option>
                 </select>
@@ -1204,8 +1322,156 @@ const QuestionDetailEditor: React.FC = () => {
           </div>
         )}
 
+        {/* Dynamic Text Fields Settings */}
+        {activeQuestion.type === "dynamic_text_fields" && (
+          <div className="mb-5">
+            <label className="block mb-1.5 text-sm font-medium text-gray-700">Input Placeholder</label>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Placeholder text for each field"
+                value={localQuestion.placeholder || ""}
+                onChange={(e) =>
+                  handleFieldChange("placeholder", e.target.value)
+                }
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+              />
+              {/* <div className="flex gap-3">
+                <input
+                  type="number"
+                  placeholder="Min length per field"
+                  value={localQuestion.minLength || ""}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      "minLength",
+                      e.target.value ? parseInt(e.target.value) : undefined
+                    )
+                  }
+                  className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  min="0"
+                />
+                <input
+                  type="number"
+                  placeholder="Max length per field"
+                  value={localQuestion.maxLength || ""}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      "maxLength",
+                      e.target.value ? parseInt(e.target.value) : undefined
+                    )
+                  }
+                  className="w-auto min-w-32 px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                  min="0"
+                />
+              </div> */}
+
+              {/* {typeof localQuestion.minLength === "number" && localQuestion.minLength > 0 && (
+                <div className="mb-5">
+                  <label htmlFor="dynamic-min-error" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message For Minimum Length
+                  </label>
+                  <textarea
+                    id="dynamic-min-error"
+                    value={localQuestion.errorMessageForMinLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForMinLength", e.target.value)}
+                    placeholder="Each field should have minimum required characters"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
+              )} */}
+
+              {/* {typeof localQuestion.maxLength === "number" && localQuestion.maxLength > 0 && (
+                <div className="mb-5">
+                  <label htmlFor="dynamic-max-error" className="block mb-1.5 text-sm font-medium text-gray-700">
+                    Error Message For Maximum Length
+                  </label>
+                  <textarea
+                    id="dynamic-max-error"
+                    value={localQuestion.errorMessageForMaxLength || ""}
+                    onChange={(e) => handleFieldChange("errorMessageForMaxLength", e.target.value)}
+                    placeholder="Each field should not exceed maximum characters"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 resize-vertical min-h-20 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    rows={3}
+                  />
+                </div>
+              )} */}
+
+              {/* VALIDATION DROPDOWN for dynamic fields */}
+              {/* <div>
+                <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Type</label>
+                <select
+                  value={localQuestion.validationType || "none"}
+                  onChange={(e) => {
+                    const selectedType = e.target.value;
+                    handleFieldChange("validationType", selectedType);
+
+                    // Auto-set regex patterns
+                    const patterns: Record<string, string> = {
+                      email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+                      url: "^https?:\\/\\/[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(?::\\d+)?(?:\\/[^\\s]*)?(#[^\\s]*)?$",
+                      number: "^\\d+$",
+                      alphanumeric: "^[a-zA-Z0-9]+$"
+                    };
+
+                    if (selectedType in patterns) {
+                      handleFieldChange("validationPattern", patterns[selectedType]);
+                    } else if (selectedType === "none") {
+                      handleFieldChange("validationPattern", "");
+                    }
+                  }}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                >
+                  <option value="none">No validation</option>
+                  <option value="email">Email address</option>
+                  <option value="url">Website URL</option>
+                  <option value="phone">Phone number</option>
+                  <option value="number">Numbers only</option>
+                  <option value="alphanumeric">Letters and numbers only</option>
+                  <option value="custom">Custom pattern</option>
+                </select>
+              </div> */}
+
+              {/* Error message and pattern inputs */}
+              {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Error Message for Validation</label>
+                    <input
+                      type="text"
+                      placeholder="Enter error message for validation failure"
+                      value={localQuestion.errorMessageForPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("errorMessageForPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
+
+              {localQuestion.validationType &&
+                localQuestion.validationType !== 'none' &&
+                localQuestion.validationType !== '' && (
+                  <div>
+                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Validation Pattern</label>
+                    <input
+                      type="text"
+                      placeholder="Enter regex pattern (e.g., ^[0-9]+$)"
+                      value={localQuestion.validationPattern || ""}
+                      onChange={(e) =>
+                        handleFieldChange("validationPattern", e.target.value)
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm transition-all duration-200 focus:outline-none focus:border-indigo-500 focus:shadow-sm focus:shadow-indigo-100"
+                    />
+                  </div>
+                )}
+            </div>
+          </div>
+        )}
+
         {/* Number Settings */}
-        {activeQuestion.type === "number" && (
+        {/* {activeQuestion.type === "number" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">Number Settings</label>
             <div className="flex gap-3 items-center flex-wrap">
@@ -1226,10 +1492,10 @@ const QuestionDetailEditor: React.FC = () => {
               </select>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* File Upload Settings */}
-        {activeQuestion.type === "file" && (
+        {/* {activeQuestion.type === "file" && (
           <div className="mb-5">
             <label className="block mb-1.5 text-sm font-medium text-gray-700">File Upload Settings</label>
             <div className="flex gap-3 items-center flex-wrap">
@@ -1246,7 +1512,7 @@ const QuestionDetailEditor: React.FC = () => {
               />
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

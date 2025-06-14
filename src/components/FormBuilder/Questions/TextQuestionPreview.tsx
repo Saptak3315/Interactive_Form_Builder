@@ -1,6 +1,7 @@
 // src/components/FormBuilder/Questions/TextQuestionPreview.tsx
 import React, { useState } from 'react';
 import type { Question } from '../../../types/form.types';
+import { validateQuestion } from '../../../utils/validationSchemas';
 
 interface TextQuestionPreviewProps {
   question: Question;
@@ -70,65 +71,12 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
     );
   };
 
-  const getValidationPattern = (validationType?: string, customPattern?: string): string | null => {
-  const patterns: Record<string, string> = {
-    email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
-    url: "^https?:\\/\\/(?:[\\w-]+\\.)+[a-zA-Z]{2,}(?::\\d+)?(?:\\/[\\w\\-._~:/?#[\\]@!$&'()*+,;=%]*)?$",
-    phone: "^\\+?[1-9]\\d{0,14}$",
-    number: "^\\d+$",
-    alphanumeric: "^[a-zA-Z0-9]+$"
-  };
-  
-  if (validationType && patterns[validationType]) {
-    return patterns[validationType];
-  }
-  
-  return customPattern || null;
-};
-
-
-  const getValidationMessage = (validationType?: string): string => {
-    const messages: Record<string, string> = {
-      email: "Please enter a valid email address",
-      url: "Please enter a valid URL (e.g., https://example.com)",
-      phone: "Please enter a valid phone number",
-      number: "Please enter numbers only",
-      alphanumeric: "Please enter letters and numbers only",
-    };
-
-    return messages[validationType || ''] || "Input does not match the required format";
-  };
-
   const validateInput = (value: string): boolean => {
-    if (question.isRequired && !value.trim()) {
-      setError('This field is required');
-      return false;
-    }
+    const validation = validateQuestion(question, value);
 
-    if (question.minLength && value.length < question.minLength) {
-      setError(`Minimum length is ${question.minLength} characters`);
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid input');
       return false;
-    }
-
-    if (question.maxLength && value.length > question.maxLength) {
-      setError(`Maximum length is ${question.maxLength} characters`);
-      return false;
-    }
-
-    // Use validation type or custom pattern
-    const pattern = getValidationPattern(question.validationType);
-    if (pattern && value) {
-      try {
-        const regex = new RegExp(pattern);
-        if (!regex.test(value)) {
-          setError(getValidationMessage(question.validationType));
-          return false;
-        }
-      } catch (e) {
-        console.error('Invalid regex pattern:', e);
-        setError('Invalid validation pattern configured');
-        return false;
-      }
     }
 
     setError(null);
@@ -146,17 +94,18 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
   };
 
   const getInputType = (): string => {
+    // Auto-detect input type based on question type and validation
+    if (question.type === 'email') return 'email';
+    if (question.type === 'phone') return 'tel';
+    if (question.type === 'number') return 'number';
+
+    // Check validation type for other cases
     switch (question.validationType) {
-      case 'email':
-        return 'email';
-      case 'url':
-        return 'url';
-      case 'phone':
-        return 'tel';
-      case 'number':
-        return 'number';
-      default:
-        return 'text';
+      case 'email': return 'email';
+      case 'url': return 'url';
+      case 'phone': return 'tel';
+      case 'number': return 'number';
+      default: return 'text';
     }
   };
 
@@ -181,8 +130,8 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
         onChange={handleChange}
         placeholder={question.placeholder || ''}
         className={`w-full px-3 py-2 border rounded-md text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${error
-            ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
-            : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
+          ? 'border-red-300 bg-red-50 text-red-900 placeholder-red-400 focus:border-red-500 focus:ring-red-500'
+          : 'border-slate-300 bg-white text-slate-700 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500'
           }`}
         required={question.isRequired}
         maxLength={question.maxLength}
@@ -213,10 +162,10 @@ const TextQuestionPreview: React.FC<TextQuestionPreviewProps> = ({
           </div>
           {question.maxLength && (
             <div className={`text-xs font-medium ${inputValue.length > question.maxLength
-                ? 'text-red-500'
-                : inputValue.length > question.maxLength * 0.8
-                  ? 'text-orange-500'
-                  : 'text-slate-400'
+              ? 'text-red-500'
+              : inputValue.length > question.maxLength * 0.8
+                ? 'text-orange-500'
+                : 'text-slate-400'
               }`}>
               {inputValue.length}/{question.maxLength}
             </div>

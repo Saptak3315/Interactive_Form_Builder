@@ -211,7 +211,7 @@ export const createDefaultQuestion = (
           showCorrectAnswers: true,
           partialCredit: false,
           scoringMethod: 'standard',
-          defaultPoints: 1,
+          defaultPoints: 0,
           defaultNegativePoints: 0,
           minSelections: undefined,
           maxSelections: undefined,
@@ -284,6 +284,14 @@ export const createDefaultQuestion = (
       return {
         ...baseQuestion,
         content: 'Calculated Field',
+      };
+
+    case 'dynamic_text_fields':
+      return {
+        ...baseQuestion,
+        content: 'Dynamic Text Fields',
+        placeholder: 'Enter item',
+        explanation: 'Users can add multiple text entries dynamically',
       };
 
     default:
